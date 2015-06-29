@@ -28,8 +28,8 @@ with env:
 
     box = KinBody.Link.GeometryInfo()
     box._type = KinBody.Link.GeomType.Box
-    box._t[0,3] = 0.7
-    box._t[1,3] = 0.5
+    # box._t[0,3] = -0.8
+    # box._t[1,3] = 0.5
     box._vGeomData = [0.2,0.1,1.01]
     box._bVisible = True
     box._fTransparency = 0
@@ -41,9 +41,10 @@ with env:
     # robot.InitFromBoxes(numpy.array([[0,0,0,0.2,0.1,0]]),True) # set geometry as one box of extents 0.1, 0.2, 0.3
     robot.SetName('box_robot')
     # robot._vDiffuseColor = [0,0,0]
-    # transform = np.identity(4)
-    # transform[0,3] = -2
-    # robot.SetTransform(transform)
+    transform = np.identity(4)
+    transform[0,3] = 0.9
+    transform[1,3] = 0
+    robot.SetTransform(transform)
     env.AddKinBody(robot)
     # vertices = np.array([[-.2, -0.1, 0],[-.2,0.1,0],[.2,.1,0], 
 
@@ -68,18 +69,35 @@ print 'number of objects in environment:', len(env.GetBodies())
 print env.GetBodies()
 t0 = time.time()
 bullet_env = bulletsimpy.BulletEnvironment(env, ['box_robot','obstacle'])
-bullet_env.SetGravity([0, 0, 0])
+# bullet_env.SetContactDistance(.05)
+# bullet_env.SetContactDistance(-100.0)
+# bullet_env.SetGravity([0, 0, 0])
+# bullet_env.SetMargin(0.5)
 
 bullet_objs = [bullet_env.GetObjectByName(b.GetName()) for b in env.GetBodies()]
 print 'bullet objs', [o.GetName() for o in bullet_objs]
 
+# bullet_env.SetContactDistance(.01)
+# bullet_env.SetContactDistance(.05)
+
+for o in bullet_objs:
+    print o.GetName()
+    print o.GetTransform()
+    o.UpdateRave()
+env.UpdatePublishedBodies()
+
 robot_obj = bullet_env.GetObjectByName('box_robot')
-robot_obj.UpdateBullet()
+# robot_obj.UpdateBullet()
+obs = bullet_env.GetObjectByName('obstacle')
+# obs.UpdateBullet()
 bullet_env.Step(0.01, 100, 0.01)
+
+# bullet_env.SetContactDistance(.05)
 
 handles = []
 print "Collisions:"
-collisions = bullet_env.DetectAllCollisions()
+# collisions = bullet_env.DetectAllCollisions()
+collisions = bullet_env.ContactTest(obs)
 ptAs = []
 ptBs = []
 for c in collisions:
@@ -101,6 +119,8 @@ for c in collisions:
     ptBs.append(ptB)
 
 with env:
+    time.sleep(0.5) # sleep 2 seconds
+    import ipdb; ipdb.set_trace()
     # handles.append(env.plot3(points=np.array((ptA,ptB)), pointsize=0.1,colors=array(((0,1,0),(0,0,0)))))
     handles.append(env.plot3(points=ptAs[0], pointsize=10,colors=(0,1,0)))
     handles.append(env.plot3(points=ptBs[0], pointsize=10,colors=(0,1,0)))

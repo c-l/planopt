@@ -115,9 +115,14 @@ class SQP(object):
             print '\n'
 
             constraints_satisfied = True
+            if self.g_use_numerical:
+                gval = g(x)
+                gjac = SQP.numerical_jac(g,x)
+            else:
+                gval, gjac = g(x)
             if abs(h(x)) > self.cnt_tolerance:
                 constraints_satisfied = False
-            elif any(g(x) > self.cnt_tolerance):
+            elif any(gval > self.cnt_tolerance):
                 constraints_satisfied = False
 
             if not constraints_satisfied:
@@ -141,6 +146,7 @@ class SQP(object):
             constraints = [A_ineq*xp <= b_ineq, A_eq*xp == b_eq]
 
             prob = cvx.Problem(obj, constraints)
+            import ipdb; ipdb.set_trace()
             prob.solve(verbose=False, solver='GUROBI')
 
             if prob.status != "optimal":
@@ -156,7 +162,7 @@ class SQP(object):
         sqp_iter = 1
 
         while True:
-            print("x: {0}".format(x))
+            # print("x: {0}".format(x))
             print("  sqp_iter: {0}".format(sqp_iter))
 
             # get gradients anad hess info for f,g and h
@@ -172,7 +178,7 @@ class SQP(object):
             hval = h(x)
             hjac = SQP.numerical_jac(h,x)
 
-            merit = SQP.calc_merit(x, Q, q, f, g, h, penalty_coeff)
+            merit = SQP.calc_merit(x, Q, q, f, lambda x: gval, h, penalty_coeff)
 
             while True:
                 print("    trust region size: {0}".format(trust_box_size))
@@ -209,7 +215,13 @@ class SQP(object):
                 # print("xp value: {0}".format(xp.value))
 
                 model_merit = prob.value
-                new_merit = SQP.calc_merit(xp.value, Q, q, f, g, h, penalty_coeff)
+                print 'evaluating for xp'
+                if self.g_use_numerical:
+                    gval = g(xp.value)
+                    gjac = SQP.numerical_jac(g,xp.value)
+                else:
+                    gval, gjac = g(xp.value)
+                new_merit = SQP.calc_merit(xp.value, Q, q, f, lambda x: gval, h, penalty_coeff)
                 approx_merit_improve = merit - model_merit
                 exact_merit_improve = merit - new_merit
                 merit_improve_ratio = exact_merit_improve / approx_merit_improve
