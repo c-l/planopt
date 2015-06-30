@@ -2,7 +2,7 @@
 """
 from openravepy import *
 import openravepy
-import bulletsimpy
+# import bulletsimpy
 import numpy as np
 import time
 from trajopt import Trajopt
@@ -12,12 +12,12 @@ env.SetViewer('qtcoin') # attach viewer (optional)
 obstacles = np.matrix(
                         '-0.806451612903226,-1.07017543859649, 1;\
                         -0.576036866359447, 0.918128654970760, 1;\
-                        0.040552995391705,0.906432748538011, 1;\
-                        0.61843317972350,-0.988304093567252, 1;\
+                        0.740552995391705,0.906432748538011, 1;\
+                        1.11843317972350,-0.988304093567252, 1;\
                         -0.806451612903226,-1.07017543859649, -1;\
                         -0.576036866359447, 0.918128654970760, -1;\
-                        0.040552995391705,0.906432748538011, -1; \
-                        0.61843317972350,-0.988304093567252, -1')
+                        0.740552995391705,0.906432748538011, -1; \
+                        1.11843317972350,-0.988304093567252, -1')
 
 # obstacles = np.matrix(
 #                         '-1.0,-1, 1;\
@@ -51,12 +51,12 @@ def create_cylinder(env, body_name, t, dims, color=[0,1,1]):
   return cylinder
 
 with env:
-    body = RaveCreateKinBody(env,'')
+    obs = RaveCreateKinBody(env,'')
     vertices = np.array(obstacles)
     indices = np.array([[2,1,0], [2,0,3], [4,5,6],[6,7,4],[0,5,4],[0,1,5],[1,2,5],[5,2,6],[2,3,6],[6,3,7],[0,7,3],[0,4,7]])
-    body.InitFromTrimesh(trimesh=TriMesh(vertices,indices),draw=True)
-    body.SetName('obstacle')
-    env.AddKinBody(body) 
+    obs.InitFromTrimesh(trimesh=TriMesh(vertices,indices),draw=True)
+    obs.SetName('obstacle')
+    env.AddKinBody(obs) 
 
     # body = RaveCreateKinBody(env,'')
     # body.InitFromSpheres(np.array([[-.1,.1,0,1.3]]))
@@ -118,47 +118,28 @@ print 'number of objects in environment:', len(env.GetBodies())
 print env.GetBodies()
 t0 = time.time()
 
-bullet_env = bulletsimpy.BulletEnvironment(env, bodies)
-bullet_env.SetContactDistance(.15)
-
-bullet_objs = [bullet_env.GetObjectByName(b.GetName()) for b in env.GetBodies()]
-print 'bullet objs', [o.GetName() for o in bullet_objs]
-
-
-for o in bullet_objs:
-    print o.GetName()
-    print o.GetTransform()
-    o.UpdateRave()
 env.UpdatePublishedBodies()
 
-robot_obj = bullet_env.GetObjectByName('box_robot')
-# robot_obj.UpdateBullet()
-obs = bullet_env.GetObjectByName('obstacle')
-# obs.UpdateBullet()
-bullet_env.Step(0.01, 100, 0.01)
-
+import ctrajoptpy
+cc = ctrajoptpy.GetCollisionChecker(env)
 
 handles = []
-print "Collisions:"
-# collisions = bullet_env.DetectAllCollisions()
-collisions = bullet_env.ContactTest(obs)
 ptAs = []
 ptBs = []
+
+collisions = cc.BodyVsAll(obs)
 for c in collisions:
-    print 'linkA:', c.linkA.GetParent().GetName(), c.linkA.GetName()
-    print 'linkB:', c.linkB.GetParent().GetName(), c.linkB.GetName()
-    print 'ptA:', c.ptA
-    print 'ptB:', c.ptB
-    print 'normalB2A:', c.normalB2A
-    print 'distance:', c.distance
-    print 'weight:', c.weight
-    # with env:
-    #     # handles.append(env.plot3(points=np.array((ptA,ptB)), pointsize=0.1,colors=np.array(((0,1,0),(0,0,0)))))
-    #     handles.append(env.plot3(points=array((ptAs[0])), pointsize=0.1,colors=array(((0,1,0)))))
-    ptA = c.ptA
+    if c.GetDistance() > 0:
+        print "distance: ", c.GetDistance()
+        print "normal: ", c.GetNormal()
+        print "ptA: ", c.GetPtA()
+        print "ptB: ", c.GetPtB()
+        print "link A: ", c.GetLinkAParentName()
+        print "link B: ", c.GetLinkBParentName()
+    ptA = c.GetPtA()
     ptA[2] = 1.01
     ptAs.append(ptA)
-    ptB = c.ptB
+    ptB = c.GetPtB()
     ptB[2] = 1.01
     ptBs.append(ptB)
 
