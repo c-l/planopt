@@ -259,7 +259,6 @@ class SQP(object):
                 elif (exact_merit_improve < 0) or (merit_improve_ratio < self.improve_ratio_threshold):
                     print("Shrinking trust region")
                     trust_box_size = trust_box_size * self.trust_shrink_ratio
-                    ipdb.set_trace()
                 else:
                     print("Growing trust region")
                     trust_box_size = trust_box_size * self.trust_expand_ratio
@@ -272,19 +271,6 @@ class SQP(object):
 
             sqp_iter = sqp_iter + 1
 
-
-
-
-# K = 2
-# T = 10
-
-# x0 = #initial trajectory
-
-# v = -1 * np.ones((K*T-K,1))
-# d = np.concatenate((np.ones((K*T,1)), np.zeros((K,1))))
-
-# P = np.diagflat(v, K) + np.diagflat(d)
-# Q = np.transpose(P)*P
 
 def test_sqp():
     from problem import Problem
