@@ -2,14 +2,12 @@ import numpy as np
 import cvxpy as cvx
 from sqp import SQP
 import time
-# import shapely as sp
-# import shapely.geometry as geo
-# import shapely.affinity as aff
-import convex_sets as cs
 from sklearn.preprocessing import normalize
+import ipdb
 
 from openravepy import *
-import bulletsimpy
+import ctrajoptpy
+# import bulletsimpy
 
 class Trajopt(object):
     def __init__(self):
@@ -92,7 +90,7 @@ class Trajopt(object):
         clones = []
         for t in range(T):
             xt = traj[:,t]
-            clones.append(self.create_robot_kinbody( "clone{0}".format(t), xt))
+            clones.append(self.create_robot_kinbody( "{0}".format(t), xt))
             env.AddKinBody(clones[t])
 
             transform = np.identity(4)
@@ -104,30 +102,52 @@ class Trajopt(object):
                 clones[t].SetTransform(transform)
         env.UpdatePublishedBodies()
 
-        for t in range(T):
-            xt = traj[:,t]
-            # one obstacle for now
-            # robot = self.make_robot_poly(xt)
-            # ptOnRobot, ptOnObs, dist = self.signedDistance(robot, obstacles)
-            ptOnRobot, ptOnObs, dist = self.signedDistance(xt, handles)
+        cc = ctrajoptpy.GetCollisionChecker(env)
+
+        handles = []
+        ptAs = []
+        ptBs = []
+        timesteps = []
+
+        collisions = cc.BodyVsAll(self.obstacle_kinbody)
+        for c in collisions:
+            # if c.GetDistance() > 0:
+            # print "distance: ", c.GetDistance()
+            # print "normal: ", c.GetNormal()
+            # print "ptA: ", c.GetPtA()
+            # print "ptB: ", c.GetPtB()
+            # print "link A: ", c.GetLinkAParentName()
+            # print "link B: ", c.GetLinkBParentName()
+            ptA = c.GetPtA()
+            ptA[2] = 1.01
+            ptAs.append(ptA)
+            ptB = c.GetPtB()
+            ptB[2] = 1.01
+            ptBs.append(ptB)
+            # timesteps.append(int(c.GetLinkBParentName()))
+            t = int(c.GetLinkBParentName())
+            # print "computed normal: ", normalize(ptB-ptA)
+
+            handles.append(env.plot3(points=ptB, pointsize=10,colors=(1,0,0)))
+            handles.append(env.plot3(points=ptA, pointsize=10,colors=(0,1,0)))
+            handles.append(env.drawarrow(p1=ptB, p2=ptA, linewidth=.01,color=(0,1,0)))
 
             gradd = np.zeros((1,K))
-            if dist != None:
-                normalObsToRobot = -1 * np.sign(dist)*normalize(ptOnRobot-ptOnObs)
-                
-                gradd = normalObsToRobot * Trajopt.calcJacobian(np.transpose(ptOnRobot), xt)
-                # print 'normalObsToRobot: ', normalObsToRobot
-                # print 'gradd: ', gradd
-                # print 'd: ', dist
-            else:
-                dist = 0
+            normal = np.matrix(c.GetNormal())
+            
+            # normalObsToRobot2 = -1 * np.sign(c.GetDistance())*normalize(ptB-ptA)
+            # ipdb.set_trace()
 
-            # val[t] = dsafe - dist
-            val[t] = 0 - dist
+            ptB = np.matrix(ptB)[:, 0:2]
+            gradd = normal[:,0:2] * Trajopt.calcJacobian(np.transpose(ptB), traj[:,t])
+
+            val[t] = dsafe - c.GetDistance()
             jac[t, K*t:K*(t+1)] = gradd
 
-        # import ipdb; ipdb.set_trace()
-        time.sleep(.1)
+
+
+        time.sleep(.5)
+        # ipdb.set_trace()
         for t in range(T):
             # env.RemoveKinBody(clones[t])
             env.Remove(clones[t])
@@ -136,14 +156,6 @@ class Trajopt(object):
     def signedDistance(self, xt, handles):
         # handles = []
         return self.penetrationDepth(xt, handles)
-        v1 = cs.ConvexHull(self.make_robot_poly(xt))
-        v2 = cs.ConvexHull(self.obstacle_poly)
-        # import ipdb; ipdb.set_trace()
-
-        if cs.is_empty(cs.intersect(v1,v2)):
-            return Trajopt.distance(v1, v2)
-        else:
-            return self.penetrationDepth(xt)
 
     @staticmethod
     def calcJacobian(pt, x0):
@@ -154,32 +166,6 @@ class Trajopt(object):
         jac[0,2] = -r[1]
         jac[1,2] = r[0]
         return np.matrix(jac)
-    
-    # @staticmethod
-    # def signedDistance(poly1, poly2):
-    #     v1 = cs.ConvexHull(poly1.tolist())
-    #     v2 = cs.ConvexHull(poly2.tolist())
-    #     import ipdb; ipdb.set_trace()
-
-    #     if cs.is_empty(cs.intersect(v1,v2)):
-    #         return Trajopt.distance(v1, v2)
-    #     else:
-    #         return Trajopt.penetrationDepth(v1, v2)
-
-    @staticmethod
-    def distance(poly1, poly2):
-        objective = cvx.Minimize(cvx.norm(poly1 - poly2, 2))
-        prob = cvx.Problem(objective)
-        prob.solve(solver='GUROBI')
-        return (poly1.value, poly2.value, prob.value)
-
-
-    # @staticmethod
-    # def penetrationDepth(poly1, poly2):
-    #     objective = cvx.Maximize(cvx.norm(poly1 - poly2, 2))
-    #     prob = cvx.Problem(objective)
-    #     prob.solve(solver='GUROBI')
-    #     return (poly1.value, poly2.value, -1 * prob.value)
 
     def init_openrave_test_env(self):
         env = Environment() # create openrave environment
@@ -214,7 +200,7 @@ class Trajopt(object):
         robot = RaveCreateKinBody(env,'')
         robot.InitFromGeometries([box])
         robot.SetName('box_robot')
-        env.AddKinBody(robot)
+        # env.AddKinBody(robot)
         self.robot_kinbody = robot
 
         return env
@@ -235,24 +221,6 @@ class Trajopt(object):
 
         return robot
 
-
-    # currently hardcoded objects (need to change)
-    def init_bullet_test_env(self, env):
-        print 'number of objects in environment:', len(env.GetBodies())
-        print env.GetBodies()
-        t0 = time.time()
-        bullet_env = bulletsimpy.BulletEnvironment(env, ['box_robot','obstacle'])
-        # bullet_env.SetContactDistance(10.0)
-        bullet_env.SetGravity([0, 0, 0])
-
-        bullet_objs = [bullet_env.GetObjectByName(b.GetName()) for b in env.GetBodies()]
-        print 'bullet objs', [o.GetName() for o in bullet_objs]
-
-        robot_obj = bullet_env.GetObjectByName('box_robot')
-        robot_obj.UpdateBullet()
-
-        return bullet_env
-
     def test_signedDistance(self, env, bullet_env, x, traj_shape):
         handles = []
 
@@ -271,69 +239,6 @@ class Trajopt(object):
             # self.penetrationDepth(xt)
             ptOnRobot, ptOnObs, dist = self.signedDistance(xt)
             # print ptOnRobot, ptOnObs, dist
-
-    def penetrationDepth(self, xt, handles):
-        env = self.env
-        bullet_env = self.bullet_env
-        robot = self.robot_kinbody
-
-        # handles = []
-        bullet_objs = [bullet_env.GetObjectByName(b.GetName()) for b in env.GetBodies()]
-        # print 'bullet objs', [o.GetName() for o in bullet_objs]
-
-        transform = np.identity(4)
-        transform[0,3] = xt[0]
-        transform[1,3] = xt[1]
-        # rot = matrixFromAxisAngle([0,0,xt[2]])
-        # transform = rot*transform
-        with env:
-            robot.SetTransform(transform)
-        env.UpdatePublishedBodies()
-
-        robot_obj = bullet_env.GetObjectByName('box_robot')
-        obs = bullet_env.GetObjectByName('obstacle')
-        robot_obj.UpdateBullet()
-        bullet_env.Step(0.01, 100, 0.01)
-
-        # print "Collisions:"
-        collisions = bullet_env.ContactTest(obs)
-        ptsOnRobot = [] # A is robot
-        ptsOnObs = [] # B is obstacle
-        distances = []
-
-        for c in collisions:
-            # print 'linkA:', c.linkA.GetParent().GetName(), c.linkA.GetName()
-            # print 'linkB:', c.linkB.GetParent().GetName(), c.linkB.GetName()
-            # print 'ptA:', c.ptA
-            # print 'ptB:', c.ptB
-            # print 'normalB2A:', c.normalB2A
-            # print 'distance:', c.distance
-            # print 'weight:', c.weight
-            # with env:
-            #     # handles.append(env.plot3(points=np.array((ptA,ptB)), pointsize=0.1,colors=np.array(((0,1,0),(0,0,0)))))
-            #     handles.append(env.plot3(points=array((ptAs[0])), pointsize=0.1,colors=array(((0,1,0)))))
-            ptA = c.ptA
-            ptA[2] = 1.01
-            ptsOnRobot.append(ptA)
-            ptB = c.ptB
-            ptB[2] = 1.01
-            ptsOnObs.append(ptB)
-            distances.append(c.distance)
-
-        with env:
-            # handles.append(env.plot3(points=np.array((ptA,ptB)), pointsize=0.1,colors=array(((0,1,0),(0,0,0)))))
-            if len(ptsOnRobot) > 0:
-                handles.append(env.plot3(points=ptsOnRobot[0], pointsize=10,colors=(1,0,0)))
-                handles.append(env.plot3(points=ptsOnObs[0], pointsize=10,colors=(0,1,0)))
-                handles.append(env.drawarrow(p1=ptsOnRobot[0], p2=ptsOnObs[0], linewidth=.01,color=(0,1,0)))
-
-                # time.sleep(0.1)
-                # import ipdb; ipdb.set_trace()
-                return (np.matrix(ptsOnRobot[0][0:2]), np.matrix(ptsOnObs[0][0:2]), distances[0])
-
-        # time.sleep(0.1)
-        return (None, None, None)
-
 
     def test(self):
         T = self.T
@@ -363,8 +268,8 @@ class Trajopt(object):
         g = lambda x: self.g_collisions(x, dsafe, (K,T))
         h = lambda x: np.zeros((1,1))
 
-        A_ineq = Q
-        b_ineq = 0.04*np.ones((KT,1))
+        A_ineq = np.vstack((P, -P))
+        b_ineq = 0.2*np.ones((2*KT,1))
 
 
         d = np.vstack((np.ones((K,1)), np.zeros((KT-2*K,1)), np.ones((K,1))))
@@ -372,24 +277,22 @@ class Trajopt(object):
 
         b_eq = np.vstack((self.traj_init[:,0], np.zeros((KT-2*K,1)), self.traj_init[:,-1]))
 
+        # ipdb.set_trace()
         # import ipdb; ipdb.set_trace()
         sqp = SQP()
-        sqp.initial_trust_box_size = 0.1
+        sqp.initial_trust_box_size =0.1
         sqp.min_approx_improve = 1e-2
         sqp.g_use_numerical = False
 
 
         self.env = self.init_openrave_test_env()
-        self.bullet_env = self.init_bullet_test_env(self.env)
-        # time.sleep(1)
-        # import ipdb; ipdb.set_trace()
         # self.test_signedDistance(self.env, self.bullet_env, x0, (K,T))
-        x = sqp.penalty_sqp(x0, Q, q, f, A_ineq, b_ineq, A_eq, b_eq, g, h)
+        x, success = sqp.penalty_sqp(x0, Q, q, f, A_ineq, b_ineq, A_eq, b_eq, g, h)
 
         env = self.env
         handles = []
         clones = []
-        traj = x[0].reshape((K,T), order='F')
+        traj = x.reshape((K,T), order='F')
         for t in range(T):
             xt = traj[:,t]
             clones.append(self.create_robot_kinbody( "clone{0}".format(t), xt))
@@ -403,7 +306,66 @@ class Trajopt(object):
             with env:
                 clones[t].SetTransform(transform)
         env.UpdatePublishedBodies()
-        import ipdb; ipdb.set_trace()
+        ipdb.set_trace()
+
+        # for t in range(T):
+        #     env.Remove(clones[t])
+
+        # # traj = x.reshape((K,T), order='F')
+        # T = 19
+        # KT = K*T
+        # self.traj_init = traj[:,:T]
+        # x0 = self.traj_init.reshape((KT,1), order='F')
+
+        # q = np.zeros((1,KT))
+
+        # v = -1*np.ones((KT-K,1))
+        # d = np.vstack((np.ones((KT-K,1)),np.zeros((K,1))))
+        # # [:,0] allows numpy to see v and d as one-dimensional so that numpy will create a diagonal matrix with v and d as a diagonal
+        # P = np.matrix(np.diag(v[:,0],K) + np.diag(d[:,0]) )
+        # Q = np.transpose(P)*P
+
+        # f = lambda x: np.zeros((1,1))
+        # # g = lambda x: self.g_collisions(x, dsafe, (K,T))
+        # g = lambda x: np.zeros((1,1))
+        # h = lambda x: np.zeros((1,1))
+
+        # A_ineq = np.vstack((P, -P))
+        # b_ineq = 0.2*np.ones((2*KT,1))
+
+
+        # d = np.vstack((np.ones((K,1)), np.zeros((KT-2*K,1)), np.ones((K,1))))
+        # A_eq = np.diag(d[:,0])
+
+        # b_eq = np.vstack((self.traj_init[:,0], np.zeros((KT-2*K,1)), self.traj_init[:,-1]))
+
+        # sqp = SQP()
+        # sqp.initial_trust_box_size = 0.1
+        # sqp.min_approx_improve = 1e-2
+        # sqp.g_use_numerical = True
+
+
+        # # self.test_signedDistance(self.env, self.bullet_env, x0, (K,T))
+        # x, success = sqp.penalty_sqp(x0, Q, q, f, A_ineq, b_ineq, A_eq, b_eq, g, h)
+
+        # handles = []
+        # clones = []
+        # traj = x.reshape((K,T), order='F')
+        # for t in range(T):
+        #     xt = traj[:,t]
+        #     clones.append(self.create_robot_kinbody( "clone{0}".format(t), xt))
+        #     env.AddKinBody(clones[t])
+
+        #     transform = np.identity(4)
+        #     transform[0,3] = xt[0]
+        #     transform[1,3] = xt[1]
+        #     # rot = matrixFromAxisAngle([0,0,xt[2]])
+        #     # transform = rot*transform
+        #     with env:
+        #         clones[t].SetTransform(transform)
+        # env.UpdatePublishedBodies()
+        # ipdb.set_trace()
+
 
 
 

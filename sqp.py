@@ -7,10 +7,10 @@ import ipdb
 class SQP(object):
     def __init__(self):
         self.improve_ratio_threshold = .25
-        # self.min_trust_box_size = 1e-4
-        self.min_trust_box_size = 1e-5
-        # self.min_approx_improve = 1e-4
-        self.min_approx_improve = 1e-8
+        self.min_trust_box_size = 1e-4
+        # self.min_trust_box_size = 1e-5
+        self.min_approx_improve = 1e-4
+        # self.min_approx_improve = 1e-8
         self.max_iter = 50
         self.trust_shrink_ratio = .1
         self.trust_expand_ratio = 1.5
@@ -105,12 +105,13 @@ class SQP(object):
     def penalty_sqp(self, x0, Q, q, f, A_ineq, b_ineq, A_eq, b_eq, g, h):
         trust_box_size = self.initial_trust_box_size
         penalty_coeff = self.initial_penalty_coeff
+        # penalty_coeff = 100
 
         x, success = SQP.find_closest_feasible_point(x0, A_ineq, b_ineq, A_eq, b_eq)
         if not success:
             return (x, success)
 
-        while True:
+        for i in range(self.max_merit_coeff_increases):
             x, trust_box_size, success = self.minimize_merit_function(x, Q, q, f, A_ineq, b_ineq, A_eq, b_eq, g, h, penalty_coeff, trust_box_size)
             print '\n'
 
@@ -130,6 +131,8 @@ class SQP(object):
                 trust_box_size = self.initial_trust_box_size
             else:
                 return (x, success)
+            # ipdb.set_trace()
+        return (x, False)
     
     @staticmethod
     def find_closest_feasible_point(x0, A_ineq, b_ineq, A_eq, b_eq):
@@ -146,8 +149,11 @@ class SQP(object):
             constraints = [A_ineq*xp <= b_ineq, A_eq*xp == b_eq]
 
             prob = cvx.Problem(obj, constraints)
-            import ipdb; ipdb.set_trace()
-            prob.solve(verbose=False, solver='GUROBI')
+            # import ipdb; ipdb.set_trace()
+            try:
+                prob.solve(verbose=False, solver='GUROBI')
+            except:
+                print ("solver error")
 
             if prob.status != "optimal":
                 success = False
@@ -190,6 +196,7 @@ class SQP(object):
                 penalty_obj += cvx.norm(hval + hjac*(xp-x), 1)
 
                 obj = q*xp
+                # ipdb.set_trace()
                 if np.any(Q):
                     obj += 0.5 * cvx.quad_form(xp, Q)
                 obj += fval
@@ -203,8 +210,18 @@ class SQP(object):
 
                 constraints = [A_ineq*xp <= b_ineq, A_eq*xp == b_eq, cvx.norm(xp-x,2) <= trust_box_size]
 
+                xp.value = x
+                print "obj value: ", obj.value
+                print "merit: ", merit
+
+                if not np.isclose(obj.value, merit, atol=1e-3):
+                    ipdb.set_trace()
+
                 prob = cvx.Problem(obj, constraints)
-                prob.solve(verbose=False, solver='GUROBI')
+                try:
+                    prob.solve(verbose=False, solver='GUROBI')
+                except:
+                    print ("solver error")
 
                 if prob.status != 'optimal':
                     print 'problem status: ', prob.status
@@ -215,13 +232,14 @@ class SQP(object):
                 # print("xp value: {0}".format(xp.value))
 
                 model_merit = prob.value
+
                 print 'evaluating for xp'
                 if self.g_use_numerical:
-                    gval = g(xp.value)
-                    gjac = SQP.numerical_jac(g,xp.value)
+                    gval2 = g(xp.value)
+                    # gjach = SQP.numerical_jac(g,xp.value)
                 else:
-                    gval, gjac = g(xp.value)
-                new_merit = SQP.calc_merit(xp.value, Q, q, f, lambda x: gval, h, penalty_coeff)
+                    gval2, gjac2 = g(xp.value)
+                new_merit = SQP.calc_merit(xp.value, Q, q, f, lambda x: gval2, h, penalty_coeff)
                 approx_merit_improve = merit - model_merit
                 exact_merit_improve = merit - new_merit
                 merit_improve_ratio = exact_merit_improve / approx_merit_improve
@@ -239,8 +257,11 @@ class SQP(object):
                     #some sort of callback
                     return (xp.value, trust_box_size, success)
                 elif (exact_merit_improve < 0) or (merit_improve_ratio < self.improve_ratio_threshold):
+                    print("Shrinking trust region")
                     trust_box_size = trust_box_size * self.trust_shrink_ratio
+                    ipdb.set_trace()
                 else:
+                    print("Growing trust region")
                     trust_box_size = trust_box_size * self.trust_expand_ratio
                     x = xp.value
                     break #from trust region loop
