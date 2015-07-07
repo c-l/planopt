@@ -276,7 +276,7 @@ class SQP(object):
                 elif approx_merit_improve < self.min_approx_improve:
                     print("Converged: y tolerance")
                     #some sort of callback
-                    print "x: ", xp.value
+                    # print "x: ", xp.value
                     return (xp, trust_box_size, success)
                 elif (exact_merit_improve < 0) or (merit_improve_ratio < self.improve_ratio_threshold):
                     # reset convex approximations of f,g and h to their original values
@@ -295,7 +295,7 @@ class SQP(object):
                 else:
                     print("Growing trust region")
                     trust_box_size.value = trust_box_size.value * self.trust_expand_ratio
-                    print "x: ", xp.value
+                    # print "x: ", xp.value
                     break #from trust region loop
 
                 if trust_box_size.value < self.min_trust_box_size:
