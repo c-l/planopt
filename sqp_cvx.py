@@ -236,10 +236,13 @@ class SQP(object):
                     print ("solver error")
 
                 if prob.status != 'optimal':
-                    print 'problem status: ', prob.status
-                    print('Failed to solve QP subproblem.')
-                    success = False
-                    return (xp, trust_box_size, success)
+                    if prob.status == None:
+                        ipdb.set_trace()
+                    else:
+                        print 'problem status: ', prob.status
+                        print('Failed to solve QP subproblem.')
+                        success = False
+                        return (xp, trust_box_size, success)
 
                 model_merit = prob.value
 

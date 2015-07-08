@@ -36,7 +36,11 @@ class Move(HLAction):
 
         self.preconditions = [RobotAt(start, self.traj), \
                             IsMP(self.env, self.traj)]
-        self.postconditions = [RobotAt(end, self.traj)]
+        # self.postconditions = [RobotAt(end, self.traj)]
+
+        # testing pick
+        self.gp = cvx.Variable(K,1)
+        self.postconditions = [InManip(self.env.GetKinBody('obstacle'), self.gp, self.traj)]
 
 
         # setting trajopt objective
@@ -47,11 +51,11 @@ class Move(HLAction):
         Q = np.transpose(P)*P
 
         self.f = lambda x: np.zeros((1,1))
-        self.objective = cvx.quad_form(cvx.reshape(self.traj, KT, 1), Q)
+        self.objective = cvx.quad_form(self.x, Q)
 
         self.add_fluents_to_opt_prob()
 
-    def test(self):
+    def solve_opt_prob(self):
         sqp = SQP()
         sqp.initial_trust_box_size = 0.1
         sqp.min_approx_improve = 1e-2
@@ -65,11 +69,15 @@ class Move(HLAction):
         handles = []
         clones = []
         # traj = x.value.reshape((K,T), order='F')
-        ipdb.set_trace()
         traj = self.traj.value
         for t in range(self.T):
             xt = traj[:,t]
-            clones.append(self.create_robot_kinbody( "clone{0}".format(t), xt))
+            if t == self.T-1:
+                clones.append(self.create_robot_kinbody( "{0}".format(t), xt, color =[1,0,0]))
+            else:
+                color_prec = t * 1.0/(self.T-1)
+                color = [color_prec, 0, 1 - color_prec]
+                clones.append(self.create_robot_kinbody( "{0}".format(t), xt, color=color))
             env.AddKinBody(clones[t])
 
             transform = np.identity(4)
@@ -82,22 +90,42 @@ class Move(HLAction):
         env.UpdatePublishedBodies()
         ipdb.set_trace()
 
-    def create_robot_kinbody(self, name, xt):
-        # create robot KinBody
-        env = self.env
-        box = KinBody.Link.GeometryInfo()
-        box._type = KinBody.Link.GeomType.Box
-        box._vGeomData = [0.2,0.1,1.01]
-        box._bVisible = True
-        box._fTransparency = 0
-        box._vDiffuseColor = [0,0,1]
-
-        robot = RaveCreateKinBody(env,'')
-        robot.InitFromGeometries([box])
-        robot.SetName(name)
-
+    def create_robot_kinbody(self, name, xt, color=[0,0,1]):
+        robot = self.create_cylinder(name, np.eye(4), [0.2,2.01], color=color)
         return robot
+
+        # # create robot KinBody
+        # env = self.env
+        # box = KinBody.Link.GeometryInfo()
+        # box._type = KinBody.Link.GeomType.Box
+        # box._vGeomData = [0.2,0.1,1.01]
+        # box._bVisible = True
+        # box._fTransparency = 0
+        # box._vDiffuseColor = [0,0,1]
+
+        # robot = RaveCreateKinBody(env,'')
+        # robot.InitFromGeometries([box])
+        # robot.SetName(name)
+
+        # return robot
+
+    def create_cylinder(self, body_name, t, dims, color=[0,1,1]):
+        infocylinder = KinBody.GeometryInfo()
+        infocylinder._type = GeometryType.Cylinder
+        infocylinder._vGeomData = dims
+        infocylinder._bVisible = True
+        infocylinder._vDiffuseColor = color
+        infocylinder._fTransparency = 0.8
+        # infocylinder._t[2, 3] = dims[1] / 2
+
+        cylinder = RaveCreateKinBody(self.env, '')
+        cylinder.InitFromGeometries([infocylinder])
+        cylinder.SetName(body_name)
+        cylinder.SetTransform(t)
+
+        return cylinder
+
 
 if __name__ == "__main__":
     move = Move()
-    move.test()
+    move.solve_opt_prob()

@@ -45,7 +45,12 @@ class IsMP(Fluent):
         clones = []
         for t in range(T):
             xt = traj[:,t]
-            clones.append(self.create_robot_kinbody( "{0}".format(t), xt))
+            if t == T-1:
+                clones.append(self.create_robot_kinbody( "{0}".format(t), xt, color =[1,0,0]))
+            else:
+                color_prec = t * 1.0/(T-1)
+                color = [color_prec, 0, 1 - color_prec]
+                clones.append(self.create_robot_kinbody( "{0}".format(t), xt, color=color))
             env.AddKinBody(clones[t])
 
             transform = np.identity(4)
@@ -115,19 +120,39 @@ class IsMP(Fluent):
         jac[1,2] = r[0]
         return np.matrix(jac)
 
-    def create_robot_kinbody(self, name, xt):
-        # create robot KinBody
-        env = self.env
-        box = KinBody.Link.GeometryInfo()
-        box._type = KinBody.Link.GeomType.Box
-        box._vGeomData = [0.2,0.1,1.01]
-        box._bVisible = True
-        box._fTransparency = 0
-        box._vDiffuseColor = [0,0,1]
+    def create_cylinder(self, body_name, t, dims, color=[0,1,1]):
+        infocylinder = KinBody.GeometryInfo()
+        infocylinder._type = GeometryType.Cylinder
+        infocylinder._vGeomData = dims
+        infocylinder._bVisible = True
+        infocylinder._vDiffuseColor = color
+        infocylinder._fTransparency = 0.7
+        # infocylinder._t[2, 3] = dims[1] / 2
 
-        robot = RaveCreateKinBody(env,'')
-        robot.InitFromGeometries([box])
+        cylinder = RaveCreateKinBody(self.env, '')
+        cylinder.InitFromGeometries([infocylinder])
+        cylinder.SetName(body_name)
+        cylinder.SetTransform(t)
+
+        return cylinder
+
+    def create_robot_kinbody(self, name, xt, color=[0,0,1]):
+        robot = self.create_cylinder(name, np.eye(4), [0.2,2.01], color=color)
         robot.SetName(name)
-
         return robot
+
+        # # create robot KinBody
+        # env = self.env
+        # box = KinBody.Link.GeometryInfo()
+        # box._type = KinBody.Link.GeomType.Box
+        # box._vGeomData = [0.2,0.1,1.01]
+        # box._bVisible = True
+        # box._fTransparency = 0
+        # box._vDiffuseColor = [0,0,1]
+
+        # robot = RaveCreateKinBody(env,'')
+        # robot.InitFromGeometries([box])
+        # robot.SetName(name)
+
+        # return robot
 

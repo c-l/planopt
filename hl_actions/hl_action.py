@@ -37,4 +37,5 @@ class HLAction(object):
             # self.g = lambda x: np.vstack((self.g(x), g(x)))
             self.g = lambda x: g(x)
         if h is not None:
-            self.h = lambda x: np.vstack((self.h(x), h(x)))
+            # self.h = lambda x: np.vstack((self.h(x), h(x)))
+            self.h = lambda x: h(x)

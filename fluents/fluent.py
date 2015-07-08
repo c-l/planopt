@@ -1,5 +1,6 @@
 import cvxpy as cvx
 import openravepy
+import numpy as np
 
 class Fluent(object):
     def __init__(self, env):
@@ -20,12 +21,12 @@ class Fluent(object):
     @staticmethod
     def get_object_loc(obj_kinbody):
         transform = obj_kinbody.GetTransform()
-        angle = openravepy.AxisAngleFromMatrix(transform)
+        angle = openravepy.axisAngleFromRotationMatrix(transform[:3, :3])[2]
         print "double check angle is in radians"
-        import ipdb; ipdb.set_trace()
         x = transform[0,3]
         y = transform[1,3]
-        loc = np.matrix([x, y, angle])
+        loc = np.matrix([[x], [y], [angle]])
+
         return loc
 
 
