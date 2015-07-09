@@ -5,16 +5,20 @@ from openravepy import *
 import ctrajoptpy
 import numpy as np
 import time
+import ipdb
 
 class IsMP(Fluent):
-    def __init__(self, env, traj):
+    def __init__(self, env, hl_action, traj):
         self.env = env
         self.traj = traj
+        self.hl_action = hl_action
         self.obstacle_kinbody = env.GetKinBody("obstacle")
 
     def precondition(self):
         traj = self.traj
-        K,T = traj.size
+        K = self.hl_action.K
+        T = self.hl_action.T
+        # K,T = traj.size
 
         v = -1*np.ones((K*T-K,1))
         d = np.vstack((np.ones((K*T-K,1)),np.zeros((K,1))))
@@ -24,7 +28,7 @@ class IsMP(Fluent):
         # positions between time steps are less than 0.2
         A_ineq = np.vstack((P, -P))
         b_ineq = 0.2*np.ones((2*K*T,1))
-        constraints = [A_ineq * cvx.reshape(traj, K*T,1) <= b_ineq]
+        constraints = [A_ineq * traj <= b_ineq]
 
         g = lambda x: self.collisions(x, 0.05, (K,T)) # function inequality constraint g(x) <= 0
         h = None # function equality constraint h(x) ==0

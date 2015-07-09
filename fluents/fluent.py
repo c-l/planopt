@@ -3,8 +3,9 @@ import openravepy
 import numpy as np
 
 class Fluent(object):
-    def __init__(self, env):
+    def __init__(self, env, hl_action):
         self.env = env
+        self.hl_action = hl_action
 
     def precondition(self):
         linear_constraints = []

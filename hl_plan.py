@@ -79,7 +79,9 @@ class HLPlan(object):
 
     def test(self):
         env = self.init_openrave_test_env()
-        self.add_hl_action(Move(env, np.array((-2,0,0)),np.array((0,1,0))))
+        # self.add_hl_action(Move(env, np.array((-2,0,0)),np.array((2,1,0))))
+        self.add_hl_action(Move(env, np.array((-2,0,0)),np.array((1,1,0))))
+        # self.add_hl_action(Move(env, np.array((-2,0,0)),np.array((1,0,0))))
         self.solve()
 
 if __name__ == "__main__":

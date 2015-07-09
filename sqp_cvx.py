@@ -233,6 +233,7 @@ class SQP(object):
                     prob = cvx.Problem(cvx.Minimize(objective), constraints)
                     prob.solve(verbose=False, solver='GUROBI')
                 except:
+                    prob.solve(verbose=True, solver='CVXOPT')
                     print ("solver error")
 
                 if prob.status != 'optimal':
@@ -259,6 +260,7 @@ class SQP(object):
 
                 x_cur = x.value
 
+                # ipdb.set_trace()
                 self.update_fgh(xp, f, g, h, fval, fgrad, fhess, gval, gjac, hval, hjac)
 
                 x.value = xp.value
@@ -309,10 +311,16 @@ class SQP(object):
 
 
 def test_sqp():
+    # from problem_cvx import Problem
+    # prob = Problem()
+    # prob.problem8()
+    # prob.test()
+
     from problem_cvx import Problem
-    prob = Problem()
-    prob.problem8()
-    prob.test()
+    for i in range(9):
+        prob = Problem()
+        getattr(prob, "problem{0}".format(i))()
+        prob.test()
 
 def test_grad():
     x0 = np.transpose(np.matrix([0.418649467727506, 0.846221417824324, 0.525152496305172]))

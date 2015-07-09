@@ -30,17 +30,17 @@ class Move(HLAction):
         #                                       np.linspace(start[1],end[1],num=T),\
         #                                       np.linspace(start[2],end[2],num=T))))
         self.traj_init = np.matrix([np.linspace(i,j,T) for i,j in zip(start, end)])
-        self.x = cvx.Variable(K*T,1)
-        self.traj = cvx.reshape(self.x, K, T)
+        self.traj = cvx.Variable(K*T,1)
+        # self.traj = cvx.reshape(self.x, K, T)
         # self.traj = cvx.Variable(K,T)
 
-        self.preconditions = [RobotAt(start, self.traj), \
-                            IsMP(self.env, self.traj)]
-        # self.postconditions = [RobotAt(end, self.traj)]
+        self.preconditions = [RobotAt(self, start, self.traj), \
+                            IsMP(self.env, self, self.traj)]
+        # self.postconditions = [RobotAt(self, end, self.traj)]
 
         # testing pick
         self.gp = cvx.Variable(K,1)
-        self.postconditions = [InManip(self.env.GetKinBody('obstacle'), self.gp, self.traj)]
+        self.postconditions = [InManip(self, self.env.GetKinBody('obstacle'), self.gp, self.traj)]
 
 
         # setting trajopt objective
@@ -51,25 +51,26 @@ class Move(HLAction):
         Q = np.transpose(P)*P
 
         self.f = lambda x: np.zeros((1,1))
-        self.objective = cvx.quad_form(self.x, Q)
+        self.objective = cvx.quad_form(self.traj, Q)
 
         self.add_fluents_to_opt_prob()
 
     def solve_opt_prob(self):
         sqp = SQP()
-        sqp.initial_trust_box_size = 0.1
-        sqp.min_approx_improve = 1e-2
+        # sqp.initial_trust_box_size = 0.1
+        sqp.initial_trust_box_size = 1
+        sqp.min_trust_box_size=1e-4
+        sqp.initial_penalty_coeff = 0.1
+        # sqp.min_approx_improve = 1e-2
         sqp.g_use_numerical = False
 
         # x = cvx.reshape(self.traj, self.K, self.T)
         x0 = np.reshape(self.traj_init, (self.K*self.T,1), order='F')
-        x, success = sqp.penalty_sqp(self.x, x0, self.objective, self.constraints, self.f, self.g, self.h)
+        x, success = sqp.penalty_sqp(self.traj, x0, self.objective, self.constraints, self.f, self.g, self.h)
 
-        env = self.env
-        handles = []
-        clones = []
-        # traj = x.value.reshape((K,T), order='F')
-        traj = self.traj.value
+    def plot(self):
+        traj = self.traj.value.reshape((self.K,self.T), order='F')
+        # traj = self.traj.value
         for t in range(self.T):
             xt = traj[:,t]
             if t == self.T-1:
@@ -78,17 +79,16 @@ class Move(HLAction):
                 color_prec = t * 1.0/(self.T-1)
                 color = [color_prec, 0, 1 - color_prec]
                 clones.append(self.create_robot_kinbody( "{0}".format(t), xt, color=color))
-            env.AddKinBody(clones[t])
+            self.env.AddKinBody(clones[t])
 
             transform = np.identity(4)
             transform[0,3] = xt[0]
             transform[1,3] = xt[1]
             rot = matrixFromAxisAngle([0,0,xt[2]])
             transform = np.dot(rot,transform)
-            with env:
+            with self.env:
                 clones[t].SetTransform(transform)
-        env.UpdatePublishedBodies()
-        ipdb.set_trace()
+        self.env.UpdatePublishedBodies()
 
     def create_robot_kinbody(self, name, xt, color=[0,0,1]):
         robot = self.create_cylinder(name, np.eye(4), [0.2,2.01], color=color)
