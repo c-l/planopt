@@ -1,7 +1,11 @@
 from hl_actions.move import Move
+from hl_actions.pick import Pick
 from openravepy import *
+from hl_param import HLParam
 import numpy as np
 import ipdb
+import cvxpy as cvx
+import time
 
 class HLPlan(object):
     def __init__(self):
@@ -12,8 +16,20 @@ class HLPlan(object):
         self.hl_actions += [hl_action]
 
     def solve(self):
+        plot_kinbodies = []
         for action in self.hl_actions:
             action.solve_opt_prob()
+            plot_kinbodies += action.plot_kinbodies()
+
+        for kinbody in plot_kinbodies:
+            self.env.AddKinBody(kinbody)
+
+        self.env.UpdatePublishedBodies()
+        time.sleep(0.5)
+
+        for kinbody in plot_kinbodies:
+            self.env.Remove(kinbody)
+
 
     def init_openrave_test_env(self):
         env = Environment() # create openrave environment
@@ -62,27 +78,49 @@ class HLPlan(object):
         return robot
 
     def create_cylinder(self, env, body_name, t, dims, color=[0,1,1]):
-      infocylinder = KinBody.GeometryInfo()
-      infocylinder._type = GeometryType.Cylinder
-      infocylinder._vGeomData = dims
-      # ipdb.set_trace()
-      infocylinder._bVisible = True
-      infocylinder._vDiffuseColor = color
-      # infocylinder._t[2, 3] = dims[1] / 2
+        infocylinder = KinBody.GeometryInfo()
+        infocylinder._type = GeometryType.Cylinder
+        infocylinder._vGeomData = dims
+        # ipdb.set_trace()
+        infocylinder._bVisible = True
+        infocylinder._vDiffuseColor = color
+        # infocylinder._t[2, 3] = dims[1] / 2
 
-      cylinder = RaveCreateKinBody(env, '')
-      cylinder.InitFromGeometries([infocylinder])
-      cylinder.SetName(body_name)
-      cylinder.SetTransform(t)
+        cylinder = RaveCreateKinBody(env, '')
+        cylinder.InitFromGeometries([infocylinder])
+        cylinder.SetName(body_name)
+        cylinder.SetTransform(t)
 
-      return cylinder
+        return cylinder
 
     def test(self):
-        env = self.init_openrave_test_env()
-        # self.add_hl_action(Move(env, np.array((-2,0,0)),np.array((2,1,0))))
-        self.add_hl_action(Move(env, np.array((-2,0,0)),np.array((1,1,0))))
-        # self.add_hl_action(Move(env, np.array((-2,0,0)),np.array((1,0,0))))
-        self.solve()
+        self.env = self.init_openrave_test_env()
+        self.ro = 0.05
+        consensus = cvx.Parameter(3,1,value=np.zeros((3,1)))
+        self.params = {"rp": HLParam("rp", consensus, ro=self.ro)}
+        # rp = HLParam("rp")
+        rp = self.params["rp"]
+        end = cvx.Variable(3,1)
+        dual_end = cvx.Parameter(3,1,value=np.zeros((3,1)))
+        rp.add_action_var(end, dual_end)
+        move = Move(self.env, np.array((-2,0,0)),end)
+        move.add_dual_cost(end, dual_end, consensus, ro=self.ro)
+        self.add_hl_action(move)
+
+        pos = cvx.Variable(3,1)
+        dual_pos = cvx.Parameter(3,1,value=np.zeros((3,1)))
+        rp.add_action_var(pos, dual_pos)
+        pick = Pick(self.env, pos, self.env.GetKinBody('obstacle'), np.zeros((3,1)))
+        pick.add_dual_cost(pos, dual_pos, consensus, ro=self.ro)
+        self.add_hl_action(pick)
+
+        epsilon = 1e-3
+        while True:
+            self.solve()
+            diff = self.params["rp"].dual_update()
+            print "diff: ", diff
+            if diff < epsilon:
+                break
 
 if __name__ == "__main__":
     plan = HLPlan()

@@ -26,21 +26,20 @@ class Move(HLAction):
         K = self.K
         KT = K*T
 
-        # self.traj_init = np.matrix(np.vstack((np.linspace(start[0],end[0],num=T),\
-        #                                       np.linspace(start[1],end[1],num=T),\
-        #                                       np.linspace(start[2],end[2],num=T))))
-        self.traj_init = np.matrix([np.linspace(i,j,T) for i,j in zip(start, end)])
+        # self.traj_init = np.matrix([np.linspace(i,j,T) for i,j in zip(start, end)])
+        # self.traj_init = np.matrix([np.linspace(i,j,T) for i,j in zip(start, end.value)])
+        self.traj_init = np.matrix([np.linspace(i,j,T) for i,j in zip(start, start)])
         self.traj = cvx.Variable(K*T,1)
-        # self.traj = cvx.reshape(self.x, K, T)
-        # self.traj = cvx.Variable(K,T)
+
+        # self.end = cvx.Variable(K,1)
 
         self.preconditions = [RobotAt(self, start, self.traj), \
                             IsMP(self.env, self, self.traj)]
-        # self.postconditions = [RobotAt(self, end, self.traj)]
+        self.postconditions = [RobotAt(self, self.end, self.traj)]
 
         # testing pick
-        self.gp = cvx.Variable(K,1)
-        self.postconditions = [InManip(self, self.env.GetKinBody('obstacle'), self.gp, self.traj)]
+        # self.gp = cvx.Variable(K,1)
+        # self.postconditions = [InManip(self, self.env.GetKinBody('obstacle'), self.gp, self.traj)]
 
 
         # setting trajopt objective
@@ -50,7 +49,6 @@ class Move(HLAction):
         P = np.matrix(np.diag(v[:,0],K) + np.diag(d[:,0]) )
         Q = np.transpose(P)*P
 
-        self.f = lambda x: np.zeros((1,1))
         self.objective = cvx.quad_form(self.traj, Q)
 
         self.add_fluents_to_opt_prob()
@@ -59,8 +57,8 @@ class Move(HLAction):
         sqp = SQP()
         # sqp.initial_trust_box_size = 0.1
         sqp.initial_trust_box_size = 1
-        sqp.min_trust_box_size=1e-4
-        sqp.initial_penalty_coeff = 0.1
+        # sqp.min_trust_box_size=1e-4
+        # sqp.initial_penalty_coeff = 0.1
         # sqp.min_approx_improve = 1e-2
         sqp.g_use_numerical = False
 
@@ -68,18 +66,19 @@ class Move(HLAction):
         x0 = np.reshape(self.traj_init, (self.K*self.T,1), order='F')
         x, success = sqp.penalty_sqp(self.traj, x0, self.objective, self.constraints, self.f, self.g, self.h)
 
-    def plot(self):
+    def plot_kinbodies(self):
+        clones = []
         traj = self.traj.value.reshape((self.K,self.T), order='F')
         # traj = self.traj.value
         for t in range(self.T):
             xt = traj[:,t]
             if t == self.T-1:
-                clones.append(self.create_robot_kinbody( "{0}".format(t), xt, color =[1,0,0]))
+                clones.append(self.create_robot_kinbody( "{0}".format(t), color =[1,0,0]))
             else:
                 color_prec = t * 1.0/(self.T-1)
                 color = [color_prec, 0, 1 - color_prec]
-                clones.append(self.create_robot_kinbody( "{0}".format(t), xt, color=color))
-            self.env.AddKinBody(clones[t])
+                clones.append(self.create_robot_kinbody( "{0}".format(t), color=color))
+            # self.env.AddKinBody(clones[t])
 
             transform = np.identity(4)
             transform[0,3] = xt[0]
@@ -88,43 +87,8 @@ class Move(HLAction):
             transform = np.dot(rot,transform)
             with self.env:
                 clones[t].SetTransform(transform)
-        self.env.UpdatePublishedBodies()
 
-    def create_robot_kinbody(self, name, xt, color=[0,0,1]):
-        robot = self.create_cylinder(name, np.eye(4), [0.2,2.01], color=color)
-        return robot
-
-        # # create robot KinBody
-        # env = self.env
-        # box = KinBody.Link.GeometryInfo()
-        # box._type = KinBody.Link.GeomType.Box
-        # box._vGeomData = [0.2,0.1,1.01]
-        # box._bVisible = True
-        # box._fTransparency = 0
-        # box._vDiffuseColor = [0,0,1]
-
-        # robot = RaveCreateKinBody(env,'')
-        # robot.InitFromGeometries([box])
-        # robot.SetName(name)
-
-        # return robot
-
-    def create_cylinder(self, body_name, t, dims, color=[0,1,1]):
-        infocylinder = KinBody.GeometryInfo()
-        infocylinder._type = GeometryType.Cylinder
-        infocylinder._vGeomData = dims
-        infocylinder._bVisible = True
-        infocylinder._vDiffuseColor = color
-        infocylinder._fTransparency = 0.8
-        # infocylinder._t[2, 3] = dims[1] / 2
-
-        cylinder = RaveCreateKinBody(self.env, '')
-        cylinder.InitFromGeometries([infocylinder])
-        cylinder.SetName(body_name)
-        cylinder.SetTransform(t)
-
-        return cylinder
-
+        return clones
 
 if __name__ == "__main__":
     move = Move()

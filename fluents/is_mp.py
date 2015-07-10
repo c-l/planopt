@@ -64,7 +64,7 @@ class IsMP(Fluent):
             transform = np.dot(rot,transform)
             with env:
                 clones[t].SetTransform(transform)
-        env.UpdatePublishedBodies()
+        # env.UpdatePublishedBodies()
 
         cc = ctrajoptpy.GetCollisionChecker(env)
 
@@ -108,7 +108,7 @@ class IsMP(Fluent):
             val[t] = dsafe - c.GetDistance()
             jac[t, K*t:K*(t+1)] = gradd
 
-        time.sleep(.5)
+        # time.sleep(.5)
         # ipdb.set_trace()
         for t in range(T):
             # env.RemoveKinBody(clones[t])
