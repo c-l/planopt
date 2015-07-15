@@ -1,18 +1,20 @@
 from fluent import Fluent
 import cvxpy as cvx
 from trajopt_cvx import Trajopt
+from utils import *
 from openravepy import *
 import ctrajoptpy
 import numpy as np
 import time
-import ipdb
 
 class IsMP(Fluent):
-    def __init__(self, env, hl_action, traj):
+    def __init__(self, env, hl_action, traj, obj, obj_traj):
         self.env = env
-        self.traj = traj
         self.hl_action = hl_action
-        self.obstacle_kinbody = env.GetKinBody("obstacle")
+        self.traj = traj
+        self.obj = obj
+        self.obj_traj = obj_traj
+        # self.obstacle_kinbody = env.GetKinBody("obstacle")
 
     def precondition(self):
         traj = self.traj
@@ -34,8 +36,8 @@ class IsMP(Fluent):
         h = None # function equality constraint h(x) ==0
         return constraints, g, h
 
+    # TODO: compute collisions properly
     def collisions(self, x, dsafe, traj_shape):
-        # import ipdb; ipdb.set_trace()
         env = self.env
         traj = x.reshape(traj_shape, order='F')
         K, T = traj_shape
@@ -44,28 +46,6 @@ class IsMP(Fluent):
         jac = np.zeros((val.size, x.size))
 
         icontact = 1
-
-        handles = []
-        clones = []
-        for t in range(T):
-            xt = traj[:,t]
-            if t == T-1:
-                clones.append(self.create_robot_kinbody( "{0}".format(t), xt, color =[1,0,0]))
-            else:
-                color_prec = t * 1.0/(T-1)
-                color = [color_prec, 0, 1 - color_prec]
-                clones.append(self.create_robot_kinbody( "{0}".format(t), xt, color=color))
-            env.AddKinBody(clones[t])
-
-            transform = np.identity(4)
-            transform[0,3] = xt[0]
-            transform[1,3] = xt[1]
-            rot = matrixFromAxisAngle([0,0,xt[2]])
-            transform = np.dot(rot,transform)
-            with env:
-                clones[t].SetTransform(transform)
-        # env.UpdatePublishedBodies()
-
         cc = ctrajoptpy.GetCollisionChecker(env)
 
         handles = []
@@ -73,46 +53,95 @@ class IsMP(Fluent):
         ptBs = []
         timesteps = []
 
-        collisions = cc.BodyVsAll(self.obstacle_kinbody)
-        for c in collisions:
-            # if c.GetDistance() > 0:
-            # print "distance: ", c.GetDistance()
-            # print "normal: ", c.GetNormal()
-            # print "ptA: ", c.GetPtA()
-            # print "ptB: ", c.GetPtB()
-            # print "link A: ", c.GetLinkAParentName()
-            # print "link B: ", c.GetLinkBParentName()
-            ptA = c.GetPtA()
-            ptA[2] = 1.01
-            ptAs.append(ptA)
-            ptB = c.GetPtB()
-            ptB[2] = 1.01
-            ptBs.append(ptB)
-            # timesteps.append(int(c.GetLinkBParentName()))
-            t = int(c.GetLinkBParentName())
-            # print "computed normal: ", normalize(ptB-ptA)
-
-            handles.append(env.plot3(points=ptB, pointsize=10,colors=(1,0,0)))
-            handles.append(env.plot3(points=ptA, pointsize=10,colors=(0,1,0)))
-            handles.append(env.drawarrow(p1=ptB, p2=ptA, linewidth=.01,color=(0,1,0)))
-
-            gradd = np.zeros((1,K))
-            normal = np.matrix(c.GetNormal())
-            
-            # normalObsToRobot2 = -1 * np.sign(c.GetDistance())*normalize(ptB-ptA)
-            # ipdb.set_trace()
-
-            ptB = np.matrix(ptB)[:, 0:2]
-            gradd = normal[:,0:2] * self.calcJacobian(np.transpose(ptB), traj[:,t])
-
-            val[t] = dsafe - c.GetDistance()
-            jac[t, K*t:K*(t+1)] = gradd
-
-        # time.sleep(.5)
-        # ipdb.set_trace()
+        # collisions = cc.BodyVsAll(self.obstacle_kinbody)
+        # robot = self.create_robot_kinbody("robot", color=[1,0,0])
+        robot = self.env.GetRobots()[0]
+        obj = self.obj
+        # collisions = cc.TrajVsAll(np.array(traj[:,:10]), robot)
+        collisions = []
+        distances = -1 * np.infty * np.ones(T)
         for t in range(T):
-            # env.RemoveKinBody(clones[t])
-            env.Remove(clones[t])
+            xt = self.traj.value[K*t:K*(t+1)]
+            robot.SetTransform(base_pose_to_mat(xt))
+            ot = self.obj_traj.value[K*t:K*(t+1)]
+            obj.SetTransform(base_pose_to_mat(ot))
+            # robot.Grab(obj, robot.GetLink('base'))
+            # robot.Release(obj)
+            for body in [robot, obj]:
+                collisions = cc.BodyVsAll(body)
+
+                for c in collisions:
+                    # if c.GetDistance() > 0:
+                    distance = c.GetDistance()
+                    # print "normal: ", c.GetNormal()
+                    # print "ptA: ", c.GetPtA()
+                    # print "ptB: ", c.GetPtB()
+                    linkA = c.GetLinkAParentName()
+                    linkB = c.GetLinkBParentName()
+                    if linkA == robot.GetName() and linkB == obj.GetName():
+                        continue
+                    elif linkB == robot.GetName() and linkA == obj.GetName():
+                        continue
+
+                    # print "distance: ", distance
+                    if distance < distances[t]:
+                        continue
+
+                    # print "link A: ", linkA
+                    # print "link B: ", linkB
+                    ptA = c.GetPtA()
+                    # ptA[2] = 1.01
+                    # ptAs.append(ptA)
+                    ptB = c.GetPtB()
+                    # ptB[2] = 1.01
+                    # ptBs.append(ptB)
+                    # timesteps.append(int(c.GetLinkBParentName()))
+                    # t = int(c.GetLinkBParentName())
+                    # print "computed normal: ", normalize(ptB-ptA)
+
+                    # handles.append(env.plot3(points=ptB, pointsize=10,colors=(1,0,0)))
+                    # handles.append(env.plot3(points=ptA, pointsize=10,colors=(0,1,0)))
+                    # if np.all(ptA == ptB):
+                    #     import ipdb; ipdb.set_trace() # BREAKPOINT
+                    # handles.append(env.drawarrow(p1=ptA, p2=ptB, linewidth=.01,color=(0,1,0)))
+
+                    gradd = np.zeros((1,K))
+                    normal = np.matrix(c.GetNormal())
+                    
+                    # normalObsToRobot2 = -1 * np.sign(c.GetDistance())*normalize(ptB-ptA)
+
+                    ptB = np.matrix(ptB)[:, 0:2]
+                    # why is there a negative one?
+                    gradd = -1 * normal[:,0:2] * self.calcJacobian(np.transpose(ptB), traj[:,t])
+
+                    val[t] = dsafe - c.GetDistance()
+                    jac[t, K*t:K*(t+1)] = gradd
+                    # import ipdb; ipdb.set_trace() # BREAKPOINT
+
+        # clones = []
+        # for t in range(T):
+        #     xt = traj[:,t]
+        #     if t == T-1:
+        #         clones.append(self.create_robot_kinbody( "{0}".format(t), color =[1,0,0]))
+        #     else:
+        #         color_prec = t * 1.0/(T-1)
+        #         color = [color_prec, 0, 1 - color_prec]
+        #         clones.append(self.create_robot_kinbody( "{0}".format(t), color=color))
+        #     env.AddKinBody(clones[t])
+
+        #     transform = np.identity(4)
+        #     transform[0,3] = xt[0]
+        #     transform[1,3] = xt[1]
+        #     rot = matrixFromAxisAngle([0,0,xt[2]])
+        #     transform = np.dot(rot,transform)
+        #     with env:
+        #         clones[t].SetTransform(transform)
+
+        # env.UpdatePublishedBodies()
+        # time.sleep(.5)
+        # for t in range(T):
+        #     # env.RemoveKinBody(clones[t])
+        #     env.Remove(clones[t])
         return (val, jac)
 
     def calcJacobian(self, pt, x0):
@@ -123,40 +152,4 @@ class IsMP(Fluent):
         jac[0,2] = -r[1]
         jac[1,2] = r[0]
         return np.matrix(jac)
-
-    def create_cylinder(self, body_name, t, dims, color=[0,1,1]):
-        infocylinder = KinBody.GeometryInfo()
-        infocylinder._type = GeometryType.Cylinder
-        infocylinder._vGeomData = dims
-        infocylinder._bVisible = True
-        infocylinder._vDiffuseColor = color
-        infocylinder._fTransparency = 0.7
-        # infocylinder._t[2, 3] = dims[1] / 2
-
-        cylinder = RaveCreateKinBody(self.env, '')
-        cylinder.InitFromGeometries([infocylinder])
-        cylinder.SetName(body_name)
-        cylinder.SetTransform(t)
-
-        return cylinder
-
-    def create_robot_kinbody(self, name, xt, color=[0,0,1]):
-        robot = self.create_cylinder(name, np.eye(4), [0.2,2.01], color=color)
-        robot.SetName(name)
-        return robot
-
-        # # create robot KinBody
-        # env = self.env
-        # box = KinBody.Link.GeometryInfo()
-        # box._type = KinBody.Link.GeomType.Box
-        # box._vGeomData = [0.2,0.1,1.01]
-        # box._bVisible = True
-        # box._fTransparency = 0
-        # box._vDiffuseColor = [0,0,1]
-
-        # robot = RaveCreateKinBody(env,'')
-        # robot.InitFromGeometries([box])
-        # robot.SetName(name)
-
-        # return robot
 

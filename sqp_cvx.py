@@ -129,7 +129,6 @@ class SQP(object):
                 trust_box_size.value = self.initial_trust_box_size
             else:
                 return (x, success)
-            # ipdb.set_trace()
         return (x, False)
     
     @staticmethod
