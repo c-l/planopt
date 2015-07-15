@@ -30,7 +30,7 @@ class InManip(Fluent):
         # linear_constraints = [self.traj[:,-1] - self.gp == obj_pos, cvx.norm(self.gp,2) == 1.26] 
         K = self.hl_action.K
         linear_constraints = [self.traj[-K:] - self.gp == obj_pos]
-        h = lambda x: np.matrix(norm(x[-K:]-obj_pos) - .6)
+        h = lambda x: np.matrix(norm(x[-K:]-obj_pos) - .55)
         return (linear_constraints, None, h)
 
 

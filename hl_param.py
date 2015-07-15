@@ -3,13 +3,22 @@ import cvxpy as cvx
 from numpy.linalg import norm
 
 class HLParam(object):
-    def __init__(self, var_name, consensus, ro=0.05):
+    def __init__(self, var_name, rows, cols, ro=0.05):
         self.var_name = var_name
         self.action_vars = []
         self.dual_vars = []
-        self.consensus = consensus
+        self.rows = rows
+        self.cols = cols
+        self.consensus = cvx.Parameter(rows, cols, value=np.zeros((rows,cols)))
         self.ro = ro
         
+    def add_dual(self, hl_action, var):
+        rows = self.rows
+        cols = self.cols
+        assert var.size == (rows, cols)
+        dual_var = cvx.Parameter(rows, cols, value=np.zeros((rows,cols)))
+        self.add_action_var(var, dual_var)
+        hl_action.add_dual_cost(var, dual_var, self.consensus, ro=self.ro)
 
     def add_action_var(self, var, dual_var):
         self.action_vars.append(var)

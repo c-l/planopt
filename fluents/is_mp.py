@@ -14,7 +14,6 @@ class IsMP(Fluent):
         self.traj = traj
         self.obj = obj
         self.obj_traj = obj_traj
-        # self.obstacle_kinbody = env.GetKinBody("obstacle")
 
     def precondition(self):
         traj = self.traj
@@ -57,7 +56,6 @@ class IsMP(Fluent):
         # robot = self.create_robot_kinbody("robot", color=[1,0,0])
         robot = self.env.GetRobots()[0]
         obj = self.obj
-        # collisions = cc.TrajVsAll(np.array(traj[:,:10]), robot)
         collisions = []
         distances = -1 * np.infty * np.ones(T)
         for t in range(T):
@@ -99,11 +97,11 @@ class IsMP(Fluent):
                     # t = int(c.GetLinkBParentName())
                     # print "computed normal: ", normalize(ptB-ptA)
 
-                    # handles.append(env.plot3(points=ptB, pointsize=10,colors=(1,0,0)))
-                    # handles.append(env.plot3(points=ptA, pointsize=10,colors=(0,1,0)))
+                    handles.append(env.plot3(points=ptB, pointsize=10,colors=(1,0,0)))
+                    handles.append(env.plot3(points=ptA, pointsize=10,colors=(0,1,0)))
                     # if np.all(ptA == ptB):
                     #     import ipdb; ipdb.set_trace() # BREAKPOINT
-                    # handles.append(env.drawarrow(p1=ptA, p2=ptB, linewidth=.01,color=(0,1,0)))
+                    handles.append(env.drawarrow(p1=ptA, p2=ptB, linewidth=.01,color=(0,1,0)))
 
                     gradd = np.zeros((1,K))
                     normal = np.matrix(c.GetNormal())
@@ -118,32 +116,39 @@ class IsMP(Fluent):
                     jac[t, K*t:K*(t+1)] = gradd
                     # import ipdb; ipdb.set_trace() # BREAKPOINT
 
-        # clones = []
-        # for t in range(T):
-        #     xt = traj[:,t]
-        #     if t == T-1:
-        #         clones.append(self.create_robot_kinbody( "{0}".format(t), color =[1,0,0]))
-        #     else:
-        #         color_prec = t * 1.0/(T-1)
-        #         color = [color_prec, 0, 1 - color_prec]
-        #         clones.append(self.create_robot_kinbody( "{0}".format(t), color=color))
-        #     env.AddKinBody(clones[t])
+        clones = []
+        transparency = 0.8
+        self.env.Remove(robot)
+        time.sleep(1.5)
+        self.env.Add(robot)
 
-        #     transform = np.identity(4)
-        #     transform[0,3] = xt[0]
-        #     transform[1,3] = xt[1]
-        #     rot = matrixFromAxisAngle([0,0,xt[2]])
-        #     transform = np.dot(rot,transform)
-        #     with env:
-        #         clones[t].SetTransform(transform)
+        for t in range(T):
+            xt = traj[:,t]
 
-        # env.UpdatePublishedBodies()
-        # time.sleep(.5)
-        # for t in range(T):
-        #     # env.RemoveKinBody(clones[t])
-        #     env.Remove(clones[t])
+            newrobot = RaveCreateRobot(self.env,robot.GetXMLId())
+            newrobot.Clone(robot,0)
+            newrobot.SetName("move_" + robot.GetName() + "_" + str(t))
+            # newrobot.SetName(str(t))
+
+            for link in newrobot.GetLinks():
+                for geom in link.GetGeometries():
+                    geom.SetTransparency(transparency)
+                    geom.SetDiffuseColor([0,0,1])
+
+            newrobot.SetTransform(base_pose_to_mat(xt))
+            env.Add(newrobot)
+            clones.append(newrobot)
+
+
+        time.sleep(0.5)
+        env.UpdatePublishedBodies()
+        for t in range(T):
+            # env.RemoveKinBody(clones[t])
+            env.Remove(clones[t])
         return (val, jac)
 
+    
+        
     def calcJacobian(self, pt, x0):
         jac = np.zeros((2,3))
         r = pt - x0[0:2]

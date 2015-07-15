@@ -68,7 +68,6 @@ class PickAndMove(HLAction):
         self.add_fluents_to_opt_prob()
 
     def solve_opt_prob(self):
-        robot = self.env.GetKinBody('robot')
         sqp = SQP()
         sqp.initial_trust_box_size = 0.1
         # sqp.initial_trust_box_size = 1

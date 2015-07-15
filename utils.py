@@ -12,6 +12,6 @@ def mat_to_base_pose(mat):
     x = pose[4]
     y = pose[5]
     rot = axisAngleFromRotationMatrix(mat)[2]
-    return x, y, rot
+    return [x, y, rot]
 
 

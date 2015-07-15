@@ -51,6 +51,53 @@ class HLAction(object):
             # self.h = lambda x: np.vstack((self.h(x), h(x)))
             self.h = lambda x: h(x)
 
+    def plot_kinbodies(self):
+        clones = []
+        traj = self.traj.value.reshape((self.K,self.T), order='F')
+        if self.obj is not None:
+            obj_traj = self.obj_traj.value.reshape((self.K,self.T), order='F')
+        transparency = 0.8
+        robot = self.env.GetKinBody('robot')
+
+        # Need to remove obj and robot, sleep and then add them back in to clone them....
+        if self.obj is not None:
+            self.env.Remove(self.obj)
+        self.env.Remove(robot)
+        time.sleep(1.5)
+        if self.obj is not None:
+            self.env.Add(self.obj)
+        self.env.Add(robot)
+
+        for t in range(self.T):
+            xt = traj[:,t]
+            newrobot = RaveCreateRobot(self.env,robot.GetXMLId())
+            newrobot.Clone(robot,0)
+            newrobot.SetName(robot.GetName() + str(t))
+            # newrobot.SetName(str(t))
+
+            for link in newrobot.GetLinks():
+                for geom in link.GetGeometries():
+                    geom.SetTransparency(transparency)
+                    geom.SetDiffuseColor([0,0,1])
+
+            # for obj in grabbed_objs:
+            if self.obj is not None:
+                ot = obj_traj[:,t]
+                if self.obj is not None:
+                    newobj = RaveCreateKinBody(self.env, self.obj.GetXMLId())
+                    newobj.Clone(self.obj, 0)
+                    newobj.SetName(self.obj.GetName() + str(t))
+                    
+                    for link in newobj.GetLinks():
+                        for geom in link.GetGeometries():
+                            geom.SetTransparency(transparency)
+                            # geom.SetDiffuseColor([0,0,1])
+                    newobj.SetTransform(base_pose_to_mat(ot))
+                    clones.append(newobj)
+            newrobot.SetTransform(base_pose_to_mat(xt))
+            clones.append(newrobot)
+
+        return clones
 
     def create_robot_kinbody(self, name, color=[0,0,1], transparency=0.8):
         robot = self.create_cylinder(name, np.eye(4), [0.2,2.01], color=color, transparency=transparency)
