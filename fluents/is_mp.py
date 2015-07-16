@@ -1,6 +1,6 @@
 from fluent import Fluent
 import cvxpy as cvx
-from trajopt_cvx import Trajopt
+# from trajopt_cvx import Trajopt
 from utils import *
 from openravepy import *
 import ctrajoptpy
@@ -14,6 +14,8 @@ class IsMP(Fluent):
         self.traj = traj
         self.obj = obj
         self.obj_traj = obj_traj
+        self.clones = None
+        self.robot = self.env.GetRobots()[0]
 
     def precondition(self):
         traj = self.traj
@@ -28,7 +30,7 @@ class IsMP(Fluent):
 
         # positions between time steps are less than 0.2
         A_ineq = np.vstack((P, -P))
-        b_ineq = 0.2*np.ones((2*K*T,1))
+        b_ineq = 0.3*np.ones((2*K*T,1))
         constraints = [A_ineq * traj <= b_ineq]
 
         g = lambda x: self.collisions(x, 0.05, (K,T)) # function inequality constraint g(x) <= 0
@@ -36,6 +38,7 @@ class IsMP(Fluent):
         return constraints, g, h
 
     # TODO: compute collisions properly
+    @profile
     def collisions(self, x, dsafe, traj_shape):
         env = self.env
         traj = x.reshape(traj_shape, order='F')
@@ -99,9 +102,8 @@ class IsMP(Fluent):
 
                     handles.append(env.plot3(points=ptB, pointsize=10,colors=(1,0,0)))
                     handles.append(env.plot3(points=ptA, pointsize=10,colors=(0,1,0)))
-                    # if np.all(ptA == ptB):
-                    #     import ipdb; ipdb.set_trace() # BREAKPOINT
-                    handles.append(env.drawarrow(p1=ptA, p2=ptB, linewidth=.01,color=(0,1,0)))
+                    if not np.all(ptA == ptB):
+                        handles.append(env.drawarrow(p1=ptA, p2=ptB, linewidth=.01,color=(0,1,0)))
 
                     gradd = np.zeros((1,K))
                     normal = np.matrix(c.GetNormal())
@@ -116,39 +118,44 @@ class IsMP(Fluent):
                     jac[t, K*t:K*(t+1)] = gradd
                     # import ipdb; ipdb.set_trace() # BREAKPOINT
 
-        clones = []
-        transparency = 0.8
+        # if self.clones is None:
+        #     self.create_clones()
+
+        # for t in range(T):
+        #     xt = traj[:,t]
+        #     self.clones[t].SetTransform(base_pose_to_mat(xt))
+        #     env.Add(self.clones[t])
+
+        # env.UpdatePublishedBodies()
+        # time.sleep(0.5)
+        # for t in range(T):
+        #     env.Remove(self.clones[t])
+        return (val, jac)
+
+    
+        
+    @profile
+    def create_clones(self):
+        self.clones = []
+        robot = self.robot
+
         self.env.Remove(robot)
         time.sleep(1.5)
         self.env.Add(robot)
 
-        for t in range(T):
-            xt = traj[:,t]
-
+        transparency = 0.8
+        for t in range(self.hl_action.T):
             newrobot = RaveCreateRobot(self.env,robot.GetXMLId())
             newrobot.Clone(robot,0)
             newrobot.SetName("move_" + robot.GetName() + "_" + str(t))
-            # newrobot.SetName(str(t))
-
+        
             for link in newrobot.GetLinks():
                 for geom in link.GetGeometries():
                     geom.SetTransparency(transparency)
                     geom.SetDiffuseColor([0,0,1])
 
-            newrobot.SetTransform(base_pose_to_mat(xt))
-            env.Add(newrobot)
-            clones.append(newrobot)
+            self.clones.append(newrobot)
 
-
-        time.sleep(0.5)
-        env.UpdatePublishedBodies()
-        for t in range(T):
-            # env.RemoveKinBody(clones[t])
-            env.Remove(clones[t])
-        return (val, jac)
-
-    
-        
     def calcJacobian(self, pt, x0):
         jac = np.zeros((2,3))
         r = pt - x0[0:2]
