@@ -12,7 +12,6 @@ class InManip(Fluent):
         self.obj_traj = obj_traj
 
     def precondition(self):
-        obj_pos = Fluent.get_object_loc(self.obj)
         K = self.hl_action.K
         T = self.hl_action.T
         gp_all_timesteps = self.gp
@@ -21,16 +20,15 @@ class InManip(Fluent):
             # gp_all_timesteps = cvx.vstack(gp_all_timesteps, self.gp)
             linear_constraints += [self.traj[K*i:K*(i+1)] - self.gp == self.obj_traj[K*i:K*(i+1)]]
         # linear_constraints = [self.traj - gp_all_timesteps == self.obj_traj]
-        # linear_constraints = [self.traj[-K:] - self.gp == obj_pos]
-        # h = lambda x: np.matrix(norm(x[:K]-obj_pos) - .5)
         return (linear_constraints, None, None)
 
     def postcondition(self):
-        obj_pos = Fluent.get_object_loc(self.obj)
+        # obj_pos = Fluent.get_object_loc(self.obj)
         # linear_constraints = [self.traj[:,-1] - self.gp == obj_pos, cvx.norm(self.gp,2) == 1.26] 
         K = self.hl_action.K
-        linear_constraints = [self.traj[-K:] - self.gp == obj_pos]
-        h = lambda x: np.matrix(norm(x[-K:]-obj_pos) - .55)
+        linear_constraints = [self.traj[-K:] - self.gp == self.obj_traj[-K:]]
+        # h = lambda x: np.matrix(norm(x[-K:]-obj_pos) - .55)
+        h = lambda x: np.matrix(norm(x[-K:]-self.obj_traj[-K:].value) - .55)
         return (linear_constraints, None, h)
 
 
