@@ -15,15 +15,14 @@ from fluents.obj_at import ObjAt
 from utils import *
 
 class Pick(HLAction):
-    def __init__(self, env, robot, pos, obj, loc, gp):
-        super(Pick, self).__init__()
-        self.handles = []
-        self.env = env
-        self.robot = robot
-        self.pos = pos
+    def __init__(self, hl_plan, env, robot, pos_param, obj, loc_param, gp_param):
+        super(Pick, self).__init__(hl_plan, env, robot)
+
+        self.pos, self.hl_pos = pos_param.new_hla_var(self)
         self.obj = obj
-        self.loc = loc
-        self.gp = gp
+        self.loc, self.hl_loc = loc_param.new_hla_var(self)
+        self.gp, self.hl_gp = gp_param.new_hla_var(self)
+        self.name = "pick"
 
         self.T = 1
         self.K = 3
@@ -38,12 +37,9 @@ class Pick(HLAction):
         self.obj_traj = cvx.Variable(K*T,1)
         self.obj_traj.value = self.obj_init
 
-        self.objective = 0
-
-
-        self.preconditions = [RobotAt(self, pos, self.traj)]
-        self.preconditions += [ObjAt(self, obj, loc, self.obj_traj)] 
-        self.postconditions = [InManip(self, self.obj, self.gp, self.traj)]
+        self.preconditions = [RobotAt(self, self.pos, self.traj)]
+        self.preconditions += [ObjAt(self, self.obj, self.loc, self.obj_traj)] 
+        self.postconditions = [InManip(self, self.obj, self.gp, self.traj, self.obj_traj)]
         self.add_fluents_to_opt_prob()
 
     def solve_opt_prob(self):
@@ -59,40 +55,40 @@ class Pick(HLAction):
         # x0 = np.reshape(self.traj_init, (self.K*self.T,1), order='F')
         x, success = sqp.penalty_sqp(self.traj, self.traj.value, self.objective, self.constraints, self.f, self.g, self.h)
 
-    def plot_kinbodies(self):
-        robot = self.robot
-        transparency = 0
+    # def plot_kinbodies(self):
+    #     robot = self.robot
+    #     transparency = 0
 
-        # Need to remove obj and robot, sleep and then add them back in to clone them....
-        self.env.Remove(self.obj)
-        self.env.Remove(robot)
-        time.sleep(1)
-        self.env.Add(self.obj)
-        self.env.Add(robot)
+    #     # Need to remove obj and robot, sleep and then add them back in to clone them....
+    #     self.env.Remove(self.obj)
+    #     self.env.Remove(robot)
+    #     time.sleep(1)
+    #     self.env.Add(self.obj)
+    #     self.env.Add(robot)
 
-        pick_robot = RaveCreateRobot(self.env,robot.GetXMLId())
-        pick_robot.Clone(robot,0)
-        pick_robot.SetName("pick_" + robot.GetName())
+    #     pick_robot = RaveCreateRobot(self.env,robot.GetXMLId())
+    #     pick_robot.Clone(robot,0)
+    #     pick_robot.SetName("pick_" + robot.GetName())
 
-        for link in pick_robot.GetLinks():
-            for geom in link.GetGeometries():
-                geom.SetTransparency(transparency)
-                geom.SetDiffuseColor([1,1,0])
+    #     for link in pick_robot.GetLinks():
+    #         for geom in link.GetGeometries():
+    #             geom.SetTransparency(transparency)
+    #             geom.SetDiffuseColor([1,1,0])
 
-        newobj = RaveCreateKinBody(self.env, self.obj.GetXMLId())
-        newobj.Clone(self.obj, 0)
-        newobj.SetName("pick_" + self.obj.GetName())
+    #     newobj = RaveCreateKinBody(self.env, self.obj.GetXMLId())
+    #     newobj.Clone(self.obj, 0)
+    #     newobj.SetName("pick_" + self.obj.GetName())
         
-        for link in newobj.GetLinks():
-            for geom in link.GetGeometries():
-                geom.SetTransparency(transparency)
-                geom.SetDiffuseColor([1,0,1])
-        ot = self.obj_traj.value[:,0]
-        newobj.SetTransform(base_pose_to_mat(ot))
+    #     for link in newobj.GetLinks():
+    #         for geom in link.GetGeometries():
+    #             geom.SetTransparency(transparency)
+    #             geom.SetDiffuseColor([1,0,1])
+    #     ot = self.obj_traj.value[:,0]
+    #     newobj.SetTransform(base_pose_to_mat(ot))
 
-        xt = self.traj.value[:,0]
-        pick_robot.SetTransform(base_pose_to_mat(xt))
+    #     xt = self.traj.value[:,0]
+    #     pick_robot.SetTransform(base_pose_to_mat(xt))
 
-        return [pick_robot, newobj]
+    #     return [pick_robot, newobj]
 
 

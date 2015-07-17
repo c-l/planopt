@@ -1,10 +1,19 @@
 import numpy as np
 import cvxpy as cvx
 from openravepy import *
+import time
+from utils import *
 
 class HLAction(object):
-    def __init__(self):
+    def __init__(self, hl_plan, env, robot):
+        self.hl_plan = hl_plan
+        self.env = env
+        self.robot = robot
+        self.handles = []
+        self.name = "hla"
+
         # optimization sqp info
+        self.objective = 0
         self.constraints = []
         self.f = lambda x: np.zeros((1,1))
         self.g = lambda x: np.zeros((1,1))
@@ -16,6 +25,14 @@ class HLAction(object):
 
         # list of effect fluents
         self.postconditions = []
+
+        self.obj = None
+        self.traj = None
+        self.obj_traj = None
+
+        # for graphing
+        self.robot_clones = None
+        self.obj_clones = None
 
     def add_fluents_to_opt_prob(self):
         for precondition in self.preconditions:
@@ -51,57 +68,173 @@ class HLAction(object):
             # self.h = lambda x: np.vstack((self.h(x), h(x)))
             self.h = lambda x: h(x)
 
-    def plot_kinbodies(self):
-        clones = []
-        traj = self.traj.value.reshape((self.K,self.T), order='F')
-        if self.obj is not None:
-            obj_traj = self.obj_traj.value.reshape((self.K,self.T), order='F')
-        transparency = 0.8
-        robot = self.env.GetKinBody('robot')
+    def plot_traj_line(self, traj, colors=(0,0,1)):
+        handles = []
+        env = self.hl_plan.env
+        traj_points = np.reshape(traj.value.copy(), (self.T, self.K))
+        traj_points[:,2] = np.ones((self.T, 1))
+        handles.append(env.drawlinestrip(points=traj_points, linewidth=10.0, colors=colors))
+        handles.append(env.plot3(points=traj_points[0,:],pointsize=30, colors=colors))
+        handles.append(env.plot3(points=traj_points[-1,:],pointsize=30, colors=colors))
 
-        # Need to remove obj and robot, sleep and then add them back in to clone them....
-        if self.obj is not None:
-            self.env.Remove(self.obj)
-        self.env.Remove(robot)
-        time.sleep(1.5)
-        if self.obj is not None:
-            self.env.Add(self.obj)
-        self.env.Add(robot)
+        return handles
 
-        for t in range(self.T):
-            xt = traj[:,t]
-            newrobot = RaveCreateRobot(self.env,robot.GetXMLId())
-            newrobot.Clone(robot,0)
-            newrobot.SetName(robot.GetName() + str(t))
-            # newrobot.SetName(str(t))
+    def create_robot_clones(self):
+        self.robot_clones = []
+        env = self.hl_plan.env
+        robot = self.hl_plan.robot
+        with env:
+            with robot:
+                # with env:
+                # env.Remove(robot)
+                # time.sleep(1.5)
+                # env.Add(robot)
+            
+                transparency = 0.85
+                traj = self.traj.value.reshape((self.K,self.T), order='F')
+                for t in range(self.T):
+                    xt = traj[:,t]
+                    newrobot = self.create_robot_kinbody(name=self.name + "_" + robot.GetName() + str(t), transparency=transparency)
+                    # newrobot = RaveCreateRobot(env,robot.GetXMLId())
+                    # newrobot.Clone(self.robot,7)
+                    # newrobot.SetName(self.name + "_" + robot.GetName() + str(t))
+                    newrobot.SetTransform(base_pose_to_mat(xt))
 
-            for link in newrobot.GetLinks():
-                for geom in link.GetGeometries():
-                    geom.SetTransparency(transparency)
-                    geom.SetDiffuseColor([0,0,1])
-
-            # for obj in grabbed_objs:
-            if self.obj is not None:
-                ot = obj_traj[:,t]
-                if self.obj is not None:
-                    newobj = RaveCreateKinBody(self.env, self.obj.GetXMLId())
-                    newobj.Clone(self.obj, 0)
-                    newobj.SetName(self.obj.GetName() + str(t))
-                    
-                    for link in newobj.GetLinks():
+                    for link in newrobot.GetLinks():
                         for geom in link.GetGeometries():
                             geom.SetTransparency(transparency)
                             # geom.SetDiffuseColor([0,0,1])
-                    newobj.SetTransform(base_pose_to_mat(ot))
-                    clones.append(newobj)
-            newrobot.SetTransform(base_pose_to_mat(xt))
-            clones.append(newrobot)
 
-        return clones
+                    # for obj in grabbed_objs:
+                    self.robot_clones.append(newrobot)
+                    env.Add(newrobot)
+                # env.Remove(robot)
+                # time.sleep(3)
+                # env.Add(robot)
+            env.UpdatePublishedBodies()
+        # with env:
+        #     env.UpdatePublishedBodies()
+        # import ipdb; ipdb.set_trace() # BREAKPOINT
+        # time.sleep(1.5)
+        # for newrobot in self.robot_clones:
+        #     with newrobot:
+        #         env.Remove(newrobot)
+        #         env.Add(newrobot)
+        # time.sleep(1.5)
+        # env.UpdatePublishedBodies()
+
+
+    def plot_traj_robot_kinbodies(self):
+        traj = self.traj.value.reshape((self.K,self.T), order='F')
+        if self.robot_clones is None:
+            self.create_robot_clones()
+
+        for t in range(self.T):
+            xt = traj[:,t]
+            self.robot_clones[t].SetTransform(base_pose_to_mat(xt))
+        return self.robot_clones
+
+    def create_obj_clones(self):
+        self.obj_clones = []
+        env = self.hl_plan.env
+        obj = env.GetKinBody(self.obj.GetName())
+        # env.Remove(obj)
+        # time.sleep(1.5)
+        # env.Add(obj)
+        
+        transparency = 0.85
+        traj = self.obj_traj.value.reshape((self.K,self.T), order='F')
+        with env:
+            for t in range(self.T):
+                xt = traj[:,t]
+                newobj = self.create_obj_kinbody(name=self.name + "_" + obj.GetName() + str(t), transparency=transparency)
+                # newobj = RaveCreateKinBody(env, obj.GetXMLId())
+                # newobj.Clone(obj, 0)
+                # newobj.SetName(self.name + "_" + obj.GetName() + str(t))
+
+                for link in newobj.GetLinks():
+                    for geom in link.GetGeometries():
+                        geom.SetTransparency(transparency)
+                        # geom.SetDiffuseColor([0,0,1])
+
+                # for obj in grabbed_objs:
+                self.obj_clones.append(newobj)
+                env.Add(newobj)
+
+    def plot_traj_obj_kinbodies(self):
+        traj = self.obj_traj.value.reshape((self.K,self.T), order='F')
+        if self.obj_clones is None:
+            self.create_obj_clones()
+
+        for t in range(self.T):
+            xt = traj[:,t]
+            self.obj_clones[t].SetTransform(base_pose_to_mat(xt))
+        return self.obj_clones
+
+    def plot(self, handles=[]):
+        self.handles = handles
+        self.handles += self.plot_traj_line(self.traj, colors=(0,0,0.5))
+        self.plot_traj_robot_kinbodies()
+        if self.obj is not None:
+            self.handles += self.plot_traj_line(self.obj_traj, colors=(0,0.5,0))
+            self.plot_traj_obj_kinbodies()
+        return self.handles
+
+    # def plot_kinbodies(self):
+    #     clones = []
+    #     traj = self.traj.value.reshape((self.K,self.T), order='F')
+    #     if self.obj is not None:
+    #         obj_traj = self.obj_traj.value.reshape((self.K,self.T), order='F')
+    #     transparency = 0.8
+    #     robot = self.env.GetKinBody('robot')
+
+    #     # Need to remove obj and robot, sleep and then add them back in to clone them....
+    #     if self.obj is not None:
+    #         self.env.Remove(self.obj)
+    #     self.env.Remove(robot)
+    #     time.sleep(1.5)
+    #     if self.obj is not None:
+    #         self.env.Add(self.obj)
+    #     self.env.Add(robot)
+
+    #     for t in range(self.T):
+    #         xt = traj[:,t]
+    #         newrobot = RaveCreateRobot(self.env,robot.GetXMLId())
+    #         newrobot.Clone(robot,0)
+    #         newrobot.SetName(robot.GetName() + str(t))
+    #         # newrobot.SetName(str(t))
+
+    #         for link in newrobot.GetLinks():
+    #             for geom in link.GetGeometries():
+    #                 geom.SetTransparency(transparency)
+    #                 geom.SetDiffuseColor([0,0,1])
+
+    #         # for obj in grabbed_objs:
+    #         if self.obj is not None:
+    #             ot = obj_traj[:,t]
+    #             if self.obj is not None:
+    #                 newobj = RaveCreateKinBody(self.env, self.obj.GetXMLId())
+    #                 newobj.Clone(self.obj, 0)
+    #                 newobj.SetName(self.obj.GetName() + str(t))
+                    
+    #                 for link in newobj.GetLinks():
+    #                     for geom in link.GetGeometries():
+    #                         geom.SetTransparency(transparency)
+    #                         # geom.SetDiffuseColor([0,0,1])
+    #                 newobj.SetTransform(base_pose_to_mat(ot))
+    #                 clones.append(newobj)
+    #         newrobot.SetTransform(base_pose_to_mat(xt))
+    #         clones.append(newrobot)
+
+    #     return clones
 
     def create_robot_kinbody(self, name, color=[0,0,1], transparency=0.8):
         robot = self.create_cylinder(name, np.eye(4), [0.2,2.01], color=color, transparency=transparency)
         return robot
+
+    def create_obj_kinbody(self, name, color=[0,1,0], transparency=0.8):
+        obj = self.create_cylinder(name, np.eye(4), [0.35,2.01], color=color, transparency=transparency)
+        return obj
 
     def create_cylinder(self, body_name, t, dims, color=[0,1,1], transparency=0.8):
         infocylinder = KinBody.GeometryInfo()
@@ -112,7 +245,7 @@ class HLAction(object):
         infocylinder._fTransparency = transparency
         # infocylinder._t[2, 3] = dims[1] / 2
 
-        cylinder = RaveCreateKinBody(self.env, '')
+        cylinder = RaveCreateKinBody(self.hl_plan.env, '')
         cylinder.InitFromGeometries([infocylinder])
         cylinder.SetName(body_name)
         cylinder.SetTransform(t)

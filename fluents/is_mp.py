@@ -8,14 +8,14 @@ import numpy as np
 import time
 
 class IsMP(Fluent):
-    def __init__(self, env, hl_action, traj, obj, obj_traj):
+    def __init__(self, env, hl_action, robot, traj, obj, obj_traj):
         self.env = env
+        self.plotting_env = hl_action.hl_plan.env
         self.hl_action = hl_action
         self.traj = traj
         self.obj = obj
         self.obj_traj = obj_traj
-        self.clones = None
-        self.robot = self.env.GetRobots()[0]
+        self.robot = robot
 
     def precondition(self):
         traj = self.traj
@@ -38,7 +38,7 @@ class IsMP(Fluent):
         return constraints, g, h
 
     # TODO: compute collisions properly
-    @profile
+    # @profile
     def collisions(self, x, dsafe, traj_shape):
         env = self.env
         traj = x.reshape(traj_shape, order='F')
@@ -57,7 +57,8 @@ class IsMP(Fluent):
 
         # collisions = cc.BodyVsAll(self.obstacle_kinbody)
         # robot = self.create_robot_kinbody("robot", color=[1,0,0])
-        robot = self.env.GetRobots()[0]
+        # robot = self.env.GetRobots()[0]
+        robot = self.robot
         obj = self.obj
         collisions = []
         distances = -1 * np.infty * np.ones(T)
@@ -91,19 +92,23 @@ class IsMP(Fluent):
                     # print "link A: ", linkA
                     # print "link B: ", linkB
                     ptA = c.GetPtA()
-                    # ptA[2] = 1.01
+                    ptA[2] = 1.01
                     # ptAs.append(ptA)
                     ptB = c.GetPtB()
-                    # ptB[2] = 1.01
+                    ptB[2] = 1.01
                     # ptBs.append(ptB)
                     # timesteps.append(int(c.GetLinkBParentName()))
                     # t = int(c.GetLinkBParentName())
                     # print "computed normal: ", normalize(ptB-ptA)
 
-                    handles.append(env.plot3(points=ptB, pointsize=10,colors=(1,0,0)))
-                    handles.append(env.plot3(points=ptA, pointsize=10,colors=(0,1,0)))
+                    # plotting collision information
+                    # handles.append(self.plotting_env.plot3(points=ptB, pointsize=10,colors=(1,0,0)))
+                    # handles.append(self.plotting_env.plot3(points=ptA, pointsize=10,colors=(0,1,0)))
                     if not np.all(ptA == ptB):
-                        handles.append(env.drawarrow(p1=ptA, p2=ptB, linewidth=.01,color=(0,1,0)))
+                        if distance < 0:
+                            handles.append(self.plotting_env.drawarrow(p1=ptA, p2=ptB, linewidth=.01,color=(1,0,0)))
+                        else:
+                            handles.append(self.plotting_env.drawarrow(p1=ptA, p2=ptB, linewidth=.01,color=(0,0,0)))
 
                     gradd = np.zeros((1,K))
                     normal = np.matrix(c.GetNormal())
@@ -121,12 +126,15 @@ class IsMP(Fluent):
         # if self.clones is None:
         #     self.create_clones()
 
+        # import ipdb; ipdb.set_trace() # BREAKPOINT
+        self.hl_action.plot(handles)
         # for t in range(T):
         #     xt = traj[:,t]
         #     self.clones[t].SetTransform(base_pose_to_mat(xt))
         #     env.Add(self.clones[t])
 
-        # env.UpdatePublishedBodies()
+        self.plotting_env.UpdatePublishedBodies()
+        # import ipdb; ipdb.set_trace() # BREAKPOINT
         # time.sleep(0.5)
         # for t in range(T):
         #     env.Remove(self.clones[t])
@@ -134,7 +142,7 @@ class IsMP(Fluent):
 
     
         
-    @profile
+    # @profile
     def create_clones(self):
         self.clones = []
         robot = self.robot

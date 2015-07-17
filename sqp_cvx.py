@@ -98,6 +98,7 @@ class SQP(object):
         a = A*x + b
         return np.sum(np.exp(a));
 
+    # @profile
     def penalty_sqp(self, x, x0, objective, constraints, f, g, h):
         # trust_box_size = self.initial_trust_box_size
         # penalty_coeff = self.initial_penalty_coeff
@@ -153,6 +154,7 @@ class SQP(object):
             try:
                 prob.solve(verbose=False, solver='GUROBI')
             except:
+                import ipdb; ipdb.set_trace() # BREAKPOINT
                 print ("solver error")
 
             if prob.status != "optimal":
@@ -160,9 +162,11 @@ class SQP(object):
                 print("Couldn't find a point satisfying linear constraints")
             return (x, success)
 
+    # @profile
     def update_fgh(self, x, f, g, h, fval, fgrad, fhess, gval, gjac, hval, hjac):
         fval.value, fgrad.value, fhess.value, gval.value, gjac.value, hval.value, hjac.value = self.convexify_fgh(x, f, g, h)
 
+    # @profile
     def convexify_fgh(self, x, f, g, h):
         fval = f(x.value)
         fgrad, fhess = SQP.numerical_grad_hess(f,x.value)
@@ -177,6 +181,7 @@ class SQP(object):
         hjac = SQP.numerical_jac(h,x.value)
         return (fval, fgrad, fhess, gval, gjac, hval, hjac)
 
+    # @profile
     def minimize_merit_function(self, xp, objective, constraints_wo_trust_box, f, g, h, penalty_coeff, trust_box_size):
         objective_wo_fhess = objective
 
