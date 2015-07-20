@@ -55,40 +55,33 @@ class Pick(HLAction):
         # x0 = np.reshape(self.traj_init, (self.K*self.T,1), order='F')
         x, success = sqp.penalty_sqp(self.traj, self.traj.value, self.objective, self.constraints, self.f, self.g, self.h)
 
-    # def plot_kinbodies(self):
-    #     robot = self.robot
-    #     transparency = 0
+    def plot(self, handles=[]):
+        self.handles = []
+        # del self.handles
+        super(Pick, self).plot()
 
-    #     # Need to remove obj and robot, sleep and then add them back in to clone them....
-    #     self.env.Remove(self.obj)
-    #     self.env.Remove(robot)
-    #     time.sleep(1)
-    #     self.env.Add(self.obj)
-    #     self.env.Add(robot)
-
-    #     pick_robot = RaveCreateRobot(self.env,robot.GetXMLId())
-    #     pick_robot.Clone(robot,0)
-    #     pick_robot.SetName("pick_" + robot.GetName())
-
-    #     for link in pick_robot.GetLinks():
-    #         for geom in link.GetGeometries():
-    #             geom.SetTransparency(transparency)
-    #             geom.SetDiffuseColor([1,1,0])
-
-    #     newobj = RaveCreateKinBody(self.env, self.obj.GetXMLId())
-    #     newobj.Clone(self.obj, 0)
-    #     newobj.SetName("pick_" + self.obj.GetName())
+        if not np.allclose(self.pos.value, self.hl_pos.value):
+            pick_pos = np.array(self.pos.value)
+            pick_pos[2] = 1
+            hl_pos = np.array(self.hl_pos.value)
+            hl_pos[2] = 1
+            self.handles += [self.hl_plan.env.drawarrow(p1=pick_pos, p2=hl_pos, linewidth=0.01, color=(1,0,0))]
+            self.handles += [self.hl_plan.env.plot3(points=hl_pos[:, 0], pointsize=10, colors=(1,0,0))]
         
-    #     for link in newobj.GetLinks():
-    #         for geom in link.GetGeometries():
-    #             geom.SetTransparency(transparency)
-    #             geom.SetDiffuseColor([1,0,1])
-    #     ot = self.obj_traj.value[:,0]
-    #     newobj.SetTransform(base_pose_to_mat(ot))
+        # if not np.allclose(self.gp.value, self.hl_gp.value):
+        #     hl_gp = np.array(self.hl_gp.value)
 
-    #     xt = self.traj.value[:,0]
-    #     pick_robot.SetTransform(base_pose_to_mat(xt))
+        #     pick_pos = np.array(self.traj.value)
+        #     pick_pos[2] = 1
 
-    #     return [pick_robot, newobj]
+        #     hl_obj_pos = hl_gp + pick_pos
+        #     hl_obj_pos[2]=1
+        #     pick_obj_pos = np.array(self.obj_traj.value)
+        #     pick_obj_pos[2] = 1
 
+        #     self.handles += [self.hl_plan.env.drawarrow(p1=pick_obj_pos, p2=hl_obj_pos, linewidth=0.01, color=(1,0,0))]
+        #     hl_points = np.transpose(np.hstack((pick_pos, hl_obj_pos)))
+        #     pick_points = np.transpose(np.hstack((pick_pos, pick_obj_pos)))
+        #     self.handles += [self.hl_plan.env.drawlinestrip(points=pick_points, linewidth=10, colors=(0,0.5,0))]
+        #     self.handles += [self.hl_plan.env.drawlinestrip(points=hl_points, linewidth=10, colors=(1,0,0))]
 

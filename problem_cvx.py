@@ -117,9 +117,10 @@ class Problem(object):
         else:
             print ('{0} failed'.format(self.name))
         if np.allclose(x.value, self.xtrue, atol=1e-3):
-            print ('x = {1} and xtrue = {2} are close'.format(self.name, x, self.xtrue))
+            print ('x = {1} and xtrue = {2} are close'.format(self.name, x.value, self.xtrue))
         else:
-            print ('x = {1} and xtrue = {2} are not close'.format(self.name, x, self.xtrue))
+            print ('x = {1} and xtrue = {2} are not close'.format(self.name, x.value, self.xtrue))
+            ipdb.set_trace()
 
 
 

@@ -72,57 +72,34 @@ class Move(HLAction):
         # sqp.initial_penalty_coeff = 0.01
         sqp.min_approx_improve = 1e-2
 
-        sqp.g_use_numerical = False
+        # sqp.g_use_numerical = False
 
         x, success = sqp.penalty_sqp(self.traj, self.traj.value, self.objective, self.constraints, self.f, self.g, self.h)
 
-    # def plot_kinbodies(self):
-    #     clones = []
-    #     traj = self.traj.value.reshape((self.K,self.T), order='F')
-    #     if self.obj is not None:
-    #         obj_traj = self.obj_traj.value.reshape((self.K,self.T), order='F')
-    #     transparency = 0.8
-    #     robot = self.env.GetKinBody('robot')
+    def plot(self, handles=[]):
+        self.handles = []
+        # self.handles += super(Move, self).plot(handles)
+        super(Move, self).plot()
+        self.handles += handles
+        self.handles += self.plot_traj_line(self.traj, colors=(0,0,0.5))
 
-    #     # Need to remove obj and robot, sleep and then add them back in to clone them....
-    #     if self.obj is not None:
-    #         self.env.Remove(self.obj)
-    #     self.env.Remove(robot)
-    #     time.sleep(2)
-    #     if self.obj is not None:
-    #         self.env.Add(self.obj)
-    #     self.env.Add(robot)
+        if self.obj is not None:
+            self.handles += self.plot_traj_line(self.obj_traj, colors=(0,0.5,0))
 
-    #     for t in range(self.T):
-    #         xt = traj[:,t]
-    #         newrobot = RaveCreateRobot(self.env,robot.GetXMLId())
-    #         newrobot.Clone(robot,0)
-    #         newrobot.SetName("move_" + robot.GetName() + "_" + str(t))
-    #         # newrobot.SetName(str(t))
+        if not np.allclose(self.start.value, self.hl_start.value):
+            start = np.array(self.start.value)
+            start[2] = 1
+            hl_start = np.array(self.hl_start.value)
+            hl_start[2] = 1
+            self.handles += [self.hl_plan.env.drawarrow(p1=start, p2=hl_start, linewidth=0.01, color=(1,0,0))]
 
-    #         for link in newrobot.GetLinks():
-    #             for geom in link.GetGeometries():
-    #                 geom.SetTransparency(transparency)
-    #                 geom.SetDiffuseColor([0,0,1])
+        if not np.allclose(self.end.value, self.hl_end.value):
+            end = np.array(self.end.value)
+            end[2] = 1
+            hl_end = np.array(self.hl_end.value)
+            hl_end[2] = 1
+            self.handles += [self.hl_plan.env.drawarrow(p1=end, p2=hl_end, linewidth=0.01, color=(1,0,0))]
 
-    #         # for obj in grabbed_objs:
-    #         if self.obj is not None:
-    #             ot = obj_traj[:,t]
-    #             if self.obj is not None:
-    #                 newobj = RaveCreateKinBody(self.env, self.obj.GetXMLId())
-    #                 newobj.Clone(self.obj, 0)
-    #                 newobj.SetName("move_" + self.obj.GetName() + str(t))
-                    
-    #                 for link in newobj.GetLinks():
-    #                     for geom in link.GetGeometries():
-    #                         geom.SetTransparency(transparency)
-    #                         geom.SetDiffuseColor([1,0,0])
-    #                 newobj.SetTransform(base_pose_to_mat(ot))
-    #                 clones.append(newobj)
-    #         newrobot.SetTransform(base_pose_to_mat(xt))
-    #         clones.append(newrobot)
-
-    #     return clones
 
 if __name__ == "__main__":
     move = Move()

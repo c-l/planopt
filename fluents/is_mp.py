@@ -128,6 +128,7 @@ class IsMP(Fluent):
 
         # import ipdb; ipdb.set_trace() # BREAKPOINT
         self.hl_action.plot(handles)
+        handles = []
         # for t in range(T):
         #     xt = traj[:,t]
         #     self.clones[t].SetTransform(base_pose_to_mat(xt))

@@ -119,63 +119,57 @@ class HLPlan(object):
         self.robot = self.env.GetRobots()[0]
         # self.ro = 0.02
         # self.ro = 0.2
-        # self.ro = 2
-        self.ro = 20
+        self.ro = 2
+        # self.ro = 10
+        # self.ro = 20
+        # self.ro = 300
         # consensus_rp = cvx.Parameter(3,1,value=np.zeros((3,1)))
         # consensus_gp = cvx.Parameter(3,1,value=np.zeros((3,1)))
-        self.params = {"rp": HLParam("rp", 3, 1, ro=self.ro), \
-                "gp": HLParam("gp", 3, 1, ro=self.ro), \
-                "rp2": HLParam("rp2", 3, 1, ro=self.ro)}
-        # rp = HLParam("rp")
-        rp = self.params["rp"]
-        gp = self.params["gp"]
-        rp2 = self.params["rp2"]
 
-        pick_pos = self.hl_var("rp")
-        obj = self.env.GetKinBody('obj')
-        grasp = self.hl_var("gp")
-        obj_loc = cvx.Parameter(3,1,value=mat_to_base_pose(obj.GetTransform()))
-        pick = Pick(self.env, self.robot, pick_pos, obj, obj_loc, grasp)
-        rp.add_dual(pick, pick_pos)
-        gp.add_dual(pick, grasp)
+
+        rp1 = HLParam("rp1", 3, 1, ro=self.ro)
+        rp2 = HLParam("rp2", 3, 1, ro=self.ro)
+        pick_obj = self.env.GetKinBody('obj')
+        gp = HLParam("gp", 3, 1, ro=self.ro)
+        obj_loc = HLParam("obj_loc", 3, 1, is_var=False, value=mat_to_base_pose(pick_obj.GetTransform()))
+        target_loc = HLParam("target_loc", 3, 1, is_var=False, value=np.array((2,1,0)))
+
+        env = self.env.CloneSelf(1) # clones objects in the environment
+        robot = env.GetRobots()[0]
+        obj = env.GetKinBody('obj')
+        pick = Pick(self, env, robot, rp1, obj, obj_loc, gp)
+        self.add_hl_action(pick)
+
+        env = self.env.CloneSelf(1) # clones objects in the environment
+        robot = env.GetRobots()[0]
+        obj = env.GetKinBody('obj')
+        place = Place(self, env, robot, rp2, obj, target_loc, gp)
+        self.add_hl_action(place)
+
+        # must clone env before solve and dual update?
+        env = self.env.CloneSelf(1) # clones objects in the environment
+        robot = env.GetRobots()[0]
+        obj = env.GetKinBody('obj')
+
         pick.solve_opt_prob()
-
-        place_pos = self.hl_var("rp2")
-        target_loc = cvx.Parameter(3,1,value=np.array((2,0,0)))
-        grasp = self.hl_var("gp")
-        place = Place(self.env, self.robot, place_pos, obj, target_loc, grasp)
-        rp2.add_dual(place, place_pos)
-        gp.add_dual(place, grasp)
+        rp1.dual_update()
         place.solve_opt_prob()
-
-        rp.dual_update()
         rp2.dual_update()
         gp.dual_update()
 
-        start = self.hl_var("rp", pick_pos.value)
-        # end = cvx.Parameter(3,1,value=np.array((2,0,0)))
-        end = self.hl_var("rp2", place_pos.value)
-        grasp = self.hl_var("gp", grasp.value)
+        pick.plot()
+        place.plot()
+        # import ipdb; ipdb.set_trace() # BREAKPOINT
+        move = Move(self, env, robot, rp1, rp2, obj, gp)
+        self.add_hl_action(move)
 
-        # grasp = cvx.Variable(3,1)
-        # grasp.value = np.zeros((3,1))
-        # dual_grasp = cvx.Parameter(3,1,value=np.zeros((3,1)))
-        # gp.add_action_var(grasp, dual_grasp)
-        move2 = Move(self.env, self.robot, start, end, obj, grasp)
-        rp.add_dual(move2, start)
-        rp2.add_dual(move2, end)
-        gp.add_dual(move2, grasp)
 
-        # adding actions to hl plan
-        self.add_hl_action(pick)
-        self.add_hl_action(move2)
-        self.add_hl_action(place)
-
-        epsilon = 5e-3*len(self.params)
+        params = [rp1, rp2, gp]
+        epsilon = 5e-3*len(params)
         while True:
             self.solve()
             diff = 0
-            for param in self.params.itervalues():
+            for param in params:
                 diff += param.dual_update()
             print "diff: ", diff
             if diff < epsilon:
@@ -226,5 +220,5 @@ class HLPlan(object):
 
 if __name__ == "__main__":
     plan = HLPlan()
-    # plan.test_pick_move_and_place()
-    plan.test_pick_and_move()
+    plan.test_pick_move_and_place()
+    # plan.test_pick_and_move()
