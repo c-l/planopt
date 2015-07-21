@@ -42,7 +42,6 @@ class HLPlan(object):
         #     self.env.Remove(kinbody)
         # del plot_kinbodies
 
-
     def init_openrave_test_env(self):
         env = Environment() # create openrave environment
         env.SetViewer('qtcoin') # attach viewer (optional)

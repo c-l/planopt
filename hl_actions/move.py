@@ -72,7 +72,7 @@ class Move(HLAction):
         # sqp.initial_penalty_coeff = 0.01
         sqp.min_approx_improve = 1e-2
 
-        # sqp.g_use_numerical = False
+        sqp.g_use_numerical = False
 
         x, success = sqp.penalty_sqp(self.traj, self.traj.value, self.objective, self.constraints, self.f, self.g, self.h)
 
