@@ -1,6 +1,7 @@
 import cvxpy as cvx
 import openravepy
 import numpy as np
+from opt.constraints import Constraints
 
 class Fluent(object):
     def __init__(self, env, hl_action):
@@ -11,13 +12,13 @@ class Fluent(object):
         linear_constraints = []
         func_eq_constraint = None
         func_ineq_constraint = None
-        return (linear_constraints, func_eq_constraint, func_ineq_constraint)
+        return Constraints(linear_constraints, func_eq_constraint, func_ineq_constraint)
 
     def postcondition(self):
         linear_constraints = []
         func_eq_constraint = None
         func_ineq_constraint = None
-        return (linear_constraints, func_eq_constraint, func_ineq_constraint)
+        return Constraints(linear_constraints, func_eq_constraint, func_ineq_constraint)
 
     @staticmethod
     def get_object_loc(obj_kinbody):

@@ -2,6 +2,8 @@ from fluent import Fluent
 import cvxpy as cvx
 from numpy.linalg import norm
 import numpy as np
+from opt.constraints import Constraints
+from opt.function import Function
 
 class InManip(Fluent):
     def __init__(self, hl_action, obj, gp, traj, obj_traj = None):
@@ -20,7 +22,7 @@ class InManip(Fluent):
             # gp_all_timesteps = cvx.vstack(gp_all_timesteps, self.gp)
             linear_constraints += [self.traj[K*i:K*(i+1)] + self.gp == self.obj_traj[K*i:K*(i+1)]]
         # linear_constraints = [self.traj - gp_all_timesteps == self.obj_traj]
-        return (linear_constraints, None, None)
+        return Constraints(linear_constraints, None, None)
 
     def postcondition(self):
         # obj_pos = Fluent.get_object_loc(self.obj)
@@ -28,7 +30,7 @@ class InManip(Fluent):
         K = self.hl_action.K
         linear_constraints = [self.traj[-K:] + self.gp == self.obj_traj[-K:]]
         # h = lambda x: np.matrix(norm(x[-K:]-obj_pos) - .55)
-        h = lambda x: np.matrix(norm(x[-K:]-self.obj_traj[-K:].value) - .55)
-        return (linear_constraints, None, h)
+        h = Function(lambda x: np.matrix(norm(x[-K:]-self.obj_traj[-K:].value) - .55))
+        return Constraints(linear_constraints, None, (h, self.traj))
 
 

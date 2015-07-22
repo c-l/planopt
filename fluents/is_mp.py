@@ -1,5 +1,7 @@
 from fluent import Fluent
 import cvxpy as cvx
+from opt.constraints import Constraints
+from opt.function import Function
 # from trajopt_cvx import Trajopt
 from utils import *
 from openravepy import *
@@ -31,11 +33,11 @@ class IsMP(Fluent):
         # positions between time steps are less than 0.2
         A_ineq = np.vstack((P, -P))
         b_ineq = 0.3*np.ones((2*K*T,1))
-        constraints = [A_ineq * traj <= b_ineq]
+        linear_constraints = [A_ineq * traj <= b_ineq]
 
-        g = lambda x: self.collisions(x, 0.05, (K,T)) # function inequality constraint g(x) <= 0
+        g = Function(lambda x: self.collisions(x, 0.05, (K,T)), use_numerical=False) # function inequality constraint g(x) <= 0
         h = None # function equality constraint h(x) ==0
-        return constraints, g, h
+        return Constraints(linear_constraints, (g, self.traj), h)
 
     # TODO: compute collisions properly
     # @profile
@@ -65,11 +67,13 @@ class IsMP(Fluent):
         for t in range(T):
             xt = self.traj.value[K*t:K*(t+1)]
             robot.SetTransform(base_pose_to_mat(xt))
-            ot = self.obj_traj.value[K*t:K*(t+1)]
-            obj.SetTransform(base_pose_to_mat(ot))
+            if obj is not None:
+                ot = self.obj_traj.value[K*t:K*(t+1)]
+                obj.SetTransform(base_pose_to_mat(ot))
             # robot.Grab(obj, robot.GetLink('base'))
             # robot.Release(obj)
-            for body in [robot, obj]:
+            for body in [robot]:
+            # for body in [robot, obj]:
                 collisions = cc.BodyVsAll(body)
 
                 for c in collisions:
@@ -80,10 +84,10 @@ class IsMP(Fluent):
                     # print "ptB: ", c.GetPtB()
                     linkA = c.GetLinkAParentName()
                     linkB = c.GetLinkBParentName()
-                    if linkA == robot.GetName() and linkB == obj.GetName():
-                        continue
-                    elif linkB == robot.GetName() and linkA == obj.GetName():
-                        continue
+                    # if linkA == robot.GetName() and linkB == obj.GetName():
+                    #     continue
+                    # elif linkB == robot.GetName() and linkA == obj.GetName():
+                    #     continue
 
                     # print "distance: ", distance
                     if distance < distances[t]:

@@ -1,5 +1,7 @@
 import numpy as np
 import cvxpy as cvx
+from opt.opt_prob import OptProb
+from opt.opt_prob import Objective
 from openravepy import *
 import time
 from utils import *
@@ -13,13 +15,9 @@ class HLAction(object):
         self.name = "hla"
 
         # optimization sqp info
-        self.objective = 0
-        self.constraints = []
-        self.f = lambda x: np.zeros((1,1))
-        self.g = lambda x: np.zeros((1,1))
-        self.h = lambda x: np.zeros((1,1))
+        self.cost = 0
+        self.opt_prob = OptProb()
 
-        # list of variables
         # list of precondition fluents
         self.preconditions = []
 
@@ -34,40 +32,34 @@ class HLAction(object):
         self.robot_clones = None
         self.obj_clones = None
 
+    def create_opt_prob(self):
+        self.opt_prob.add_var(self.traj)
+        if self.obj is not None:
+            self.opt_prob.add_var(self.obj_traj)
+
+        self.add_cost_to_opt_prob()
+        self.add_fluents_to_opt_prob()
+
+    def add_cost_to_opt_prob(self):
+        self.opt_prob.add_objective(Objective(self.cost))
+
     def add_fluents_to_opt_prob(self):
         for precondition in self.preconditions:
             self.add_precondition(precondition)
         for postcondition in self.postconditions:
             self.add_postcondition(postcondition)
 
-    def add_dual_cost(self, var, dual, consensus=None, ro = 0.05):
-        # self.objective += dual.T*var # dual gradient ascent
-        if consensus is None:
-            self.objective += dual.T*var # dual gradient ascent
-        else:
-            self.objective += dual.T*var + ro/2 * cvx.square(cvx.norm(var-consensus))
-            # self.objective += ro/2 * cvx.square(cvx.norm(var-consensus))
-
-
     def add_postcondition(self, fluent):
-        constraints, g, h = fluent.postcondition()
-        self.add_opt_info(constraints, g, h)
+        self.add_opt_info(fluent.postcondition())
 
     def add_precondition(self, fluent):
-        constraints, g, h = fluent.precondition()
-        self.add_opt_info(constraints, g, h)
+        self.add_opt_info(fluent.precondition())
 
-    def add_opt_info(self, constraints, g, h):
-        self.constraints += constraints
+    def add_opt_info(self, constraints):
+        self.opt_prob.add_constraints(constraints)
 
-        # fix nested f g and hs? Need to think about how to write this
-        # TODO: Fix current implementation
-        if g is not None:
-            # self.g = lambda x: np.vstack((self.g(x), g(x)))
-            self.g = lambda x: g(x)
-        if h is not None:
-            # self.h = lambda x: np.vstack((self.h(x), h(x)))
-            self.h = lambda x: h(x)
+    def add_dual_cost(self, var, dual, consensus, ro):
+        self.opt_prob.add_dual_cost(var,dual,consensus,ro)
 
     def plot_traj_line(self, traj, colors=(0,0,1)):
         handles = []

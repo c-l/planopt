@@ -66,19 +66,20 @@ class HLPlan(object):
                 geom.SetDiffuseColor((.9,.9,.9))
         env.AddKinBody(body) 
 
-        # create cylindrical object
-        transform = np.eye(4)
-        transform[0,3] = -2
-        obj = self.create_cylinder(env, 'obj', np.eye(4), [.35, 2])
-        obj.SetTransform(transform)
-        env.AddKinBody(obj) 
+        # # create cylindrical object
+        # transform = np.eye(4)
+        # transform[0,3] = -1
+        # obj = self.create_cylinder(env, 'obj', np.eye(4), [.35, 2])
+        # obj.SetTransform(transform)
+        # env.AddKinBody(obj) 
 
         # import ipdb; ipdb.set_trace() # BREAKPOINT
         env.Load("robot.xml")
 
         robot = env.GetRobots()[0]
         transparency = 0.7
-        for body in [robot, body, obj]:
+        # for body in [robot, body, obj]:
+        for body in [robot, body]:
             for link in body.GetLinks():
                 for geom in link.GetGeometries():
                     geom.SetTransparency(transparency)
@@ -105,7 +106,7 @@ class HLPlan(object):
     #     rows = param.rows
     #     cols = param.cols
 
-    #     var = cvx.Variable(rows, cols)
+    #     var = Variable(rows, cols)
     #     if init_value is not None:
     #         var.value = init_value
     #     else:
@@ -217,7 +218,26 @@ class HLPlan(object):
             if diff < epsilon:
                 break
 
+    def test_move(self):
+        self.env = self.init_openrave_test_env()
+        self.robot = self.env.GetRobots()[0]
+        # self.ro = 0.02
+        # self.ro = 0.2
+        # self.ro = 2
+        self.ro = 20
+
+        start = HLParam("start", 3, 1, is_var=False, value=np.array((-2,0,0)))
+        end = HLParam("end", 3, 1, is_var=False, value=np.array((2,0,0)))
+
+        env = self.env.CloneSelf(1) # clones objects in the environment
+        robot = env.GetRobots()[0]
+        # obj = env.GetKinBody('obj')
+        move = Move(self, env, robot, start, end, None, None)
+        self.add_hl_action(move)
+        move.solve_opt_prob()
+
 if __name__ == "__main__":
     plan = HLPlan()
-    plan.test_pick_move_and_place()
+    # plan.test_pick_move_and_place()
     # plan.test_pick_and_move()
+    plan.test_move()

@@ -1,6 +1,8 @@
 import numpy as np
 import cvxpy as cvx
-from sqp_cvx import SQP
+from opt.variable import Variable
+from opt.admm_sqp import ADMM_SQP
+# from sqp_cvx import SQP
 import time
 import ipdb
 
@@ -30,30 +32,17 @@ class Pick(HLAction):
         K = self.K
 
         self.traj_init = np.zeros((3,1))
-        self.traj = cvx.Variable(K*T,1)
-        self.traj.value = self.traj_init
+        self.traj = Variable(K*T,1, cur_value=self.traj_init)
+        # self.traj.value = self.traj_init
 
         self.obj_init = np.zeros((3,1))
-        self.obj_traj = cvx.Variable(K*T,1)
-        self.obj_traj.value = self.obj_init
+        self.obj_traj = Variable(K*T,1, cur_value=self.traj_init)
+        # self.obj_traj.value = self.obj_init
 
         self.preconditions = [RobotAt(self, self.pos, self.traj)]
         self.preconditions += [ObjAt(self, self.obj, self.loc, self.obj_traj)] 
         self.postconditions = [InManip(self, self.obj, self.gp, self.traj, self.obj_traj)]
-        self.add_fluents_to_opt_prob()
-
-    def solve_opt_prob(self):
-        sqp = SQP()
-        # sqp.initial_trust_box_size = 0.1
-        sqp.initial_trust_box_size = 1
-        sqp.min_trust_box_size=1e-4
-        sqp.initial_penalty_coeff = 0.1
-        # sqp.min_approx_improve = 1e-2
-        # sqp.g_use_numerical = False
-
-        # x = cvx.reshape(self.traj, self.K, self.T)
-        # x0 = np.reshape(self.traj_init, (self.K*self.T,1), order='F')
-        x, success = sqp.penalty_sqp(self.traj, self.traj.value, self.objective, self.constraints, self.f, self.g, self.h)
+        self.create_opt_prob()
 
     def plot(self, handles=[]):
         self.handles = []
@@ -85,3 +74,16 @@ class Pick(HLAction):
         #     self.handles += [self.hl_plan.env.drawlinestrip(points=pick_points, linewidth=10, colors=(0,0.5,0))]
         #     self.handles += [self.hl_plan.env.drawlinestrip(points=hl_points, linewidth=10, colors=(1,0,0))]
 
+    def solve_opt_prob(self):
+        sqp = ADMM_SQP()
+        # sqp.initial_trust_box_size = 0.1
+        sqp.initial_trust_box_size = 1
+        sqp.min_trust_box_size=1e-4
+        sqp.initial_penalty_coeff = 0.1
+        # sqp.min_approx_improve = 1e-2
+        # sqp.g_use_numerical = False
+
+        # x = cvx.reshape(self.traj, self.K, self.T)
+        # x0 = np.reshape(self.traj_init, (self.K*self.T,1), order='F')
+        success = sqp.penalty_sqp(self.opt_prob)
+        # x, success = sqp.penalty_sqp(self.traj, self.traj.value, self.objective, self.constraints, self.f, self.g, self.h)

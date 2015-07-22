@@ -1,5 +1,6 @@
 import numpy as np
 import cvxpy as cvx
+from opt.variable import Variable
 from numpy.linalg import norm
 
 class HLParam(object):
@@ -30,7 +31,7 @@ class HLParam(object):
         rows = self.rows
         cols = self.cols
 
-        hla_var = cvx.Variable(rows, cols, name=self.name)
+        hla_var = Variable(rows, cols, name=self.name)
         hla_var.value = self.consensus.value
 
         dual_var = cvx.Parameter(rows, cols, value=np.zeros((rows,cols)))
@@ -41,19 +42,6 @@ class HLParam(object):
 
         hl_action.add_dual_cost(hla_var, dual_var, self.consensus, ro=self.ro)
         return hla_var, self.consensus
-
-    # def add_dual(self, hl_action, var):
-    #     rows = self.rows
-    #     cols = self.cols
-    #     assert var.size == (rows, cols)
-    #     dual_var = cvx.Parameter(rows, cols, value=np.zeros((rows,cols)))
-    #     self.add_action_var(hl_action.name, var, dual_var)
-    #     hl_action.add_dual_cost(var, dual_var, self.consensus, ro=self.ro)
-
-    # def add_action_var(self, hl_action_name, var, dual_var):
-    #     self.hl_action_name.append(hl_action_name)
-    #     self.hla_vars.append(var)
-    #     self.hla_dual_vars.append(dual_var)
 
     # @profile
     def dual_update(self):

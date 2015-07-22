@@ -1,5 +1,6 @@
 from fluent import Fluent
 import cvxpy as cvx
+from opt.constraints import Constraints
 
 class RobotAt(Fluent):
     def __init__(self, hl_action, pos, traj):
@@ -10,9 +11,9 @@ class RobotAt(Fluent):
     def precondition(self):
         K = self.hl_action.K
         linear_constraints = [self.traj[:K] == self.pos] 
-        return (linear_constraints, None, None)
+        return Constraints(linear_constraints, None, None)
 
     def postcondition(self):
         K = self.hl_action.K
         linear_constraints = [self.traj[-K:] == self.pos] 
-        return (linear_constraints, None, None)
+        return Constraints(linear_constraints, None, None)

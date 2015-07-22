@@ -1,6 +1,8 @@
 import numpy as np
 import cvxpy as cvx
-from sqp_cvx import SQP
+from opt.variable import Variable
+from opt.admm_sqp import ADMM_SQP
+# from sqp_cvx import SQP
 import time
 import ipdb
 
@@ -21,7 +23,7 @@ class Move(HLAction):
         if obj is None:
             assert gp_param is None
             self.obj = obj
-            self.gp = gp
+            self.gp = gp_param
         else:
             self.obj = obj
             self.gp, self.hl_gp = gp_param.new_hla_var(self)
@@ -34,13 +36,13 @@ class Move(HLAction):
         KT = K*T
 
         self.traj_init = np.matrix([np.linspace(i,j,T) for i,j in zip(np.array(self.start.value), np.array(self.end.value))])
-        self.traj = cvx.Variable(K*T,1)
-        self.traj.value = np.reshape(self.traj_init, (self.K*self.T,1), order='F')
+        self.traj_init = np.reshape(self.traj_init, (self.K*self.T,1), order='F')
+        self.traj = Variable(K*T,1,cur_value=self.traj_init)
 
         if obj is not None:
-            self.obj_traj = cvx.Variable(K*T,1)
             self.obj_init = np.matrix([np.linspace(i,j,T) for i,j in zip(np.array(self.gp.value + self.start.value), np.array(self.gp.value + self.end.value))])
-            self.obj_traj.value = np.reshape(self.obj_init, (self.K*self.T,1), order='F')
+            self.obj_init = np.reshape(self.obj_init, (self.K*self.T,1), order='F')
+            self.obj_traj = Variable(K*T,1,cur_value=self.obj_init)
         else:
             self.obj_traj = None
 
@@ -59,22 +61,9 @@ class Move(HLAction):
         P = np.matrix(np.diag(v[:,0],K) + np.diag(d[:,0]) )
         Q = np.transpose(P)*P
 
-        self.objective += cvx.quad_form(self.traj, Q)
+        self.cost += cvx.quad_form(self.traj, Q)
 
-        self.add_fluents_to_opt_prob()
-
-    def solve_opt_prob(self):
-        sqp = SQP()
-        sqp.initial_trust_box_size = 0.1
-        # sqp.initial_trust_box_size = 1
-        sqp.min_trust_box_size=1e-2
-        sqp.initial_penalty_coeff = 0.1
-        # sqp.initial_penalty_coeff = 0.01
-        sqp.min_approx_improve = 1e-2
-
-        sqp.g_use_numerical = False
-
-        x, success = sqp.penalty_sqp(self.traj, self.traj.value, self.objective, self.constraints, self.f, self.g, self.h)
+        self.create_opt_prob()
 
     def plot(self, handles=[]):
         self.handles = []
@@ -99,6 +88,19 @@ class Move(HLAction):
             hl_end = np.array(self.hl_end.value)
             hl_end[2] = 1
             self.handles += [self.hl_plan.env.drawarrow(p1=end, p2=hl_end, linewidth=0.01, color=(1,0,0))]
+
+    def solve_opt_prob(self):
+        sqp = ADMM_SQP()
+        # sqp.initial_trust_box_size = 0.1
+        sqp.initial_trust_box_size = 1
+        sqp.min_trust_box_size=1e-2
+        sqp.initial_penalty_coeff = 0.1
+        # sqp.initial_penalty_coeff = 0.01
+        sqp.min_approx_improve = 1e-2
+
+        # sqp.g_use_numerical = False
+        success = sqp.penalty_sqp(self.opt_prob)
+        # x, success = sqp.penalty_sqp(self.traj, self.traj.value, self.objective, self.constraints, self.f, self.g, self.h)
 
 
 if __name__ == "__main__":
