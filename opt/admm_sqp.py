@@ -1,4 +1,5 @@
 import cvxpy as cvx
+from opt.variable import Variable
 import numpy as np
 import numpy.linalg as linalg
 import scipy.misc as sci
@@ -64,10 +65,10 @@ class ADMM_SQP(object):
             constraints = opt_prob.constraints.linear_constraints
             for x in opt_prob.xs:
                 obj += cvx.norm(x - x.cur_value,2)
-            obj = cvx.Minimize(obj)
 
-            prob = cvx.Problem(obj, constraints)
-            # import ipdb; ipdb.set_trace()
+            gp = opt_prob.hl_action.hl_plan.hl_actions[0].gp.value
+
+            prob = cvx.Problem(cvx.Minimize(obj), constraints)
             try:
                 prob.solve(verbose=False, solver='GUROBI')
             except:
@@ -87,13 +88,8 @@ class ADMM_SQP(object):
         sqp_iter = 1
 
         x_cur = []
-        # for x in opt_prob.xs:
-        #     x_cur.append(x.cur_value)
-        
         objective, constraints = opt_prob.convexify(penalty_coeff, trust_box_size)
-
         prob = None
-        # prob.solve(verbose=False, solver='GUROBI')
 
         while True:
             print("  sqp_iter: {0}".format(sqp_iter))
@@ -105,8 +101,11 @@ class ADMM_SQP(object):
                 try:
                     prob = cvx.Problem(cvx.Minimize(objective), constraints)
                     prob.solve(verbose=False, solver='GUROBI')
+                    # prob.solve(verbose=False, solver='ECOS')
                 except:
-                    prob.solve(verbose=True, solver='CVXOPT')
+                    import ipdb; ipdb.set_trace() # BREAKPOINT
+                    # prob.solve(verbose=True, solver='GUROBI')
+                    prob.solve(verbose=True, solver='ECOS')
                     print ("solver error")
 
                 if prob.status != 'optimal':
@@ -143,12 +142,9 @@ class ADMM_SQP(object):
                         opt_prob.xs[i].cur_value = x_cur[i]
                         # x's value needs to be also reset so that the merit can be computed correctly
                         opt_prob.xs[i].value = x_cur[i]
-                    # xp.value = x_cur
                     return  (trust_box_size, success)
                 elif approx_merit_improve < self.min_approx_improve:
                     print("Converged: y tolerance")
-                    #some sort of callback
-                    # print "x: ", xp.value
                     return (trust_box_size, success)
                 elif (exact_merit_improve < 0) or (merit_improve_ratio < self.improve_ratio_threshold):
                     # reset convex approximations of optimization problem
@@ -161,14 +157,10 @@ class ADMM_SQP(object):
 
                     print("Shrinking trust region")
                     trust_box_size.value = trust_box_size.value * self.trust_shrink_ratio
-                    # for i in range(len(opt_prob.xs)):
-                    #     opt_prob.xs[i].cur_value = x_cur[i]
-                    # objective, constraints = opt_prob.convexify(penalty_coeff, trust_box_size)
 
                 else:
                     print("Growing trust region")
                     trust_box_size.value = trust_box_size.value * self.trust_expand_ratio
-                    # print "x: ", xp.value
                     break #from trust region loop
 
                 if trust_box_size.value < self.min_trust_box_size:

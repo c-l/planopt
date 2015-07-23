@@ -16,7 +16,7 @@ class HLAction(object):
 
         # optimization sqp info
         self.cost = 0
-        self.opt_prob = OptProb()
+        self.opt_prob = OptProb(self)
 
         # list of precondition fluents
         self.preconditions = []

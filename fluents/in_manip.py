@@ -30,7 +30,12 @@ class InManip(Fluent):
         K = self.hl_action.K
         linear_constraints = [self.traj[-K:] + self.gp == self.obj_traj[-K:]]
         # h = lambda x: np.matrix(norm(x[-K:]-obj_pos) - .55)
-        h = Function(lambda x: np.matrix(norm(x[-K:]-self.obj_traj[-K:].value) - .55))
+        h = Function(lambda x: self.grasp(x))
         return Constraints(linear_constraints, None, (h, self.traj))
+
+    def grasp(self, x):
+        K = self.hl_action.K
+        self.hl_action.plot()
+        return np.matrix(norm(x[-K:]-self.obj_traj[-K:].value) - .55)
 
 

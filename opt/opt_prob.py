@@ -4,7 +4,8 @@ from opt.objective import Objective
 from opt.constraints import Constraints
 
 class OptProb(object):
-    def __init__(self):
+    def __init__(self, hl_action):
+        self.hl_action = hl_action
         self.constraints = Constraints()
         self.objective = Objective()
 

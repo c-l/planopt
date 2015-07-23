@@ -32,11 +32,11 @@ class Pick(HLAction):
         K = self.K
 
         self.traj_init = np.zeros((3,1))
-        self.traj = Variable(K*T,1, cur_value=self.traj_init)
+        self.traj = Variable(K*T,1, name=self.name+"_traj",cur_value=self.traj_init)
         # self.traj.value = self.traj_init
 
         self.obj_init = np.zeros((3,1))
-        self.obj_traj = Variable(K*T,1, cur_value=self.traj_init)
+        self.obj_traj = Variable(K*T,1, name=self.name+'_obj_traj', cur_value=self.traj_init)
         # self.obj_traj.value = self.obj_init
 
         self.preconditions = [RobotAt(self, self.pos, self.traj)]
@@ -79,7 +79,7 @@ class Pick(HLAction):
         # sqp.initial_trust_box_size = 0.1
         sqp.initial_trust_box_size = 1
         sqp.min_trust_box_size=1e-4
-        sqp.initial_penalty_coeff = 0.1
+        # sqp.initial_penalty_coeff = 0.1
         # sqp.min_approx_improve = 1e-2
         # sqp.g_use_numerical = False
 

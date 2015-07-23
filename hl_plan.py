@@ -20,27 +20,11 @@ class HLPlan(object):
         return hl_action
 
     def solve(self):
-        # plot_kinbodies = []
-        # handles = []
-        
-        # action_num = 0
         for action in self.hl_actions:
             action.solve_opt_prob()
-            # handles += action.plot(action_num)
-            # handles += action.plot(handles)
             action.plot()
-            # action_num += 1
-            # plot_kinbodies += action.plot_kinbodies()
-
-        # for kinbody in plot_kinbodies:
-        #     self.env.AddKinBody(kinbody)
 
         self.env.UpdatePublishedBodies()
-        import ipdb; ipdb.set_trace() # BREAKPOINT
-
-        # for kinbody in plot_kinbodies:
-        #     self.env.Remove(kinbody)
-        # del plot_kinbodies
 
     def init_openrave_test_env(self):
         env = Environment() # create openrave environment
@@ -66,12 +50,12 @@ class HLPlan(object):
                 geom.SetDiffuseColor((.9,.9,.9))
         env.AddKinBody(body) 
 
-        # # create cylindrical object
-        # transform = np.eye(4)
-        # transform[0,3] = -1
-        # obj = self.create_cylinder(env, 'obj', np.eye(4), [.35, 2])
-        # obj.SetTransform(transform)
-        # env.AddKinBody(obj) 
+        # create cylindrical object
+        transform = np.eye(4)
+        transform[0,3] = -2
+        obj = self.create_cylinder(env, 'obj', np.eye(4), [.35, 2])
+        obj.SetTransform(transform)
+        env.AddKinBody(obj) 
 
         # import ipdb; ipdb.set_trace() # BREAKPOINT
         env.Load("robot.xml")
@@ -195,15 +179,19 @@ class HLPlan(object):
         env = self.env.CloneSelf(1) # clones objects in the environment
         robot = env.GetRobots()[0]
         obj = env.GetKinBody('obj')
+
         pick = Pick(self, env, robot, rp, obj, obj_loc, gp)
+
+        # must clone env, robot and obj before solve
+        env = self.env.CloneSelf(1) # clones objects in the environment
+        robot = env.GetRobots()[0]
+        obj = env.GetKinBody('obj')
+
         self.add_hl_action(pick)
         pick.solve_opt_prob()
         rp.dual_update()
         gp.dual_update()
 
-        env = self.env.CloneSelf(1) # clones objects in the environment
-        robot = env.GetRobots()[0]
-        obj = env.GetKinBody('obj')
         move = Move(self, env, robot, rp, end, obj, gp)
         self.add_hl_action(move)
 
@@ -217,6 +205,32 @@ class HLPlan(object):
             print "diff: ", diff
             if diff < epsilon:
                 break
+
+    def test_pick(self):
+        self.env = self.init_openrave_test_env()
+        self.robot = self.env.GetRobots()[0]
+        # self.ro = 0.02
+        # self.ro = 0.2
+        # self.ro = 2
+        self.ro = 20
+
+        start = HLParam("start", 3, 1, is_var=False, value=np.array((-2,0,0)))
+        end = HLParam("end", 3, 1, is_var=False, value=np.array((2,0,0)))
+
+        rp = HLParam("rp", 3, 1, ro=self.ro)
+        # end = HLParam("end", 3, 1, is_var=False, value=np.array((2,0,0)))
+        pick_obj = self.env.GetKinBody('obj')
+        gp = HLParam("gp", 3, 1, ro=self.ro)
+        obj_loc = HLParam("obj_loc", 3, 1, is_var=False, value=mat_to_base_pose(pick_obj.GetTransform()))
+
+        env = self.env.CloneSelf(1) # clones objects in the environment
+        robot = env.GetRobots()[0]
+        obj = env.GetKinBody('obj')
+        pick = Pick(self, env, robot, rp, obj, obj_loc, gp)
+        self.add_hl_action(pick)
+        pick.solve_opt_prob()
+        import ipdb; ipdb.set_trace() # BREAKPOINT
+
 
     def test_move(self):
         self.env = self.init_openrave_test_env()
@@ -238,6 +252,7 @@ class HLPlan(object):
 
 if __name__ == "__main__":
     plan = HLPlan()
-    # plan.test_pick_move_and_place()
+    plan.test_pick_move_and_place()
     # plan.test_pick_and_move()
-    plan.test_move()
+    # plan.test_move()
+    # plan.test_pick()

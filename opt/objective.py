@@ -1,6 +1,6 @@
 import numpy as np
 import cvxpy as cvx
-from copy import deepcopy
+from copy import copy, deepcopy
 
 class Objective(object):
     def __init__(self, qp_objective=0, f = None):
@@ -21,7 +21,7 @@ class Objective(object):
         self.fs += obj.fs
 
     def convexify(self):
-        convex_objective = deepcopy(self.qp_objective)
+        convex_objective = copy(self.qp_objective)
         for f,x in self.fs:
             fval, fgrad, fhess = f.val_grad_and_hess(x.cur_value)
             convex_objective += fval + fgrad*(x-x.cur_value) + cvx.quad_form(x-x.cur_value, fhess)

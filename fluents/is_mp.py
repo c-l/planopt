@@ -65,15 +65,17 @@ class IsMP(Fluent):
         collisions = []
         distances = -1 * np.infty * np.ones(T)
         for t in range(T):
-            xt = self.traj.value[K*t:K*(t+1)]
+            # xt = self.traj.value[K*t:K*(t+1)]
+            xt = traj[:,t]
             robot.SetTransform(base_pose_to_mat(xt))
             if obj is not None:
-                ot = self.obj_traj.value[K*t:K*(t+1)]
+                # ot = self.obj_traj.value[K*t:K*(t+1)]
+                ot = self.obj_traj.cur_value[K*t:K*(t+1)]
                 obj.SetTransform(base_pose_to_mat(ot))
             # robot.Grab(obj, robot.GetLink('base'))
             # robot.Release(obj)
-            for body in [robot]:
-            # for body in [robot, obj]:
+            # for body in [robot]:
+            for body in [robot, obj]:
                 collisions = cc.BodyVsAll(body)
 
                 for c in collisions:
@@ -84,10 +86,11 @@ class IsMP(Fluent):
                     # print "ptB: ", c.GetPtB()
                     linkA = c.GetLinkAParentName()
                     linkB = c.GetLinkBParentName()
-                    # if linkA == robot.GetName() and linkB == obj.GetName():
-                    #     continue
-                    # elif linkB == robot.GetName() and linkA == obj.GetName():
-                    #     continue
+                    if obj is not None:
+                        if linkA == robot.GetName() and linkB == obj.GetName():
+                            continue
+                        elif linkB == robot.GetName() and linkA == obj.GetName():
+                            continue
 
                     # print "distance: ", distance
                     if distance < distances[t]:

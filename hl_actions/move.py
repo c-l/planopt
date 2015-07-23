@@ -37,12 +37,12 @@ class Move(HLAction):
 
         self.traj_init = np.matrix([np.linspace(i,j,T) for i,j in zip(np.array(self.start.value), np.array(self.end.value))])
         self.traj_init = np.reshape(self.traj_init, (self.K*self.T,1), order='F')
-        self.traj = Variable(K*T,1,cur_value=self.traj_init)
+        self.traj = Variable(K*T,1,name=self.name+'_traj',cur_value=self.traj_init)
 
         if obj is not None:
             self.obj_init = np.matrix([np.linspace(i,j,T) for i,j in zip(np.array(self.gp.value + self.start.value), np.array(self.gp.value + self.end.value))])
             self.obj_init = np.reshape(self.obj_init, (self.K*self.T,1), order='F')
-            self.obj_traj = Variable(K*T,1,cur_value=self.obj_init)
+            self.obj_traj = Variable(K*T,1,name=self.name+'_obj_traj',cur_value=self.obj_init)
         else:
             self.obj_traj = None
 
@@ -92,7 +92,8 @@ class Move(HLAction):
     def solve_opt_prob(self):
         sqp = ADMM_SQP()
         # sqp.initial_trust_box_size = 0.1
-        sqp.initial_trust_box_size = 1
+        # sqp.initial_trust_box_size = 1
+        sqp.initial_trust_box_size = 2
         sqp.min_trust_box_size=1e-2
         sqp.initial_penalty_coeff = 0.1
         # sqp.initial_penalty_coeff = 0.01

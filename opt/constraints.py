@@ -1,10 +1,13 @@
 import numpy as np
 import cvxpy as cvx
-from copy import deepcopy
+from copy import copy, deepcopy
 
 class Constraints(object):
-    def __init__(self, linear_constraints=[], g=None, h=None):
-        self.linear_constraints = linear_constraints
+    def __init__(self, linear_constraints=None, g=None, h=None):
+        if linear_constraints is None:
+            self.linear_constraints = []
+        else:
+            self.linear_constraints = linear_constraints
 
         if g is None:
             self.gs = [] # non-linear inequality constraints
@@ -57,5 +60,6 @@ class Constraints(object):
         for h,x in self.hs:
             hval, hjac = h.val_and_grad(x.cur_value)
             penalty_objective += cvx.norm(hval + hjac*(x-x.cur_value), 1)
-        return penalty_objective, deepcopy(self.linear_constraints)
+        # import ipdb; ipdb.set_trace() # BREAKPOINT
+        return penalty_objective, copy(self.linear_constraints)
 
