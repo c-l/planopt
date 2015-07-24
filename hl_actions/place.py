@@ -46,6 +46,7 @@ class Place(HLAction):
         self.postconditions = [ObjAt(self, obj, self.loc, self.obj_traj)] 
         self.postconditions += [InManip(self, self.obj, self.gp, self.traj, self.obj_traj)]
         self.create_opt_prob()
+        self.initialize_opt()
 
     def plot(self, handles=[]):
         self.handles = []
@@ -77,7 +78,7 @@ class Place(HLAction):
         #     self.handles += [self.hl_plan.env.drawlinestrip(points=place_points, linewidth=10, colors=(0,0.5,0))]
         #     self.handles += [self.hl_plan.env.drawlinestrip(points=hl_points, linewidth=10, colors=(1,0,0))]
 
-    def solve_opt_prob(self):
+    def initialize_opt(self):
         # sqp = SQP()
         sqp = Solver()
         # sqp.initial_trust_box_size = 0.1
@@ -87,7 +88,4 @@ class Place(HLAction):
         # sqp.min_approx_improve = 1e-2
         # sqp.g_use_numerical = False
 
-        # x = cvx.reshape(self.traj, self.K, self.T)
-        # x0 = np.reshape(self.traj_init, (self.K*self.T,1), order='F')
         success = sqp.penalty_sqp(self.opt_prob)
-        # x, success = sqp.penalty_sqp(self.traj, self.traj.value, self.objective, self.constraints, self.f, self.g, self.h)

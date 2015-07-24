@@ -10,7 +10,7 @@ import time
 
 from utils import *
 
-from opt.hl_opt_prob import HLOptProb
+from ll_plan import LLPlan
 
 class HLPlan(object):
     def __init__(self):
@@ -147,29 +147,23 @@ class HLPlan(object):
 
         envs, robots, objs = self.create_local_envs(num_actions=3)
 
-        pick = Pick(self, envs[0], robots[0], rp1, objs[0], obj_loc, gp)
-        self.add_hl_action(pick)
-
-        place = Place(self, envs[1], robots[1], rp2, objs[1], target_loc, gp)
-        self.add_hl_action(place)
+        pick = self.add_hl_action(Pick(self, envs[0], robots[0], rp1, objs[0], obj_loc, gp))
+        place = self.add_hl_action(Place(self, envs[1], robots[1], rp2, objs[1], target_loc, gp))
 
         # for initialization
-        pick.solve_opt_prob()
         rp1.dual_update()
-        place.solve_opt_prob()
         rp2.dual_update()
         gp.dual_update()
 
         pick.plot()
         place.plot()
         # import ipdb; ipdb.set_trace() # BREAKPOINT
-        move = Move(self, envs[2], robots[2], rp1, rp2, objs[2], gp)
-        self.add_hl_action(move)
+        move = self.add_hl_action(Move(self, envs[2], robots[2], rp1, rp2, objs[2], gp))
 
 
         params = [rp1, rp2, gp]
-        hlprob = HLOptProb(params, self.hl_actions)
-        hlprob.solve()
+        llplan = LLPlan(params, self.hl_actions)
+        llplan.solve()
 
     # @profile
     def test_pick_and_move(self):

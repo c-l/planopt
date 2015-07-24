@@ -3,7 +3,7 @@ import cvxpy as cvx
 from opt.opt_prob import OptProb
 from opt.solver import Solver
 
-class HLOptProb(object):
+class LLPlan(object):
     def __init__(self, hl_params = None, hl_actions=None):
         if hl_params is None:
             self.hl_params = []
@@ -24,15 +24,17 @@ class HLOptProb(object):
         opt_probs = []
         for hl_action in self.hl_actions:
             opt_probs.append(hl_action.opt_prob)
-        # self.solver.admm_sqp(opt_probs, self.hl_params)
+        self.sqp_admm(opt_probs)
+        # self.admm_sqp(opt_probs)
+        # self.big_sqp(opt_probs)
+
+    def sqp_admm(self, opt_probs):
         self.solver.sqp_admm(opt_probs, self.hl_params)
-        # self.solver.big_sqp(opt_probs, self.hl_params)
 
-    def solve_(self):
-        opt_probs = []
-        for hl_action in self.hl_actions:
-            opt_probs.append(hl_action.opt_prob)
+    def admm_sqp(self, opt_probs):
+        self.solver.admm_sqp(opt_probs, self.hl_params)
 
+    def big_sqp(self, opt_probs):
         solver = self.solver
         solver.improve_ratio_threshold = .25
         # self.min_trust_box_size = 1e-4
