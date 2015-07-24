@@ -36,6 +36,6 @@ class InManip(Fluent):
     def grasp(self, x):
         K = self.hl_action.K
         self.hl_action.plot()
-        return np.matrix(norm(x[-K:]-self.obj_traj[-K:].value) - .55)
+        return 3*np.matrix(norm(x[-K:]-self.obj_traj[-K:].value) - .55)
 
 
