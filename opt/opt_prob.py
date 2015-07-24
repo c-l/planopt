@@ -4,12 +4,21 @@ from opt.objective import Objective
 from opt.constraints import Constraints
 
 class OptProb(object):
-    def __init__(self, hl_action):
+    def __init__(self, hl_action=None):
         self.hl_action = hl_action
         self.constraints = Constraints()
         self.objective = Objective()
 
         self.xs = [] # variables associated with the objectives and constraints that need to be convexified
+
+        self.callbacks = []
+
+    def add_callback(self, callback):
+        self.callbacks.append(callback)
+
+    def callback(self):
+        for callback in self.callbacks:
+            callback()
 
     def add_var(self, x):
         self.xs.append(x)
@@ -26,7 +35,7 @@ class OptProb(object):
     def add_opt_prob(self, prob):
         self.add_objective(prob.objective)
         self.add_constraints(prob.constraints)
-        self.xs.append(prob.xs)
+        self.xs += prob.xs
 
     def constraints_satisfied(self, tolerance):
         return self.constraints.constraints_satisfied(tolerance)

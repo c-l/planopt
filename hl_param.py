@@ -1,6 +1,7 @@
 import numpy as np
 import cvxpy as cvx
 from opt.variable import Variable
+from opt.constraints import Constraints
 from numpy.linalg import norm
 
 class HLParam(object):
@@ -22,8 +23,16 @@ class HLParam(object):
         else:
             assert value is not None
             self.consensus = cvx.Parameter(rows, cols, name="hl_" + name, value=value)
+        # self.consensus_var = Variable(rows, cols, name="hlvar_"_name, cur_value=self.consensus)
         self.ro = ro
         
+    def get_eq_constraints(self):
+        hl_var = Variable(self.rows, self.cols, name="hlvar_" + self.name, cur_value=self.consensus.value)
+        eq_constraints = []
+        for var in self.hla_vars:
+            eq_constraints += [hl_var == var]
+        return Constraints(eq_constraints)
+
     def new_hla_var(self, hl_action):
         if not self.is_var:
             return self.consensus, self.consensus

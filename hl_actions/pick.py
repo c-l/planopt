@@ -1,7 +1,8 @@
 import numpy as np
 import cvxpy as cvx
 from opt.variable import Variable
-from opt.admm_sqp import ADMM_SQP
+from opt.solver import Solver
+# from opt.sqp import SQP
 # from sqp_cvx import SQP
 import time
 import ipdb
@@ -74,8 +75,20 @@ class Pick(HLAction):
         #     self.handles += [self.hl_plan.env.drawlinestrip(points=pick_points, linewidth=10, colors=(0,0.5,0))]
         #     self.handles += [self.hl_plan.env.drawlinestrip(points=hl_points, linewidth=10, colors=(1,0,0))]
 
+    def initialize_opt(self):
+        solver = Solver()
+        # sqp.initial_trust_box_size = 0.1
+        solver.initial_trust_box_size = 1
+        solver.min_trust_box_size=1e-4
+        # sqp.initial_penalty_coeff = 0.1
+        # sqp.min_approx_improve = 1e-2
+        # sqp.g_use_numerical = False
+
+        success = solver.penalty_sqp(self.opt_prob)
+
     def solve_opt_prob(self):
-        sqp = ADMM_SQP()
+        # sqp = SQP()
+        sqp = Solver()
         # sqp.initial_trust_box_size = 0.1
         sqp.initial_trust_box_size = 1
         sqp.min_trust_box_size=1e-4

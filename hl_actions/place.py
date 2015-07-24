@@ -1,8 +1,9 @@
 import numpy as np
 import cvxpy as cvx
 from opt.variable import Variable
+from opt.solver import Solver
+# from opt.sqp import SQP
 
-from opt.admm_sqp import ADMM_SQP
 # from sqp_cvx import SQP
 import time
 import ipdb
@@ -77,7 +78,8 @@ class Place(HLAction):
         #     self.handles += [self.hl_plan.env.drawlinestrip(points=hl_points, linewidth=10, colors=(1,0,0))]
 
     def solve_opt_prob(self):
-        sqp = ADMM_SQP()
+        # sqp = SQP()
+        sqp = Solver()
         # sqp.initial_trust_box_size = 0.1
         sqp.initial_trust_box_size = 1
         sqp.min_trust_box_size=1e-4

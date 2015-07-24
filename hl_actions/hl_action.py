@@ -39,6 +39,7 @@ class HLAction(object):
 
         self.add_cost_to_opt_prob()
         self.add_fluents_to_opt_prob()
+        self.opt_prob.add_callback(self.plot)
 
     def add_cost_to_opt_prob(self):
         self.opt_prob.add_objective(Objective(self.cost))

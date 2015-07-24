@@ -10,6 +10,8 @@ import time
 
 from utils import *
 
+from opt.hl_opt_prob import HLOptProb
+
 class HLPlan(object):
     def __init__(self):
         self.hl_actions = []
@@ -61,12 +63,26 @@ class HLPlan(object):
         env.Load("robot.xml")
 
         robot = env.GetRobots()[0]
+        transform = np.eye(4)
+        transform[0,3] = -1
+        robot.SetTransform(transform)
         transparency = 0.7
         # for body in [robot, body, obj]:
         for body in [robot, body]:
             for link in body.GetLinks():
                 for geom in link.GetGeometries():
                     geom.SetTransparency(transparency)
+        # import ctrajoptpy
+        # cc = ctrajoptpy.GetCollisionChecker(env)
+        # # cc.SetContactDistance(np.infty)
+        # cc.SetContactDistance(np.infty)
+        # collisions = cc.BodyVsBody(robot, obj)
+        # for c in collisions:
+        #     # if c.GetDistance() > 0:
+        #     distance = c.GetDistance()
+        #     print "distance: ", distance
+
+        # import ipdb; ipdb.set_trace() # BREAKPOINT
         return env
 
     def create_cylinder(self, env, body_name, t, dims, color=[0,1,1]):
@@ -97,6 +113,20 @@ class HLPlan(object):
     #         var.value = np.zeros((rows,cols))
     #     return var
 
+    def create_local_envs(self, num_actions):
+        hla_envs = []
+        hla_robots = []
+        hla_objs = []
+        for i in range(num_actions):
+            env = self.env.CloneSelf(1) # clones objects in the environment
+            robot = env.GetRobots()[0]
+            obj = env.GetKinBody('obj')
+            hla_envs.append(env)
+            hla_robots.append(robot)
+            hla_objs.append(obj)
+        return (hla_envs, hla_robots, hla_objs)
+            
+
     # @profile
     def test_pick_move_and_place(self):
         self.env = self.init_openrave_test_env()
@@ -107,9 +137,6 @@ class HLPlan(object):
         # self.ro = 10
         # self.ro = 20
         # self.ro = 300
-        # consensus_rp = cvx.Parameter(3,1,value=np.zeros((3,1)))
-        # consensus_gp = cvx.Parameter(3,1,value=np.zeros((3,1)))
-
 
         rp1 = HLParam("rp1", 3, 1, ro=self.ro)
         rp2 = HLParam("rp2", 3, 1, ro=self.ro)
@@ -118,23 +145,15 @@ class HLPlan(object):
         obj_loc = HLParam("obj_loc", 3, 1, is_var=False, value=mat_to_base_pose(pick_obj.GetTransform()))
         target_loc = HLParam("target_loc", 3, 1, is_var=False, value=np.array((2,1,0)))
 
-        env = self.env.CloneSelf(1) # clones objects in the environment
-        robot = env.GetRobots()[0]
-        obj = env.GetKinBody('obj')
-        pick = Pick(self, env, robot, rp1, obj, obj_loc, gp)
+        envs, robots, objs = self.create_local_envs(num_actions=3)
+
+        pick = Pick(self, envs[0], robots[0], rp1, objs[0], obj_loc, gp)
         self.add_hl_action(pick)
 
-        env = self.env.CloneSelf(1) # clones objects in the environment
-        robot = env.GetRobots()[0]
-        obj = env.GetKinBody('obj')
-        place = Place(self, env, robot, rp2, obj, target_loc, gp)
+        place = Place(self, envs[1], robots[1], rp2, objs[1], target_loc, gp)
         self.add_hl_action(place)
 
-        # must clone env before solve and dual update?
-        env = self.env.CloneSelf(1) # clones objects in the environment
-        robot = env.GetRobots()[0]
-        obj = env.GetKinBody('obj')
-
+        # for initialization
         pick.solve_opt_prob()
         rp1.dual_update()
         place.solve_opt_prob()
@@ -144,20 +163,13 @@ class HLPlan(object):
         pick.plot()
         place.plot()
         # import ipdb; ipdb.set_trace() # BREAKPOINT
-        move = Move(self, env, robot, rp1, rp2, obj, gp)
+        move = Move(self, envs[2], robots[2], rp1, rp2, objs[2], gp)
         self.add_hl_action(move)
 
 
         params = [rp1, rp2, gp]
-        epsilon = 5e-3*len(params)
-        while True:
-            self.solve()
-            diff = 0
-            for param in params:
-                diff += param.dual_update()
-            print "diff: ", diff
-            if diff < epsilon:
-                break
+        hlprob = HLOptProb(params, self.hl_actions)
+        hlprob.solve()
 
     # @profile
     def test_pick_and_move(self):
@@ -196,15 +208,17 @@ class HLPlan(object):
         self.add_hl_action(move)
 
         params = [rp, gp]
-        epsilon = 5e-3*len(params)
-        while True:
-            self.solve()
-            diff = 0
-            for param in params:
-                diff += param.dual_update()
-            print "diff: ", diff
-            if diff < epsilon:
-                break
+        hlprob = HLOptProb(params, self.hl_actions)
+        hlprob.solve()
+        # epsilon = 5e-3*len(params)
+        # while True:
+        #     self.solve()
+        #     diff = 0
+        #     for param in params:
+        #         diff += param.dual_update()
+        #     print "diff: ", diff
+        #     if diff < epsilon:
+        #         break
 
     def test_pick(self):
         self.env = self.init_openrave_test_env()
