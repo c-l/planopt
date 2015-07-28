@@ -49,21 +49,15 @@ class IsMP(Fluent):
         val = np.zeros((T,1))
         jac = np.zeros((val.size, x.size))
 
-        icontact = 1
         cc = ctrajoptpy.GetCollisionChecker(env)
 
         handles = []
-        ptAs = []
-        ptBs = []
         timesteps = []
 
-        # collisions = cc.BodyVsAll(self.obstacle_kinbody)
-        # robot = self.create_robot_kinbody("robot", color=[1,0,0])
-        # robot = self.env.GetRobots()[0]
         robot = self.robot
         obj = self.obj
         collisions = []
-        distances = -1 * np.infty * np.ones(T)
+        distances = np.infty * np.ones(T)
         for t in range(T):
             # xt = self.traj.value[K*t:K*(t+1)]
             xt = traj[:,t]
@@ -72,18 +66,16 @@ class IsMP(Fluent):
                 # ot = self.obj_traj.value[K*t:K*(t+1)]
                 ot = self.obj_traj.cur_value[K*t:K*(t+1)]
                 obj.SetTransform(base_pose_to_mat(ot))
-            # robot.Grab(obj, robot.GetLink('base'))
-            # robot.Release(obj)
-            # for body in [robot]:
-            for body in [robot, obj]:
+            bodies = []
+            if obj is not None:
+                bodies = [robot, obj]
+            else:
+                bodies = [robot]
+            for body in bodies:
                 collisions = cc.BodyVsAll(body)
 
                 for c in collisions:
-                    # if c.GetDistance() > 0:
                     distance = c.GetDistance()
-                    # print "normal: ", c.GetNormal()
-                    # print "ptA: ", c.GetPtA()
-                    # print "ptB: ", c.GetPtB()
                     linkA = c.GetLinkAParentName()
                     linkB = c.GetLinkBParentName()
                     if obj is not None:
@@ -92,21 +84,15 @@ class IsMP(Fluent):
                         elif linkB == robot.GetName() and linkA == obj.GetName():
                             continue
 
-                    # print "distance: ", distance
-                    if distance < distances[t]:
+                    if distance > distances[t]:
                         continue
+                    else:
+                        distances[t] = distance
 
-                    # print "link A: ", linkA
-                    # print "link B: ", linkB
                     ptA = c.GetPtA()
                     ptA[2] = 1.01
-                    # ptAs.append(ptA)
                     ptB = c.GetPtB()
                     ptB[2] = 1.01
-                    # ptBs.append(ptB)
-                    # timesteps.append(int(c.GetLinkBParentName()))
-                    # t = int(c.GetLinkBParentName())
-                    # print "computed normal: ", normalize(ptB-ptA)
 
                     # plotting collision information
                     # handles.append(self.plotting_env.plot3(points=ptB, pointsize=10,colors=(1,0,0)))
@@ -128,24 +114,11 @@ class IsMP(Fluent):
 
                     val[t] = dsafe - c.GetDistance()
                     jac[t, K*t:K*(t+1)] = gradd
-                    # import ipdb; ipdb.set_trace() # BREAKPOINT
 
-        # if self.clones is None:
-        #     self.create_clones()
-
-        # import ipdb; ipdb.set_trace() # BREAKPOINT
         self.hl_action.plot(handles)
         handles = []
-        # for t in range(T):
-        #     xt = traj[:,t]
-        #     self.clones[t].SetTransform(base_pose_to_mat(xt))
-        #     env.Add(self.clones[t])
 
         self.plotting_env.UpdatePublishedBodies()
-        # import ipdb; ipdb.set_trace() # BREAKPOINT
-        # time.sleep(0.5)
-        # for t in range(T):
-        #     env.Remove(self.clones[t])
         return (val, jac)
 
     
