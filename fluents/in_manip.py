@@ -18,6 +18,8 @@ class InManip(Fluent):
         self.gp = gp
         self.traj = traj
         self.obj_traj = obj_traj
+        
+        self.cc = ctrajoptpy.GetCollisionChecker(env)
 
     def precondition(self):
         K = self.hl_action.K
@@ -57,8 +59,7 @@ class InManip(Fluent):
         val = np.zeros((T,1))
         jac = np.zeros((val.size, x.size))
 
-        cc = ctrajoptpy.GetCollisionChecker(env)
-        cc.SetContactDistance(np.infty)
+        cc = self.cc
 
         handles = []
         robot = self.robot
@@ -70,6 +71,7 @@ class InManip(Fluent):
         ot = self.obj_traj[-K:].value
         obj.SetTransform(base_pose_to_mat(ot))
 
+        cc.SetContactDistance(np.infty)
         collisions = cc.BodyVsBody(robot, obj)
 
         t = T-1

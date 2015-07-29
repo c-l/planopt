@@ -18,6 +18,7 @@ class IsMP(Fluent):
         self.obj = obj
         self.obj_traj = obj_traj
         self.robot = robot
+        self.cc = ctrajoptpy.GetCollisionChecker(env)
 
     def precondition(self):
         traj = self.traj
@@ -42,6 +43,7 @@ class IsMP(Fluent):
     # TODO: compute collisions properly
     # @profile
     def collisions(self, x, dsafe, traj_shape):
+        print "in ", self.hl_action.name, "'s collision method"
         env = self.env
         traj = x.reshape(traj_shape, order='F')
         K, T = traj_shape
@@ -49,7 +51,8 @@ class IsMP(Fluent):
         val = np.zeros((T,1))
         jac = np.zeros((val.size, x.size))
 
-        cc = ctrajoptpy.GetCollisionChecker(env)
+        cc = self.cc
+        cc.SetContactDistance(dsafe)
 
         handles = []
         timesteps = []
@@ -64,7 +67,7 @@ class IsMP(Fluent):
             robot.SetTransform(base_pose_to_mat(xt))
             if obj is not None:
                 # ot = self.obj_traj.value[K*t:K*(t+1)]
-                ot = self.obj_traj.cur_value[K*t:K*(t+1)]
+                ot = self.obj_traj.value[K*t:K*(t+1)]
                 obj.SetTransform(base_pose_to_mat(ot))
             bodies = []
             if obj is not None:
@@ -78,16 +81,17 @@ class IsMP(Fluent):
                     distance = c.GetDistance()
                     linkA = c.GetLinkAParentName()
                     linkB = c.GetLinkBParentName()
+                    # print "collision between ", linkA, " ", linkB
                     if obj is not None:
                         if linkA == robot.GetName() and linkB == obj.GetName():
                             continue
                         elif linkB == robot.GetName() and linkA == obj.GetName():
                             continue
 
-                    if distance > distances[t]:
-                        continue
-                    else:
-                        distances[t] = distance
+                    # if distance > distances[t]:
+                    #     continue
+                    # else:
+                    #     distances[t] = distance
 
                     ptA = c.GetPtA()
                     ptA[2] = 1.01
@@ -103,6 +107,11 @@ class IsMP(Fluent):
                         else:
                             handles.append(self.plotting_env.drawarrow(p1=ptA, p2=ptB, linewidth=.01,color=(0,0,0)))
 
+                    if distance > distances[t]:
+                        continue
+                    else:
+                        distances[t] = distance
+
                     gradd = np.zeros((1,K))
                     normal = np.matrix(c.GetNormal())
                     
@@ -116,9 +125,10 @@ class IsMP(Fluent):
                     jac[t, K*t:K*(t+1)] = gradd
 
         self.hl_action.plot(handles)
+        self.plotting_env.UpdatePublishedBodies()
+        # import ipdb; ipdb.set_trace() # BREAKPOINT
         handles = []
 
-        self.plotting_env.UpdatePublishedBodies()
         return (val, jac)
 
     
