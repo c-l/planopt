@@ -8,6 +8,8 @@ import ipdb
 import cvxpy as cvx
 import time
 
+from envs.world import World
+
 from utils import *
 
 from ll_plan import LLPlan
@@ -121,10 +123,19 @@ class HLPlan(object):
             env = self.env.CloneSelf(1) # clones objects in the environment
             robot = env.GetRobots()[0]
             obj = env.GetKinBody('obj')
+            # obj = env.GetKinBody('obj0')
             hla_envs.append(env)
             hla_robots.append(robot)
             hla_objs.append(obj)
         return (hla_envs, hla_robots, hla_objs)
+    
+    def clone_envs(self, num_actions):
+        local_envs = []
+
+        for i in range(num_actions):
+            env = self.env.CloneSelf(1) # clones objects in the environment
+            local_envs.append(env)
+        return local_envs
             
 
     # @profile
@@ -143,7 +154,8 @@ class HLPlan(object):
         pick_obj = self.env.GetKinBody('obj')
         gp = HLParam("gp", 3, 1, ro=self.ro)
         obj_loc = HLParam("obj_loc", 3, 1, is_var=False, value=mat_to_base_pose(pick_obj.GetTransform()))
-        target_loc = HLParam("target_loc", 3, 1, is_var=False, value=np.array((2,1,0)))
+        # target_loc = HLParam("target_loc", 3, 1, is_var=False, value=np.array((2,1,0)))
+        target_loc = HLParam("target_loc", 3, 1, is_var=False, value=np.array((2,0.5,0)))
 
         envs, robots, objs = self.create_local_envs(num_actions=3)
 
@@ -202,8 +214,8 @@ class HLPlan(object):
         self.add_hl_action(move)
 
         params = [rp, gp]
-        hlprob = HLOptProb(params, self.hl_actions)
-        hlprob.solve()
+        llplan = LLPlan(params, self.hl_actions)
+        llplan.solve()
         # epsilon = 5e-3*len(params)
         # while True:
         #     self.solve()
@@ -239,7 +251,240 @@ class HLPlan(object):
         pick.solve_opt_prob()
         import ipdb; ipdb.set_trace() # BREAKPOINT
 
+    # @profile
+    def pick_in_container(self):
+        self.env = World().generate_room_env()
+        self.robot = self.env.GetRobots()[0]
+        # self.ro = 0.02
+        # self.ro = 0.2
+        self.ro = 2
+        # self.ro = 10
+        # self.ro = 20
+        # self.ro = 300
 
+        # rp1 = HLParam("rp1", 3, 1, ro=self.ro)
+        rp1 = HLParam("rp1", 3, 1, is_var=False, value=np.array((0,0,0)))
+        rp2 = HLParam("rp2", 3, 1, ro=self.ro, value=np.array((2,-1,0)))
+        pick_obj = self.env.GetKinBody('obj')
+        gp = HLParam("gp", 3, 1, ro=self.ro)
+        obj_loc = HLParam("obj_loc", 3, 1, is_var=False, value=mat_to_base_pose(pick_obj.GetTransform()))
+        # target_loc = HLParam("target_loc", 3, 1, is_var=False, value=np.array((2,1,0)))
+        # target_loc = HLParam("target_loc", 3, 1, is_var=False, value=np.array((2,0.5,0)))
+
+        envs, robots, objs = self.create_local_envs(num_actions=2)
+
+        pick = self.add_hl_action(Pick(self, envs[0], robots[0], rp2, objs[0], obj_loc, gp))
+
+        # for initialization
+        # rp1.dual_update()
+        rp2.dual_update()
+        gp.dual_update()
+
+        import ipdb; ipdb.set_trace() # BREAKPOINT
+        pick.plot()
+        # move = self.add_hl_action(Move(self, envs[1], robots[1], rp1, rp2, objs[1], gp))
+        move = self.add_hl_action(Move(self, envs[1], robots[1], rp1, rp2, None, None))
+
+
+        params = [rp2, gp]
+        llplan = LLPlan(params, self.hl_actions)
+        llplan.solve()
+
+    def place_in_container(self):
+        self.env = World().generate_room_env()
+        self.robot = self.env.GetRobots()[0]
+        # self.ro = 0.02
+        # self.ro = 0.2
+        self.ro = 2
+        # self.ro = 10
+        # self.ro = 20
+        # self.ro = 300
+
+        # rp1 = HLParam("rp1", 3, 1, ro=self.ro)
+        rp1 = HLParam("rp1", 3, 1, is_var=False, value=np.array((0,0,0)))
+        # rp2 = HLParam("rp2", 3, 1, ro=self.ro, value=np.array((2,-1,0)))
+        rp2 = HLParam("rp2", 3, 1, ro=self.ro, value=np.array((1,2,0)))
+        obj = self.env.GetKinBody('obj')
+        gp = HLParam("gp", 3, 1, ro=self.ro)
+        obj_loc = HLParam("obj_loc", 3, 1, is_var=False, value=mat_to_base_pose(obj.GetTransform()))
+        # target_loc = HLParam("target_loc", 3, 1, is_var=False, value=np.array((2,1,0)))
+        # target_loc = HLParam("target_loc", 3, 1, is_var=False, value=np.array((2,0.5,0)))
+
+        envs, robots, objs = self.create_local_envs(num_actions=2)
+
+        place = self.add_hl_action(Place(self, envs[0], robots[0], rp2, objs[0], obj_loc, gp))
+
+        # for initialization
+        # rp1.dual_update()
+        rp2.dual_update()
+        gp.dual_update()
+
+        import ipdb; ipdb.set_trace() # BREAKPOINT
+        place.plot()
+        move = self.add_hl_action(Move(self, envs[1], robots[1], rp1, rp2, objs[1], gp))
+
+
+        params = [rp2, gp]
+        llplan = LLPlan(params, self.hl_actions)
+        llplan.solve()
+
+    # @profile
+    def pick_move_and_place_in_container(self):
+        self.env = World().generate_room_env()
+        self.robot = self.env.GetRobots()[0]
+        self.num_actions = 3
+        # self.ro = 0.02
+        # self.ro = 0.2
+        self.ro = 2
+        # self.ro = 10
+        # self.ro = 20
+        # self.ro = 300
+
+        rp1 = HLParam("rp1", 3, 1, ro=self.ro)
+        rp2 = HLParam("rp2", 3, 1, ro=self.ro)
+        pick_obj = self.env.GetKinBody('obj')
+        gp = HLParam("gp", 3, 1, ro=self.ro)
+        obj_loc = HLParam("obj_loc", 3, 1, is_var=False, value=mat_to_base_pose(pick_obj.GetTransform()))
+        # target_loc = HLParam("target_loc", 3, 1, is_var=False, value=np.array((2,1,0)))
+        target_loc = HLParam("target_loc", 3, 1, is_var=False, value=np.array((2,1,0)))
+
+        envs, robots, objs = self.create_local_envs(num_actions=3)
+
+        pick = self.add_hl_action(Pick(self, envs[0], robots[0], rp1, objs[0], obj_loc, gp))
+        place = self.add_hl_action(Place(self, envs[1], robots[1], rp2, objs[1], target_loc, gp))
+
+        # for initialization
+        rp1.dual_update()
+        rp2.dual_update()
+        gp.dual_update()
+
+        pick.plot()
+        place.plot()
+        import ipdb; ipdb.set_trace() # BREAKPOINT
+        # envs[2].SetViewer('qtcoin')
+        move = self.add_hl_action(Move(self, envs[2], robots[2], rp1, rp2, objs[2], gp))
+
+
+        params = [rp1, rp2, gp]
+        llplan = LLPlan(params, self.hl_actions)
+        llplan.solve()
+
+    def move_pick_and_place_in_container(self):
+        # self.env = World().generate_room_env()
+        self.env = World().generate_box_env()
+        self.robot = self.env.GetRobots()[0]
+        self.num_actions = 4
+        # self.ro = 0.02
+        # self.ro = 0.2
+        self.ro = 2
+        # self.ro = 10
+        # self.ro = 20
+        # self.ro = 300
+
+        robot_init = HLParam("rp_init", 3, 1, is_var=False, value=mat_to_base_pose(self.robot.GetTransform()))
+        rp1 = HLParam("rp1", 3, 1, ro=self.ro)
+        rp2 = HLParam("rp2", 3, 1, ro=self.ro)
+        pick_obj = self.env.GetKinBody('obj')
+        gp = HLParam("gp", 3, 1, ro=self.ro)
+        obj_loc = HLParam("obj_loc", 3, 1, is_var=False, value=mat_to_base_pose(pick_obj.GetTransform()))
+        # target_loc = HLParam("target_loc", 3, 1, is_var=False, value=np.array((2,1,0)))
+        target_loc = HLParam("target_loc", 3, 1, is_var=False, value=np.array((2,1,0)))
+
+        envs, robots, objs = self.create_local_envs(num_actions=self.num_actions)
+
+        pick = self.add_hl_action(Pick(self, envs[1], robots[1], rp1, objs[1], obj_loc, gp))
+        place = self.add_hl_action(Place(self, envs[2], robots[2], rp2, objs[2], target_loc, gp))
+
+        # for initialization
+        rp1.dual_update()
+        rp2.dual_update()
+        gp.dual_update()
+
+        pick.plot()
+        place.plot()
+        import ipdb; ipdb.set_trace() # BREAKPOINT
+        move1 = self.add_hl_action(Move(self, envs[0], robots[0], "move1", robot_init, rp1))
+        move2 = self.add_hl_action(Move(self, envs[3], robots[3], "move2", rp1, rp2, objs[3], gp))
+
+
+        params = [rp1, rp2, gp]
+        llplan = LLPlan(params, self.hl_actions)
+        llplan.solve()
+
+    def pick_place_boxes(self):
+        # self.env = World().generate_room_env()
+        num_boxes = 5
+        self.env, target_loc_values = World().generate_boxes_env(num=num_boxes)
+        target_locs = []
+        i=0
+        for loc in target_loc_values:
+            target_locs.append(HLParam("target"+"_loc"+str(i), 3, 1, is_var=False, value=mat_to_base_pose(loc)))
+            i += 1
+
+        self.robot = self.env.GetRobots()[0]
+        self.num_actions = 4*len(target_locs)
+        # self.ro = 0.02
+        # self.ro = 0.2
+        self.ro = 2
+        # self.ro = 10
+        # self.ro = 20
+        # self.ro = 300
+
+        hla_envs = self.clone_envs(self.num_actions)
+
+        rps = []
+        gps = []
+        objs = []
+        obj_locs =[]
+        for i in range(num_boxes):
+            gps.append(HLParam("gp"+str(i), 3, 1, ro=self.ro))
+            obj = self.env.GetKinBody('obj'+str(i))
+            objs.append(obj)
+            obj_locs.append(HLParam("obj"+str(i)+"_loc", 3, 1, is_var=False, value=mat_to_base_pose(obj.GetTransform())))
+
+        robot_positions = 1 + 2*num_boxes
+        for i in range(robot_positions):
+            if i == 0:
+                rps.append(HLParam("rp_init", 3, 1, is_var=False, value=mat_to_base_pose(self.robot.GetTransform())))
+            else:
+                rps.append(HLParam("rp"+str(i), 3, 1, ro=self.ro))
+
+        rp_index=1
+        for i in range(num_boxes):
+            env = hla_envs[1+4*i]
+            robot = env.GetRobots()[0]
+            obj = env.GetKinBody(objs[i].GetName())
+            pick = self.add_hl_action(Pick(self, env, robot, rps[rp_index], obj, obj_locs[i], gps[i]))
+            env = hla_envs[2+4*i]
+            robot = env.GetRobots()[0]
+            obj = env.GetKinBody(objs[i].GetName())
+            place = self.add_hl_action(Place(self, env, robot, rps[rp_index+1], obj, target_locs[i], gps[i]))
+            rp_index += 2
+
+        for rp in rps:
+            rp.dual_update()
+
+        for gp in gps:
+            gp.dual_update()
+
+        for hl_action in self.hl_actions:
+            hl_action.plot()
+
+        import ipdb; ipdb.set_trace() # BREAKPOINT
+        for i in range(num_boxes):
+            env = hla_envs[4*i]
+            robot = env.GetRobots()[0]
+            obj = env.GetKinBody(objs[i].GetName())
+            move1 = self.add_hl_action(Move(self, env, robot, "move"+str(2*i+1), rps[2*i], rps[2*i+1]))
+
+            env = hla_envs[4*i+3]
+            robot = env.GetRobots()[0]
+            move2 = self.add_hl_action(Move(self, env, robot, "move"+str(2*i+2), rps[2*i+1], rps[2*i+2], objs[i], gps[i]))
+
+        params = rps + gps
+        llplan = LLPlan(params, self.hl_actions)
+        llplan.solve()
+    
     def test_move(self):
         self.env = self.init_openrave_test_env()
         self.robot = self.env.GetRobots()[0]
@@ -260,7 +505,12 @@ class HLPlan(object):
 
 if __name__ == "__main__":
     plan = HLPlan()
-    plan.test_pick_move_and_place()
+    # plan.test_pick_move_and_place()
+    # plan.pick_in_container()
+    # plan.place_in_container()
+    # plan.pick_move_and_place_in_container()
+    # plan.move_pick_and_place_in_container() # worm example
+    plan.pick_place_boxes()
     # plan.test_pick_and_move()
     # plan.test_move()
     # plan.test_pick()
