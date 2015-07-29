@@ -16,8 +16,10 @@ from fluents.robot_at import RobotAt
 from utils import *
 
 class Move(HLAction):
-    def __init__(self, hl_plan, env, robot, start_param, end_param, obj=None, gp_param=None):
+    def __init__(self, hl_plan, env, robot, name="move", start_param=None, end_param=None, obj=None, gp_param=None):
         super(Move, self).__init__(hl_plan, env, robot)
+        assert start_param is not None
+        assert end_param is not None
         self.start, self.hl_start = start_param.new_hla_var(self)
         self.end, self.hl_end = end_param.new_hla_var(self)
         if obj is None:
@@ -27,7 +29,7 @@ class Move(HLAction):
         else:
             self.obj = obj
             self.gp, self.hl_gp = gp_param.new_hla_var(self)
-        self.name = "move"
+        self.name = name
 
         self.T = 40
         self.K = 3
@@ -35,14 +37,15 @@ class Move(HLAction):
         K = self.K
         KT = K*T
 
-        self.traj_init = np.matrix([np.linspace(i,j,T) for i,j in zip(np.array(self.start.value), np.array(self.end.value))])
+        # self.traj_init = np.matrix([np.linspace(i,j,T) for i,j in zip(np.array(self.start.value), np.array(self.end.value))])
+        self.traj_init = self.initial_traj()
         self.traj_init = np.reshape(self.traj_init, (self.K*self.T,1), order='F')
-        self.traj = Variable(K*T,1,name=self.name+'_traj',cur_value=self.traj_init)
+        self.traj = Variable(K*T,1,name=self.name+'_traj',value=self.traj_init)
 
         if obj is not None:
             self.obj_init = np.matrix([np.linspace(i,j,T) for i,j in zip(np.array(self.gp.value + self.start.value), np.array(self.gp.value + self.end.value))])
             self.obj_init = np.reshape(self.obj_init, (self.K*self.T,1), order='F')
-            self.obj_traj = Variable(K*T,1,name=self.name+'_obj_traj',cur_value=self.obj_init)
+            self.obj_traj = Variable(K*T,1,name=self.name+'_obj_traj',value=self.obj_init)
         else:
             self.obj_traj = None
 
@@ -51,7 +54,7 @@ class Move(HLAction):
         self.preconditions += [IsMP(self.env, self, robot, self.traj, self.obj, self.obj_traj)]
 
         if obj is not None:
-            self.preconditions += [InManip(self, self.obj, self.gp, self.traj, self.obj_traj)]
+            self.preconditions += [InManip(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
         self.postconditions = [RobotAt(self, self.end, self.traj)]
 
         # setting trajopt objective
@@ -64,6 +67,18 @@ class Move(HLAction):
         self.cost += cvx.quad_form(self.traj, Q)
 
         self.create_opt_prob()
+
+    def initial_traj(self):
+        waypoint = np.array([[3],[-1],[0]])
+        # waypoint = np.array([[-2],[1],[0]])
+        start = self.start.value
+        end = self.end.value
+
+        mid_time_step = self.T/2
+        init_traj = np.hstack((np.matrix([np.linspace(i,j,mid_time_step) for i,j in zip(np.array(start), np.array(waypoint))]), \
+                    np.matrix([np.linspace(i,j,self.T-mid_time_step) for i,j in zip(np.array(waypoint), np.array(end))])))
+        return init_traj
+                    
 
     def plot(self, handles=[]):
         self.handles = []
@@ -100,6 +115,7 @@ class Move(HLAction):
         sqp.min_approx_improve = 1e-2
 
         # sqp.g_use_numerical = False
+        self.opt_prob.make_primal()
         success = sqp.penalty_sqp(self.opt_prob)
         # x, success = sqp.penalty_sqp(self.traj, self.traj.value, self.objective, self.constraints, self.f, self.g, self.h)
 

@@ -33,18 +33,24 @@ class Place(HLAction):
         T = self.T
         K = self.K
 
-        self.traj_init = np.zeros((3,1))
-        self.traj = Variable(K*T,1, name=self.name+"_traj",cur_value=self.traj_init)
+        # self.traj_init = np.zeros((3,1))
+        # self.traj_init = np.array([[3],[-1],[0]])
+        # self.traj_init = np.array([[2],[-1],[0]])
+        # self.traj_init = np.array([[3],[-1],[0]])
+        self.traj_init = np.array([[3],[2],[0]]) # cool/strange wiggling into a good solution
+        # self.traj_init = np.zeros((3,1))
+        self.traj = Variable(K*T,1, name=self.name+"_traj",value=self.traj_init)
         # self.traj.value = self.traj_init
 
         self.obj_init = np.zeros((3,1))
-        self.obj_traj = Variable(K*T,1, name=self.name+'_obj_traj', cur_value=self.traj_init)
+        self.obj_traj = Variable(K*T,1, name=self.name+'_obj_traj', value=self.traj_init)
         # self.obj_traj.value = self.obj_init
 
         self.preconditions = [RobotAt(self, self.pos, self.traj)]
-        # self.preconditions += [InManip(self, self.obj, self.gp, self.traj, self.obj_traj)]
+        # self.preconditions += [InManip(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
+        self.preconditions += [IsMP(self.env, self, robot, self.traj, self.obj, self.obj_traj)]
         self.postconditions = [ObjAt(self, obj, self.loc, self.obj_traj)] 
-        self.postconditions += [InManip(self, self.obj, self.gp, self.traj, self.obj_traj)]
+        self.postconditions += [InManip(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
         self.create_opt_prob()
         self.initialize_opt()
 
@@ -80,12 +86,13 @@ class Place(HLAction):
 
     def initialize_opt(self):
         # sqp = SQP()
-        sqp = Solver()
-        # sqp.initial_trust_box_size = 0.1
-        sqp.initial_trust_box_size = 1
-        sqp.min_trust_box_size=1e-4
-        # sqp.initial_penalty_coeff = 0.1
-        # sqp.min_approx_improve = 1e-2
-        # sqp.g_use_numerical = False
+        solver = Solver()
+        # solver.initial_trust_box_size = 0.1
+        solver.initial_trust_box_size = 1
+        solver.min_trust_box_size=1e-4
+        # solver.initial_penalty_coeff = 0.1
+        solver.min_approx_improve = 1e-2
+        # solver.g_use_numerical = False
 
-        success = sqp.penalty_sqp(self.opt_prob)
+        self.opt_prob.make_primal()
+        success = solver.penalty_sqp(self.opt_prob)

@@ -16,7 +16,7 @@ class HLAction(object):
 
         # optimization sqp info
         self.cost = 0
-        self.opt_prob = OptProb(self)
+        self.opt_prob = OptProb(self, augment_lagrangian=False)
 
         # list of precondition fluents
         self.preconditions = []
@@ -84,18 +84,19 @@ class HLAction(object):
                 traj = self.traj.value.reshape((self.K,self.T), order='F')
                 for t in range(self.T):
                     xt = traj[:,t]
-                    newrobot = self.create_robot_kinbody(name=self.name + "_" + robot.GetName() + str(t), transparency=transparency)
-                    # newrobot = RaveCreateRobot(env,robot.GetXMLId())
-                    # newrobot.Clone(self.robot,7)
-                    # newrobot.SetName(self.name + "_" + robot.GetName() + str(t))
-                    newrobot.SetTransform(base_pose_to_mat(xt))
+                    # env.Load(robot.GetXMLFilename())
+                    # newrobot = self.create_robot_kinbody(name=self.name + "_" + robot.GetName() + str(t), transparency=transparency)
+                    newrobot = RaveCreateRobot(env,robot.GetXMLId())
+                    newrobot.Clone(self.robot,0)
+                    newrobot.SetName(self.name + "_" + robot.GetName() + str(t))
 
                     for link in newrobot.GetLinks():
                         for geom in link.GetGeometries():
                             geom.SetTransparency(transparency)
 
+                    env.Add(newrobot, True)
+                    newrobot.SetTransform(base_pose_to_mat(xt))
                     self.robot_clones.append(newrobot)
-                    env.Add(newrobot)
             env.UpdatePublishedBodies()
 
 
@@ -114,24 +115,33 @@ class HLAction(object):
         env = self.hl_plan.env
         obj = env.GetKinBody(self.obj.GetName())
         
-        transparency = 0.85
-        traj = self.obj_traj.value.reshape((self.K,self.T), order='F')
         with env:
-            for t in range(self.T):
-                xt = traj[:,t]
-                newobj = self.create_obj_kinbody(name=self.name + "_" + obj.GetName() + str(t), transparency=transparency)
-                # newobj = RaveCreateKinBody(env, obj.GetXMLId())
-                # newobj.Clone(obj, 0)
-                # newobj.SetName(self.name + "_" + obj.GetName() + str(t))
+            with obj:
 
-                for link in newobj.GetLinks():
-                    for geom in link.GetGeometries():
-                        geom.SetTransparency(transparency)
-                        # geom.SetDiffuseColor([0,0,1])
+                transparency = 0.85
+                traj = self.obj_traj.value.reshape((self.K,self.T), order='F')
+                for t in range(self.T):
+                    xt = traj[:,t]
+                    newobj = self.create_obj_kinbody(name=self.name + "_" + obj.GetName() + str(t), transparency=transparency)
+                    # newobj = RaveCreateKinBody(env, obj.GetXMLId())
+                    # newobj = RaveCreateRobot(env, obj.GetXMLId())
+                    # newobj = RaveClone(obj, 4)
+                    # newobj = RaveCreateKinBody(env, '')
+                    # newobj = RaveCreateKinBody(env, self.name + "_" + obj.GetName() + str(t))
+                    # newobj.Clone(obj, 0)
+                    # newobj.SetName(self.name + "_" + obj.GetName() + str(t))
 
-                # for obj in grabbed_objs:
-                self.obj_clones.append(newobj)
-                env.Add(newobj)
+                    for link in newobj.GetLinks():
+                        for geom in link.GetGeometries():
+                            geom.SetTransparency(transparency)
+                            # geom.SetDiffuseColor([0,0,1])
+
+                    # for obj in grabbed_objs:
+                    env.Add(newobj, True)
+                    newobj.SetTransform(base_pose_to_mat(xt))
+                    self.obj_clones.append(newobj)
+            env.UpdatePublishedBodies()
+            # time.sleep(3)
 
     def plot_traj_obj_kinbodies(self):
         traj = self.obj_traj.value.reshape((self.K,self.T), order='F')
@@ -154,7 +164,8 @@ class HLAction(object):
         return robot
 
     def create_obj_kinbody(self, name, color=[0,1,0], transparency=0.8):
-        obj = self.create_cylinder(name, np.eye(4), [0.35,2.01], color=color, transparency=transparency)
+        obj = self.create_box(name, np.eye(4), [.35, .35, 1], transparency=transparency)
+        # obj = self.create_cylinder(name, np.eye(4), [0.35,2.01], color=color, transparency=transparency)
         return obj
 
     def create_cylinder(self, body_name, t, dims, color=[0,1,1], transparency=0.8):
@@ -173,4 +184,25 @@ class HLAction(object):
 
         return cylinder
 
+    # def create_box(self, env, body_name, t, dims, color=[0,0,1]):
+    def create_box(self, name, transform, dims, color=[0,0,1], transparency=0.8):
+        infobox = KinBody.Link.GeometryInfo()
+        infobox._type = KinBody.Link.GeomType.Box
+        # box._t[0,3] = -0.8
+        # box._t[1,3] = 0.5
+        # infobox._vGeomData = [0.2,0.1,.99]
+        infobox._vGeomData = dims
+        infobox._bVisible = True
+        infobox._fTransparency = transparency
+        infobox._vDiffuseColor = color
 
+        box = RaveCreateKinBody(self.hl_plan.env,'')
+        box.InitFromGeometries([infobox])
+
+        # box.SetName('box')
+        box.SetName(name)
+        # transform = np.identity(4)
+        # transform[0,3] = 0.9
+        # transform[1,3] = 0.2
+        box.SetTransform(transform)
+        return box
