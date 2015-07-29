@@ -27,7 +27,7 @@ class HLParam(object):
         self.ro = ro
         
     def get_eq_constraints(self):
-        hl_var = Variable(self.rows, self.cols, name="hlvar_" + self.name, cur_value=self.consensus.value)
+        hl_var = Variable(self.rows, self.cols, name="hlvar_" + self.name, value=self.consensus.value)
         eq_constraints = []
         for var in self.hla_vars:
             eq_constraints += [hl_var == var]
@@ -54,6 +54,8 @@ class HLParam(object):
 
     # @profile
     def dual_update(self):
+        if self.is_var is False:
+            return 0.0
         z = 0
         hla_vars = self.hla_vars  
         num_vars = len(hla_vars)

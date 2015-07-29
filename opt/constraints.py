@@ -42,12 +42,12 @@ class Constraints(object):
     # x is not necessarily the same between functions, it could be the traj from different hl actions
     def constraints_satisfied(self, tolerance):
         for g,x in self.gs:
-            gval, gjac = g.val_and_grad(x.cur_value)
+            gval, gjac = g.val_and_grad(x.value)
             if any(gval > tolerance):
                 return False
 
         for h,x in self.hs:
-            hval, hjac = h.val_and_grad(x.cur_value)
+            hval, hjac = h.val_and_grad(x.value)
             if abs(hval) > tolerance:
                 return False
         return True
@@ -55,11 +55,11 @@ class Constraints(object):
     def convexify(self):
         penalty_objective = 0
         for g,x in self.gs:
-            gval, gjac = g.val_and_grad(x.cur_value)
-            penalty_objective += cvx.sum_entries(cvx.pos(gval + gjac*(x-x.cur_value)))
+            gval, gjac = g.val_and_grad(x.value)
+            penalty_objective += cvx.sum_entries(cvx.pos(gval + gjac*(x-x.value)))
         for h,x in self.hs:
-            hval, hjac = h.val_and_grad(x.cur_value)
-            penalty_objective += cvx.norm(hval + hjac*(x-x.cur_value), 1)
+            hval, hjac = h.val_and_grad(x.value)
+            penalty_objective += cvx.norm(hval + hjac*(x-x.value), 1)
         # import ipdb; ipdb.set_trace() # BREAKPOINT
         return penalty_objective, copy(self.linear_constraints)
 

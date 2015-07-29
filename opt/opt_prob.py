@@ -4,8 +4,9 @@ from opt.objective import Objective
 from opt.constraints import Constraints
 
 class OptProb(object):
-    def __init__(self, hl_action=None):
+    def __init__(self, hl_action=None, augment_lagrangian=False):
         self.hl_action = hl_action
+        self.augmented_objective = augment_lagrangian
         self.constraints = Constraints()
         self.objective = Objective()
 
@@ -29,6 +30,12 @@ class OptProb(object):
     def add_objective(self, objective):
         self.objective.add_objective(objective)
 
+    def augment_lagrangian(self):
+        self.augmented_objective = True
+
+    def make_primal(self):
+        self.augmented_objective = False
+
     def add_dual_cost(self, var, dual, consensus=None, ro = 0.05):
         self.objective.add_dual_cost(var, dual, consensus, ro)
 
@@ -41,13 +48,13 @@ class OptProb(object):
         return self.constraints.constraints_satisfied(tolerance)
 
     def convexify(self, penalty_coeff, trust_box_size):
-        objective = self.objective.convexify()
+        objective = self.objective.convexify(self.augmented_objective)
         penalty_objective, linear_constraints = self.constraints.convexify()
         objective += penalty_coeff*penalty_objective
 
         trust_box_sum = 0
         for x in self.xs:
-            trust_box_sum += cvx.norm(x-x.cur_value,1)
+            trust_box_sum += cvx.norm(x-x.value,1)
         linear_constraints += [trust_box_sum <= trust_box_size]
 
         return objective, linear_constraints
