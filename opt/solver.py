@@ -43,7 +43,8 @@ class Solver(object):
 
         # self.epsilon = 5e-3
         # self.epsilon = 1e-2
-        self.epsilon = 2e-2
+        # self.epsilon = 2e-2
+        self.epsilon = 3e-2
         self.sqp_iters = 0
 
     def big_sqp(self, opt_probs, params):
@@ -95,32 +96,49 @@ class Solver(object):
         trust_box_size = cvx.Parameter(sign="positive", value = self.initial_trust_box_size)
         penalty_coeff = cvx.Parameter(sign="positive", value = self.initial_penalty_coeff)
 
+        dual_updates = 0
         for opt_prob in opt_probs:
             success = self.find_closest_feasible_point(opt_prob)
             if not success:
                 import ipdb; ipdb.set_trace() # BREAKPOINT
                 return success
 
+        penalty_increases = 0
         for i in range(self.max_merit_coeff_increases):
+            penalty_increases += 1
+            num_probs = len(opt_probs)
+            trust_box_sizes = []
+            for i in range(num_probs):
+                trust_box_sizes.append(self.initial_trust_box_size/10.0)
+
             while True:
-                for opt_prob in opt_probs:
+                for opt_prob, i in zip(opt_probs, range(num_probs)):
+                    print "solving ", opt_prob.hl_action.name, "'s prob"
+                    trust_box_size.value = np.minimum(trust_box_sizes[i] * 10, 3)
                     trust_box_size, success = self.minimize_merit_function(opt_prob, penalty_coeff, trust_box_size)
                     opt_prob.callback()
+                    # need to grow trust region so that you don't get stuck out a trust region size where all improvements are less than min approx improve
+                    trust_box_sizes[i] = trust_box_size.value
+                    # trust_box_size.value = self.initial_trust_box_size/10.0
                     trust_box_size.value = self.initial_trust_box_size
                     print '\n'
 
                 diff = 0
                 for param in params:
                     diff += param.dual_update()
+                dual_updates += 1
+                # trust_box_size.value = self.initial_trust_box_size/10.0
                 trust_box_size.value = self.initial_trust_box_size
 
                 print "diff: ", diff
                 if diff < epsilon:
                     break
 
-            if not opt_prob.constraints_satisfied(self.cnt_tolerance):
-                penalty_coeff.value = penalty_coeff.value*self.merit_coeff_increase_ratio
-                trust_box_size.value = self.initial_trust_box_size
+            for opt_prob in opt_probs:
+                if not opt_prob.constraints_satisfied(self.cnt_tolerance):
+                    penalty_coeff.value = penalty_coeff.value*self.merit_coeff_increase_ratio
+                    trust_box_size.value = self.initial_trust_box_size
+                    break
             else:
                 end = time.time()
                 print "sqp_admm time: ", end-start
@@ -129,6 +147,8 @@ class Solver(object):
         end = time.time()
         print "sqp_admm time: ", end-start
         print "sqp_iters: ", self.sqp_iters
+        print "dual updates: ", dual_updates
+        print "penalty increases: ", penalty_increases
         return False
 
     # @profile
@@ -195,25 +215,27 @@ class Solver(object):
         sqp_iter = 1
 
         x_cur = []
-        objective, constraints = opt_prob.convexify(penalty_coeff, trust_box_size)
+        # objective, constraints = opt_prob.convexify(penalty_coeff, trust_box_size)
         prob = None
 
+        # approximation loop
         while True:
             print("  sqp_iter: {0}".format(sqp_iter))
+            objective, constraints = opt_prob.convexify(penalty_coeff, trust_box_size)
             merit = objective.value
 
+            # Trust region search
             while True:
                 self.sqp_iters += 1
                 print("    trust region size: {0}".format(trust_box_size.value))
 
-                x_cur = []
-                for x in opt_prob.xs:
-                    x_cur.append(x.value)
+                x_cur = [x.value for x in opt_prob.xs]
 
                 try:
                     prob = cvx.Problem(cvx.Minimize(objective), constraints)
                     # prob.solve(verbose=False, solver='GUROBI')
                     prob.solve(verbose=False, solver='ECOS')
+                    # prob.solve(verbose=True, solver='ECOS')
                 except:
                     prob.solve(verbose=True, solver='GUROBI')
                     # prob.solve(verbose=True, solver='ECOS')
@@ -229,26 +251,10 @@ class Solver(object):
                         success = False
                         return (trust_box_size, success)
 
-                    # if prob.status == None:
-                    #     ipdb.set_trace()
-                    # else:
-                    #     prob.solve(verbose=True, solver='GUROBI')
-                    #     import ipdb; ipdb.set_trace() # BREAKPOINT
-                    #     print 'problem status: ', prob.status
-                    #     print('Failed to solve QP subproblem.')
-                    #     success = False
-                    #     return (trust_box_size, success)
-
                 model_merit = prob.value
 
-                # updating current x in which convex approximation is computed and saving previous current x value
-                # x_cur = []
-                # for x in opt_prob.xs:
-                #     x_cur.append(x.cur_value)
-                #     x.cur_value = x.value
-                objective, constraints = opt_prob.convexify(penalty_coeff, trust_box_size)
-
-                new_merit = objective.value
+                objective_new, constraints_new = opt_prob.convexify(penalty_coeff, trust_box_size)
+                new_merit = objective_new.value
 
                 approx_merit_improve = merit - model_merit
                 exact_merit_improve = merit - new_merit
@@ -260,31 +266,32 @@ class Solver(object):
                     print("Approximate merit function got worse ({0})".format(approx_merit_improve))
                     print("Either convexification is wrong to zeroth order, or you're in numerical trouble.")
                     success = False
+                    # import ipdb; ipdb.set_trace() # BREAKPOINT
                     for i in range(len(opt_prob.xs)):
-                        # opt_prob.xs[i].cur_value = x_cur[i]
                         # x's value needs to be also reset so that the merit can be computed correctly
                         opt_prob.xs[i].value = x_cur[i]
                     return  (trust_box_size, success)
                 elif approx_merit_improve < self.min_approx_improve:
                     opt_prob.callback()
-                    # import ipdb; ipdb.set_trace() # BREAKPOINT
+                    # if exact_merit_improve < 0 or (merit_improve_ratio < self.improve_ratio_threshold):
+                    for i in range(len(opt_prob.xs)):
+                        # x's value needs to be also reset so that the merit can be computed correctly
+                        opt_prob.xs[i].value = x_cur[i]
                     print("Converged: y tolerance")
                     return (trust_box_size, success)
                 elif (exact_merit_improve < 0) or (merit_improve_ratio < self.improve_ratio_threshold):
                     # reset convex approximations of optimization problem
                     for i in range(len(opt_prob.xs)):
-                        # opt_prob.xs[i].cur_value = x_cur[i]
                         # x's value needs to be also reset so that the merit can be computed correctly
                         opt_prob.xs[i].value = x_cur[i]
 
-                    objective, constraints = opt_prob.convexify(penalty_coeff, trust_box_size)
+                    # objective, constraints = opt_prob.convexify(penalty_coeff, trust_box_size)
 
                     print("Shrinking trust region")
                     trust_box_size.value = trust_box_size.value * self.trust_shrink_ratio
 
                 else:
                     opt_prob.callback()
-                    # import ipdb; ipdb.set_trace() # BREAKPOINT
                     print("Growing trust region")
                     trust_box_size.value = trust_box_size.value * self.trust_expand_ratio
                     break #from trust region loop
