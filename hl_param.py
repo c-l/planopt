@@ -76,7 +76,42 @@ class HLParam(object):
 
         return diff
             
+class GP(HLParam):
+    # grasp pose
+    def __init__(self, name, rows, cols, is_var=True, value=None, ro=0.05):
+        super(GP, self).__init__(name, rows, cols, is_var, value, ro)
 
+        # self.consensus.value = np.array([[0],[1],[0]])
+        # self.consensus.value = np.array([[1],[0],[0]])
+        # self.consensus.value = np.array([[-1],[0],[0]])
+        # self.consensus.value = np.array([[0],[-1],[0]])
+        self.consensus.value = np.array([[-1],[1],[0]])
 
+class RP(HLParam):
+    # robot pose
+    pass
 
+class ObjLoc(HLParam):
+    # object location
+    pass
 
+class Traj(HLParam):
+    # do not add in dual costs because this variable is local to one high level action
+    def new_hla_var(self, hl_actions):
+        if not self.is_var:
+            return self.consensus, self.consensus
+
+        rows = self.rows
+        cols = self.cols
+
+        hla_var = Variable(rows, cols, name=self.name)
+        hla_var.value = self.consensus.value
+
+        dual_var = cvx.Parameter(rows, cols, value=np.zeros((rows,cols)))
+
+        self.hlas.append(hl_action)
+        self.hla_vars.append(hla_var)
+        self.hla_dual_vars.append(dual_var)
+
+        # hl_action.add_dual_cost(hla_var, dual_var, self.consensus, ro=self.ro)
+        return hla_var, self.consensus

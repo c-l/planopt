@@ -27,6 +27,7 @@ class HLAction(object):
         self.obj = None
         self.traj = None
         self.obj_traj = None
+        self.gp = None
 
         # for graphing
         self.robot_clones = None
@@ -36,6 +37,7 @@ class HLAction(object):
         self.opt_prob.add_var(self.traj)
         if self.obj is not None:
             self.opt_prob.add_var(self.obj_traj)
+            self.opt_prob.add_var(self.gp)
 
         self.add_cost_to_opt_prob()
         self.add_fluents_to_opt_prob()

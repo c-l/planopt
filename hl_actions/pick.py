@@ -18,7 +18,7 @@ from fluents.obj_at import ObjAt
 from utils import *
 
 class Pick(HLAction):
-    def __init__(self, hl_plan, env, robot, pos_param, obj, loc_param, gp_param):
+    def __init__(self, hl_plan, env, robot, pos_param, obj, loc_param, gp_param, name="pick"):
         super(Pick, self).__init__(hl_plan, env, robot)
 
         self.pos, self.hl_pos = pos_param.new_hla_var(self)
@@ -33,13 +33,15 @@ class Pick(HLAction):
         K = self.K
 
         # self.traj_init = np.zeros((3,1))
-        self.traj_init = np.array([[-1],[2],[0]]) # cool/strange wiggling into a good solution
+        # self.traj_init = np.array([[-1],[2],[0]]) # cool/strange wiggling into a good solution
         # self.traj_init = np.array([[0],[-2],[0]])
-        self.traj = Variable(K*T,1, name=self.name+"_traj",value=self.traj_init)
+        # self.traj = Variable(K*T,1, name=self.name+"_traj",value=self.traj_init)
+        self.traj = Variable(K*T,1, name=self.name+"_traj")
         # self.traj.value = self.traj_init
 
-        self.obj_init = np.zeros((3,1))
-        self.obj_traj = Variable(K*T,1, name=self.name+'_obj_traj', value=self.traj_init)
+        # self.obj_init = np.zeros((3,1))
+        # self.obj_traj = Variable(K*T,1, name=self.name+'_obj_traj', value=self.traj_init)
+        self.obj_traj = Variable(K*T,1, name=self.name+'_obj_traj')
         # self.obj_traj.value = self.obj_init
 
         self.preconditions = [RobotAt(self, self.pos, self.traj)]
@@ -80,6 +82,11 @@ class Pick(HLAction):
         #     self.handles += [self.hl_plan.env.drawlinestrip(points=hl_points, linewidth=10, colors=(1,0,0))]
 
     def initialize_opt(self):
+        # initialize trajectories
+        self.traj.value = self.hl_loc.value - self.hl_gp.value
+        self.obj_traj.value = self.hl_loc.value
+
+        # solve initial optimization problem
         solver = Solver()
         # sqp.initial_trust_box_size = 0.1
         solver.initial_trust_box_size = 1
@@ -91,3 +98,7 @@ class Pick(HLAction):
         self.opt_prob.make_primal()
         success = solver.penalty_sqp(self.opt_prob)
 
+    def create_opt_prob(self):
+        super(Pick, self).create_opt_prob()
+        self.opt_prob.add_var(self.pos)
+        self.opt_prob.add_var(self.loc)

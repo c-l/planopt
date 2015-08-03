@@ -43,7 +43,7 @@ class IsMP(Fluent):
     # TODO: compute collisions properly
     # @profile
     def collisions(self, x, dsafe, traj_shape):
-        print "in ", self.hl_action.name, "'s collision method"
+        # print "in ", self.hl_action.name, "'s collision method"
         env = self.env
         traj = x.reshape(traj_shape, order='F')
         K, T = traj_shape
@@ -81,13 +81,13 @@ class IsMP(Fluent):
                     distance = c.GetDistance()
                     linkA = c.GetLinkAParentName()
                     linkB = c.GetLinkBParentName()
-                    # print "collision between ", linkA, " ", linkB
                     if obj is not None:
                         if linkA == robot.GetName() and linkB == obj.GetName():
                             continue
                         elif linkB == robot.GetName() and linkA == obj.GetName():
                             continue
 
+                    # print "collision dist of ", distance, " between ", linkA, " ", linkB
                     # if distance > distances[t]:
                     #     continue
                     # else:
@@ -126,7 +126,6 @@ class IsMP(Fluent):
 
         self.hl_action.plot(handles)
         self.plotting_env.UpdatePublishedBodies()
-        # import ipdb; ipdb.set_trace() # BREAKPOINT
         handles = []
 
         return (val, jac)

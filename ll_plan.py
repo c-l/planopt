@@ -34,11 +34,14 @@ class LLPlan(object):
         solver = self.solver
         solver.improve_ratio_threshold = .25
         # solver.min_trust_box_size = 1e-4
-        solver.min_trust_box_size = 1e-2
-        # solver.min_approx_improve = 1e-4
+        solver.min_trust_box_size = 1e-3
+        # solver.min_trust_box_size = 1e-2
+        # solver.min_approx_improve = 1e-5
+        solver.min_approx_improve = 1e-4
+        # solver.min_approx_improve = 1e-3
         # solver.min_approx_improve = 1e-2
         # solver.min_approx_improve = 3e-2
-        solver.min_approx_improve = 1e-1
+        # solver.min_approx_improve = 1e-1
         # solver.min_approx_improve = 3e-1
         solver.max_iter = 50
         solver.trust_shrink_ratio = .1
@@ -56,12 +59,12 @@ class LLPlan(object):
         # solver.initial_penalty_coeff = 0.3
         solver.initial_penalty_coeff = 0.1
         # solver.initial_penalty_coeff = 0.01
-        # solver.max_penalty_iter = 4
-        solver.max_penalty_iter = 8
         solver.callback = []
 
         # self.epsilon = 5e-3
-        solver.epsilon = 1e-2
+        # solver.epsilon = 1e-2
+        solver.epsilon = 3e-2
+        # solver.epsilon = 1e-1
         solver.sqp_iters = 0
         self.solver.sqp_admm(opt_probs, self.hl_params)
 
@@ -74,8 +77,8 @@ class LLPlan(object):
         solver.min_trust_box_size = 1e-2
         # solver.min_approx_improve = 1e-4
         # solver.min_approx_improve = 1e-2
-        # solver.min_approx_improve = 3e-1
         solver.min_approx_improve = 1e-1
+        # solver.min_approx_improve = 3e-1
         solver.max_iter = 50
         solver.trust_shrink_ratio = .1
         solver.trust_expand_ratio = 1.5
@@ -101,8 +104,8 @@ class LLPlan(object):
         solver.solver.admm_sqp(opt_probs, self.hl_params)
 
     def big_sqp(self, opt_probs):
-        for opt_prob in opt_probs:
-            opt_prob.primal()
+        # for opt_prob in opt_probs:
+        #     opt_prob.primal()
         solver = self.solver
         solver.improve_ratio_threshold = .25
         # self.min_trust_box_size = 1e-4

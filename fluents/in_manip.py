@@ -77,7 +77,7 @@ class InManip(Fluent):
         t = T-1
         for c in collisions:
             distance = c.GetDistance()
-            print "distance: ", distance
+            # print "distance: ", distance
             linkA = c.GetLinkAParentName()
             linkB = c.GetLinkBParentName()
 
@@ -106,8 +106,8 @@ class InManip(Fluent):
 
             val[t] = 3*(target_dist - c.GetDistance())
             jac[t, K*t:K*(t+1)] = 3*gradd
-            print "distance collision = ", (target_dist - c.GetDistance())
-            print "distance = ", (self.grasp(x) / 3.0)
+            # print "distance collision = ", (target_dist - c.GetDistance())
+            # print "distance = ", (self.grasp(x) / 3.0)
 
         self.hl_action.plot(handles)
 

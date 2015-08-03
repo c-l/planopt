@@ -38,14 +38,16 @@ class Move(HLAction):
         KT = K*T
 
         # self.traj_init = np.matrix([np.linspace(i,j,T) for i,j in zip(np.array(self.start.value), np.array(self.end.value))])
-        self.traj_init = self.initial_traj()
-        self.traj_init = np.reshape(self.traj_init, (self.K*self.T,1), order='F')
-        self.traj = Variable(K*T,1,name=self.name+'_traj',value=self.traj_init)
+        # self.traj_init = self.initial_traj()
+        # self.traj_init = np.reshape(self.traj_init, (self.K*self.T,1), order='F')
+        # self.traj = Variable(K*T,1,name=self.name+'_traj',value=self.traj_init)
+        self.traj = Variable(K*T,1,name=self.name+'_traj')
 
         if obj is not None:
-            self.obj_init = np.matrix([np.linspace(i,j,T) for i,j in zip(np.array(self.gp.value + self.start.value), np.array(self.gp.value + self.end.value))])
-            self.obj_init = np.reshape(self.obj_init, (self.K*self.T,1), order='F')
-            self.obj_traj = Variable(K*T,1,name=self.name+'_obj_traj',value=self.obj_init)
+            # self.obj_init = np.matrix([np.linspace(i,j,T) for i,j in zip(np.array(self.gp.value + self.start.value), np.array(self.gp.value + self.end.value))])
+            # self.obj_init = np.reshape(self.obj_init, (self.K*self.T,1), order='F')
+            # self.obj_traj = Variable(K*T,1,name=self.name+'_obj_traj',value=self.obj_init)
+            self.obj_traj = Variable(K*T,1,name=self.name+'_obj_traj')
         else:
             self.obj_traj = None
 
@@ -67,6 +69,7 @@ class Move(HLAction):
         self.cost += cvx.quad_form(self.traj, Q)
 
         self.create_opt_prob()
+        self.initialize_opt()
 
     def initial_traj(self):
         waypoint = np.array([[3],[-1],[0]])
@@ -104,6 +107,24 @@ class Move(HLAction):
             hl_end[2] = 1
             self.handles += [self.hl_plan.env.drawarrow(p1=end, p2=hl_end, linewidth=0.01, color=(1,0,0))]
 
+    def initialize_opt(self):
+        start = self.hl_start.value
+        end = self.hl_end.value
+        midpoint = (start + end)/2
+        # waypoint = midpoint + np.array([[0],[-2],[0]])
+        waypoint = end + np.array([[0],[-2],[0]])
+
+        # traj_init = np.matrix([np.linspace(i,j,T) for i,j in zip(np.array(self.hl_start.value), np.array(self.hl_end.value))])
+        mid_time_step = self.T/2
+        init_traj = np.hstack((np.matrix([np.linspace(i,j,mid_time_step) for i,j in zip(np.array(start), np.array(waypoint))]), \
+                    np.matrix([np.linspace(i,j,self.T-mid_time_step) for i,j in zip(np.array(waypoint), np.array(end))])))
+        init_traj = np.reshape(init_traj, (self.K*self.T,1), order='F')
+        self.traj.value = init_traj
+        # self.traj_init = self.initial_traj()
+        if self.obj is not None:
+            self.obj_traj.value = self.traj.value + np.tile(self.hl_gp.value, (self.T,1))
+
+
     def solve_opt_prob(self):
         sqp = SQP()
         # sqp.initial_trust_box_size = 0.1
@@ -118,6 +139,11 @@ class Move(HLAction):
         self.opt_prob.make_primal()
         success = sqp.penalty_sqp(self.opt_prob)
         # x, success = sqp.penalty_sqp(self.traj, self.traj.value, self.objective, self.constraints, self.f, self.g, self.h)
+
+    def create_opt_prob(self):
+        super(Move, self).create_opt_prob()
+        self.opt_prob.add_var(self.start)
+        self.opt_prob.add_var(self.end)
 
 
 if __name__ == "__main__":

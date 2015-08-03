@@ -2,7 +2,8 @@ from hl_actions.move import Move
 from hl_actions.pick import Pick
 from hl_actions.place import Place
 from openravepy import *
-from hl_param import HLParam
+# from hl_param import HLParam
+from hl_param import *
 import numpy as np
 import ipdb
 import cvxpy as cvx
@@ -413,12 +414,12 @@ class HLPlan(object):
 
     def pick_place_boxes(self):
         # self.env = World().generate_room_env()
-        num_boxes = 5
+        num_boxes = 1
         self.env, target_loc_values = World().generate_boxes_env(num=num_boxes)
         target_locs = []
         i=0
         for loc in target_loc_values:
-            target_locs.append(HLParam("target"+"_loc"+str(i), 3, 1, is_var=False, value=mat_to_base_pose(loc)))
+            target_locs.append(ObjLoc("target"+"_loc"+str(i), 3, 1, is_var=False, value=mat_to_base_pose(loc)))
             i += 1
 
         self.robot = self.env.GetRobots()[0]
@@ -437,28 +438,28 @@ class HLPlan(object):
         objs = []
         obj_locs =[]
         for i in range(num_boxes):
-            gps.append(HLParam("gp"+str(i), 3, 1, ro=self.ro))
+            gps.append(GP("gp"+str(i), 3, 1, ro=self.ro))
             obj = self.env.GetKinBody('obj'+str(i))
             objs.append(obj)
-            obj_locs.append(HLParam("obj"+str(i)+"_loc", 3, 1, is_var=False, value=mat_to_base_pose(obj.GetTransform())))
+            obj_locs.append(ObjLoc("obj"+str(i)+"_loc", 3, 1, is_var=False, value=mat_to_base_pose(obj.GetTransform())))
 
         robot_positions = 1 + 2*num_boxes
         for i in range(robot_positions):
             if i == 0:
-                rps.append(HLParam("rp_init", 3, 1, is_var=False, value=mat_to_base_pose(self.robot.GetTransform())))
+                rps.append(RP("rp_init", 3, 1, is_var=False, value=mat_to_base_pose(self.robot.GetTransform())))
             else:
-                rps.append(HLParam("rp"+str(i), 3, 1, ro=self.ro))
+                rps.append(RP("rp"+str(i), 3, 1, ro=self.ro))
 
         rp_index=1
         for i in range(num_boxes):
             env = hla_envs[1+4*i]
             robot = env.GetRobots()[0]
             obj = env.GetKinBody(objs[i].GetName())
-            pick = self.add_hl_action(Pick(self, env, robot, rps[rp_index], obj, obj_locs[i], gps[i]))
+            pick = self.add_hl_action(Pick(self, env, robot, rps[rp_index], obj, obj_locs[i], gps[i], name="pick"+str(i)))
             env = hla_envs[2+4*i]
             robot = env.GetRobots()[0]
             obj = env.GetKinBody(objs[i].GetName())
-            place = self.add_hl_action(Place(self, env, robot, rps[rp_index+1], obj, target_locs[i], gps[i]))
+            place = self.add_hl_action(Place(self, env, robot, rps[rp_index+1], obj, target_locs[i], gps[i], name="place"+str(i)))
             rp_index += 2
 
         for rp in rps:
@@ -470,16 +471,16 @@ class HLPlan(object):
         for hl_action in self.hl_actions:
             hl_action.plot()
 
-        import ipdb; ipdb.set_trace() # BREAKPOINT
+        # import ipdb; ipdb.set_trace() # BREAKPOINT
         for i in range(num_boxes):
             env = hla_envs[4*i]
             robot = env.GetRobots()[0]
-            obj = env.GetKinBody(objs[i].GetName())
             move1 = self.add_hl_action(Move(self, env, robot, "move"+str(2*i+1), rps[2*i], rps[2*i+1]))
 
             env = hla_envs[4*i+3]
             robot = env.GetRobots()[0]
-            move2 = self.add_hl_action(Move(self, env, robot, "move"+str(2*i+2), rps[2*i+1], rps[2*i+2], objs[i], gps[i]))
+            obj = env.GetKinBody(objs[i].GetName())
+            move2 = self.add_hl_action(Move(self, env, robot, "move"+str(2*i+2), rps[2*i+1], rps[2*i+2], obj, gps[i]))
 
         params = rps + gps
         llplan = LLPlan(params, self.hl_actions)
