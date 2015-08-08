@@ -7,7 +7,8 @@ import time
 from utils import *
 
 class HLAction(object):
-    def __init__(self, hl_plan, env, robot):
+    def __init__(self, lineno, hl_plan, env, robot):
+        self.lineno = lineno
         self.hl_plan = hl_plan
         self.env = env
         self.robot = robot
@@ -67,8 +68,8 @@ class HLAction(object):
     def plot_traj_line(self, traj, colors=(0,0,1)):
         handles = []
         env = self.hl_plan.env
-        traj_points = np.reshape(traj.value.copy(), (self.T, self.K))
-        traj_points[:,2] = np.ones((self.T, 1))
+        traj_points = np.matrix(np.reshape(traj.value.copy(), (self.T, self.K)))
+        traj_points[:,2] = np.ones((self.T,1))
         handles.append(env.drawlinestrip(points=traj_points, linewidth=10.0, colors=colors))
         handles.append(env.plot3(points=traj_points[0,:],pointsize=20, colors=colors))
         handles.append(env.plot3(points=traj_points[-1,:],pointsize=20, colors=colors))
@@ -87,9 +88,9 @@ class HLAction(object):
                 for t in range(self.T):
                     xt = traj[:,t]
                     # env.Load(robot.GetXMLFilename())
-                    # newrobot = self.create_robot_kinbody(name=self.name + "_" + robot.GetName() + str(t), transparency=transparency)
-                    newrobot = RaveCreateRobot(env,robot.GetXMLId())
-                    newrobot.Clone(self.robot,0)
+                    newrobot = self.create_robot_kinbody(name=self.name + "_" + robot.GetName() + str(t), transparency=transparency)
+                    # newrobot = RaveCreateRobot(env,robot.GetXMLId())
+                    # newrobot.Clone(self.robot,0)
                     newrobot.SetName(self.name + "_" + robot.GetName() + str(t))
 
                     for link in newrobot.GetLinks():
@@ -161,7 +162,7 @@ class HLAction(object):
             self.plot_traj_obj_kinbodies()
         # return handles
 
-    def create_robot_kinbody(self, name, color=[0,0,1], transparency=0.8):
+    def create_robot_kinbody(self, name, color=[1,0,0], transparency=0.8):
         robot = self.create_cylinder(name, np.eye(4), [0.2,2.01], color=color, transparency=transparency)
         return robot
 

@@ -16,5 +16,7 @@ class Variable(cvx.Variable):
         else:
             self.save_value(value)
 
+        self.initialized = False
+
 
     

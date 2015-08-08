@@ -4,8 +4,14 @@ from opt.variable import Variable
 from opt.constraints import Constraints
 from numpy.linalg import norm
 
+from utils import *
+
+import sys
+sys.path.insert(0,"../")
+from envs.world import World
+
 class HLParam(object):
-    def __init__(self, name, rows, cols, is_var=True, value=None, ro=0.05):
+    def __init__(self, name, rows, cols, is_var=True, value=None, ro=2):
         self.name = name
         # hla stands for high level action
         self.hlas = []
@@ -49,8 +55,17 @@ class HLParam(object):
         self.hla_vars.append(hla_var)
         self.hla_dual_vars.append(dual_var)
 
+        if self.ro != 2:
+            import ipdb; ipdb.set_trace() # BREAKPOINT
         hl_action.add_dual_cost(hla_var, dual_var, self.consensus, ro=self.ro)
         return hla_var, self.consensus
+
+    def initialize_to_consensus(self):
+        if self.is_var is False:
+            return
+        for var in self.hla_vars:
+            if not var.initialized:
+                var.value = self.consensus.value
 
     # @profile
     def dual_update(self):
@@ -58,19 +73,29 @@ class HLParam(object):
             return 0.0
         z = 0
         hla_vars = self.hla_vars  
-        num_vars = len(hla_vars)
+        num_vars = 0
         for var in hla_vars:
-            z += var.value
+            if var.initialized:
+                num_vars += 1
+                z += var.value
+            else:
+                print var.name(), " hasn't been initialized yet"
+        if num_vars == 0:
+            return 0
+
         z = z/num_vars
         self.consensus.value = z
 
         diff = 0
         # import ipdb; ipdb.set_trace()
         # print "z = {0}".format(z)
-        for i in range(num_vars):
-            xi = self.hla_vars[i].value
-            diff += norm(z - xi, 1)
-            self.hla_dual_vars[i].value += self.ro*(xi - z)
+        # for i in range(num_vars):
+        for var, dual_var in zip(self.hla_vars, self.hla_dual_vars):
+            # xi = self.hla_vars[i].value
+            if var.initialized:
+                xi = var.value
+                diff += norm(z - xi, 1)
+                dual_var.value += self.ro*(xi - z)
             # print("dual var {0}: {1}".format(i, self.hla_dual_vars[i].value))
             # print("{0}'s {1} dual variable: {2}".format(self.hlas[i].name, self.name, self.hla_dual_vars[i].value))
 
@@ -78,22 +103,36 @@ class HLParam(object):
             
 class GP(HLParam):
     # grasp pose
-    def __init__(self, name, rows, cols, is_var=True, value=None, ro=0.05):
+    def __init__(self, name, rows, cols, is_var=True, value=None, ro=2):
         super(GP, self).__init__(name, rows, cols, is_var, value, ro)
 
-        # self.consensus.value = np.array([[0],[1],[0]])
+        self.consensus.value = np.array([[0],[1],[0]])
         # self.consensus.value = np.array([[1],[0],[0]])
         # self.consensus.value = np.array([[-1],[0],[0]])
         # self.consensus.value = np.array([[0],[-1],[0]])
-        self.consensus.value = np.array([[-1],[1],[0]])
+        # self.consensus.value = np.array([[-1],[1],[0]])
 
 class RP(HLParam):
-    # robot pose
+    # def __init__(self, name, rows, cols, is_var=True, value=None, ro=0.05):
+    #     super(RP, self).__init__(name, rows, cols, is_var, value, ro)
     pass
 
 class ObjLoc(HLParam):
     # object location
+    # def __init__(self, name, rows, cols, is_var=True, value=None, ro=0.05):
+    #     super(ObjLoc, self).__init__(name, rows, cols, is_var, value, ro)
     pass
+
+class Movable(HLParam):
+    def __init__(self, name):
+        self.name = name
+        self.is_var = False
+
+    def initialize_to_consensus(self):
+        return
+
+    def new_hla_var(self, hl_actions, env):
+        return env.GetKinBody(self.name), None
 
 class Traj(HLParam):
     # do not add in dual costs because this variable is local to one high level action

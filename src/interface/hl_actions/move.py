@@ -9,26 +9,27 @@ import ipdb
 from openravepy import *
 from hl_action import HLAction
 
-from fluents.is_mp import IsMP
-from fluents.in_manip import InManip
-from fluents.robot_at import RobotAt
+from interface.fluents.is_mp import IsMP
+from interface.fluents.in_manip import InManip
+from interface.fluents.robot_at import RobotAt
 
 from utils import *
 
 class Move(HLAction):
-    def __init__(self, hl_plan, env, robot, name="move", start_param=None, end_param=None, obj=None, gp_param=None):
-        super(Move, self).__init__(hl_plan, env, robot)
+    def __init__(self, lineno, hl_plan, env, robot, start_param=None, end_param=None, obj_param=None, gp_param=None, name="move"):
+        super(Move, self).__init__(lineno, hl_plan, env, robot)
         assert start_param is not None
         assert end_param is not None
         self.start, self.hl_start = start_param.new_hla_var(self)
         self.end, self.hl_end = end_param.new_hla_var(self)
-        if obj is None:
+        if obj_param is None:
             assert gp_param is None
-            self.obj = obj
+            self.obj = obj_param
             self.gp = gp_param
         else:
-            self.obj = obj
+            self.obj, _ = obj_param.new_hla_var(self, env)
             self.gp, self.hl_gp = gp_param.new_hla_var(self)
+            import ipdb; ipdb.set_trace() # BREAKPOINT
         self.name = name
 
         self.T = 40
@@ -43,7 +44,7 @@ class Move(HLAction):
         # self.traj = Variable(K*T,1,name=self.name+'_traj',value=self.traj_init)
         self.traj = Variable(K*T,1,name=self.name+'_traj')
 
-        if obj is not None:
+        if self.obj is not None:
             # self.obj_init = np.matrix([np.linspace(i,j,T) for i,j in zip(np.array(self.gp.value + self.start.value), np.array(self.gp.value + self.end.value))])
             # self.obj_init = np.reshape(self.obj_init, (self.K*self.T,1), order='F')
             # self.obj_traj = Variable(K*T,1,name=self.name+'_obj_traj',value=self.obj_init)
@@ -55,7 +56,7 @@ class Move(HLAction):
         self.create_robot_clones()
         self.preconditions += [IsMP(self.env, self, robot, self.traj, self.obj, self.obj_traj)]
 
-        if obj is not None:
+        if self.obj is not None:
             self.preconditions += [InManip(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
         self.postconditions = [RobotAt(self, self.end, self.traj)]
 
@@ -69,7 +70,7 @@ class Move(HLAction):
         self.cost += cvx.quad_form(self.traj, Q)
 
         self.create_opt_prob()
-        self.initialize_opt()
+        # self.initialize_opt()
 
     def initial_traj(self):
         waypoint = np.array([[3],[-1],[0]])
@@ -107,7 +108,7 @@ class Move(HLAction):
             hl_end[2] = 1
             self.handles += [self.hl_plan.env.drawarrow(p1=end, p2=hl_end, linewidth=0.01, color=(1,0,0))]
 
-    def initialize_opt(self):
+    def init_opt(self):
         start = self.hl_start.value
         end = self.hl_end.value
         midpoint = (start + end)/2
@@ -123,6 +124,10 @@ class Move(HLAction):
         # self.traj_init = self.initial_traj()
         if self.obj is not None:
             self.obj_traj.value = self.traj.value + np.tile(self.hl_gp.value, (self.T,1))
+        self.start.initialized = True
+        self.end.initialized = True
+        if self.obj is not None:
+            self.gp.initialized = True
 
 
     def solve_opt_prob(self):

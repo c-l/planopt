@@ -6,6 +6,7 @@ from utils import *
 class World(object):
     def __init__(self):
         self.env = Environment() # create openrave environment
+        return
         self.env.SetViewer('qtcoin') # attach viewer (optional)
 
     def create_cylinder(self, env, body_name, t, dims, color=[0,1,1]):
@@ -160,7 +161,7 @@ class World(object):
         return env, target_locations
 
     def make_transparent(self, body):
-        transparency = 1
+        transparency = 0.9
         for link in body.GetLinks():
             for geom in link.GetGeometries():
                 geom.SetTransparency(transparency)
@@ -273,5 +274,7 @@ class World(object):
 
 if __name__ == "__main__":
     world = World()
-    world.generate_room_env()
+    env, target_locations = world.generate_boxes_env(1)
+    env.Save("../envs/one_box_world.dae", Environment.SelectionOptions.Everything)
     import ipdb; ipdb.set_trace() # BREAKPOINT
+

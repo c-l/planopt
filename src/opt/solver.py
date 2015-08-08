@@ -143,7 +143,8 @@ class Solver(object):
                 end = time.time()
                 print "sqp_admm time: ", end-start
                 print "sqp_iters: ", self.sqp_iters
-                return success
+                return True
+                # return success
         end = time.time()
         print "sqp_admm time: ", end-start
         print "sqp_iters: ", self.sqp_iters

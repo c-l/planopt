@@ -11,19 +11,19 @@ import ipdb
 from openravepy import *
 from hl_action import HLAction
 
-from fluents.is_mp import IsMP
-from fluents.in_manip import InManip
-from fluents.robot_at import RobotAt
-from fluents.obj_at import ObjAt
+from interface.fluents.is_mp import IsMP
+from interface.fluents.in_manip import InManip
+from interface.fluents.robot_at import RobotAt
+from interface.fluents.obj_at import ObjAt
 
 from utils import *
 
 class Place(HLAction):
-    def __init__(self, hl_plan, env, robot, pos_param, obj, loc_param, gp_param, name="place"):
-        super(Place, self).__init__(hl_plan, env, robot)
+    def __init__(self, lineno, hl_plan, env, robot, pos_param, obj_param, loc_param, gp_param, name="place"):
+        super(Place, self).__init__(lineno, hl_plan, env, robot)
 
         self.pos, self.hl_pos = pos_param.new_hla_var(self)
-        self.obj = obj
+        self.obj, _ = obj_param.new_hla_var(self, env)
         self.loc, self.hl_loc = loc_param.new_hla_var(self)
         self.gp, self.hl_gp = gp_param.new_hla_var(self)
         self.name = name
@@ -51,10 +51,10 @@ class Place(HLAction):
         self.preconditions = [RobotAt(self, self.pos, self.traj)]
         # self.preconditions += [InManip(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
         # self.preconditions += [IsMP(self.env, self, robot, self.traj, self.obj, self.obj_traj)]
-        self.postconditions = [ObjAt(self, obj, self.loc, self.obj_traj)] 
+        self.postconditions = [ObjAt(self, self.obj, self.loc, self.obj_traj)] 
         self.postconditions += [InManip(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
         self.create_opt_prob()
-        self.initialize_opt()
+        # self.initialize_opt()
 
     def plot(self, handles=[]):
         self.handles = []
@@ -86,7 +86,7 @@ class Place(HLAction):
         #     self.handles += [self.hl_plan.env.drawlinestrip(points=place_points, linewidth=10, colors=(0,0.5,0))]
         #     self.handles += [self.hl_plan.env.drawlinestrip(points=hl_points, linewidth=10, colors=(1,0,0))]
 
-    def initialize_opt(self):
+    def init_opt(self):
         # initialize trajectories
         self.traj.value = self.hl_loc.value - self.hl_gp.value
         self.obj_traj.value = self.hl_loc.value
@@ -102,6 +102,10 @@ class Place(HLAction):
 
         self.opt_prob.make_primal()
         success = solver.penalty_sqp(self.opt_prob)
+        self.pos.initialized = True
+        self.loc.initialized = True
+        self.gp.initialized = True
+
 
     def create_opt_prob(self):
         super(Place, self).create_opt_prob()
