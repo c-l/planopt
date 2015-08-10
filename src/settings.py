@@ -31,13 +31,20 @@ MPEXEC = "../planners/M/Mp"
 LOG_DOMAIN = 0
 
 def set_domain(dom):
-    global DOMAIN, pddlDomainFile, pddlDomainFileNoGeomEff, initialProblemFile, PLANNER_TO_USE, REPORT_PUTDOWN_OBSTRUCTIONS, demoFile
+    global DOMAIN, pddlDomainFile, pddlDomainFileNoGeomEff, initialProblemFile, pddlToOpt, PLANNER_TO_USE 
     DOMAIN = dom
     if dom == LOG_DOMAIN:
         pddlDomainFile = DOMAIN_PATH + "log_dom.pddl"
         pddlDomainFileNoGeomEff = pddlDomainFile
         initialProblemFile = DOMAIN_PATH + "log_prob.pddl"
+
+        import sys
+        sys.path.insert(0, DOMAIN_PATH)
+        from log_opt import LogOpt
+        import ipdb; ipdb.set_trace() # BREAKPOINT
+        pddlToOpt = LogOpt
         PLANNER_TO_USE = FD
+
 
 envFile = ENVPATH+"created_info.dae"
 

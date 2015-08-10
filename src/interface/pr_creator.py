@@ -6,15 +6,16 @@ import ipdb
 from plan_refinement import PlanRefinement
 # from interface.env_manager import EnvManager
 
+import settings
+
 
 class PRCreator(object):
     def __init__(self, env):
         self.env = env
 
     def create_pr(self, file_object_or_name, parent_pr, resume_from):
-        from box_world import BoxWorld
-        self.world = BoxWorld(self.env)
-        self.pr = PlanRefinement(self.env, self.world)
+        self.pddlToOpt = settings.pddlToOpt(self.env)
+        self.pr = PlanRefinement(self.env, self.pddlToOpt)
 
         if type(file_object_or_name) is str:
             file_obj = open(file_object_or_name)
@@ -58,7 +59,7 @@ class PRCreator(object):
             # fn_name = "_add_action_" + parsed_fn_name
             # method = getattr(self, fn_name, None)
             fn_name = parsed_fn_name
-            method = getattr(self.world, fn_name, None)
+            method = getattr(self.pddlToOpt, fn_name, None)
 
             if method is None:
                 raise TypeError("No method called %s" % (parsed_fn_name))
@@ -87,24 +88,3 @@ class PRCreator(object):
 
             functions.append(function)
         return functions
-
-    def _add_action_move(self, lineno, start, end):
-        # print "added move with ", start, " ", end
-        self.pr.add_move(lineno, start, end)
-        return
-
-    def _add_action_move_w_obj(self, lineno, start, end, obj, gp):
-        # print "added move_w_obj ", start, " ", end, " ", obj, " ", gp
-        self.pr.add_move(lineno, start, end, obj, gp)
-        return
-    
-    def _add_action_pick(self, lineno, pos, obj, loc, gp):
-        # print "added pick ", pos, " ", obj, " ", loc, " ", gp
-        self.pr.add_pick(lineno, pos, obj, loc, gp)
-        return
-
-    def _add_action_place(self, lineno, pos, obj, loc, gp):
-        # print "added place ", pos, " ", obj, " ", loc, " ", gp
-        self.pr.add_place(lineno, pos, obj, loc, gp)
-        return
-

@@ -135,22 +135,9 @@ class PlanRefinement(object):
         if error is not None:
             raise error
 
-    def _try_refine2(self):
-        # TODO: rewrite
-        self.pick_place_boxes()
-
     def _try_refine(self):
         # TODO: rewrite
-        # self.pick_place_boxes()
         num_boxes=1
-        # fake_env, target_loc_values = World().generate_boxes_env(num=num_boxes)
-        # target_locs = []
-        # i=0
-        # for loc in target_loc_values:
-        #     # target_locs.append(ObjLoc("target"+"_loc"+str(i), 3, 1, is_var=False, value=mat_to_base_pose(loc)))
-        #     # target_locs.append(ObjLoc("goal", 3, 1, is_var=False, value=mat_to_base_pose(loc)))
-        #     self.hl_params["goal"] = ObjLoc("goal", 3, 1, is_var=False, value=mat_to_base_pose(loc)))
-        #     i += 1
 
         init_later_actions = []
         for action in self.action_list:
@@ -175,7 +162,6 @@ class PlanRefinement(object):
         for hl_action in self.action_list:
             hl_action.plot()
 
-        import ipdb; ipdb.set_trace() # BREAKPOINT
         llplan = LLPlan(params, self.action_list)
         llplan.solve()
         
@@ -279,36 +265,12 @@ class PlanRefinement(object):
         llplan = LLPlan(params, self.action_list)
         llplan.solve()
     
-    # def add_action(self, action):
-    #     # if action.lineno >= self.resume_from_lineno:
-    #     if action.lineno == len(self.action_list):
-    #         self.action_list.append(action)
-    #     elif action.lineno < len(self.action_list):
-    #         self.action_list[action.lineno] = action
-    #     else:
-    #         raise Exception("Bad action lineno: {}".format(action.lineno))
-
     def setActionListNames(self, hlplan):
         self.action_list_names = hlplan.actionList
         self.action_effects_dict = hlplan.effectDict
         self.action_precond_dict = hlplan.preconditionDict
         self.state_list = hlplan.stateList
 
-    def get_gp_hl_param(self, hl_param_str):
-        if hl_param_str not in self.hl_params:
-            self.hl_params[hl_param_str] = GP(hl_param_str, 3, 1)
-        return self.hl_params[hl_param_str]
-
-    def get_rp_hl_param(self, hl_param_str):
-        if hl_param_str not in self.hl_params:
-            self.hl_params[hl_param_str] = RP(hl_param_str, 3, 1)
-        return self.hl_params[hl_param_str]
-
-    def get_loc_hl_param(self, hl_param_str):
-        if hl_param_str not in self.hl_params:
-            self.hl_params[hl_param_str] = ObjLoc(hl_param_str, 3, 1)
-        return self.hl_params[hl_param_str]
-    
     def add_action(self, lineno, action_fn, *args):
         env = self.original_env.CloneSelf(1) # clones objects in the environment
         robot = env.GetRobots()[0]
@@ -321,34 +283,3 @@ class PlanRefinement(object):
         else:
             raise Exception("Bad action lineno: {}".format(action.lineno))
 
-    def add_move(self, lineno, start_str, end_str, obj_str=None, gp_str=None):
-        env = self.env.CloneSelf(1) # clones objects in the environment
-        robot = env.GetRobots()[0]
-        start = self.get_rp_hl_param(start_str)
-        end = self.get_rp_hl_param(end_str)
-        if obj_str is None:
-            self.add_action(Move(lineno, self, env, robot, start_param=start, end_param=end, name="move"+str(lineno)))
-        else:
-            obj = env.GetKinBody(obj_str)
-            gp = self.get_gp_hl_param(gp_str)
-            self.add_action(Move(lineno, self, env, robot, name="move"+str(lineno), start_param=start, end_param=end, obj=obj, gp_param=gp))
-
-    def add_pick(self, lineno, pos_str, obj_str, loc_str, gp_str):
-        env = self.env.CloneSelf(1) # clones objects in the environment
-        robot = env.GetRobots()[0]
-        pos = self.get_rp_hl_param(pos_str)
-        obj = env.GetKinBody(obj_str)
-        gp = self.get_gp_hl_param(gp_str)
-        obj_loc = self.get_loc_hl_param(loc_str)
-
-        self.add_action(Pick(lineno, self, env, robot, pos, obj, obj_loc, gp, name="pick"+str(lineno)))
-
-    def add_place(self, lineno, pos_str, obj_str, loc_str, gp_str):
-        env = self.env.CloneSelf(1) # clones objects in the environment
-        robot = env.GetRobots()[0]
-        pos = self.get_rp_hl_param(pos_str)
-        obj = env.GetKinBody(obj_str)
-        gp = self.get_gp_hl_param(gp_str)
-        obj_loc = self.get_loc_hl_param(loc_str)
-
-        self.add_action(Place(lineno, self, env, robot, pos, obj, obj_loc, gp, name="place"+str(lineno)))
