@@ -8,7 +8,7 @@ from utils import *
 
 import sys
 sys.path.insert(0,"../")
-from envs.world import World
+# from envs.world import World
 
 class HLParam(object):
     def __init__(self, name, rows, cols, is_var=True, value=None, ro=2):

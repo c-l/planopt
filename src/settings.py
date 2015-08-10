@@ -41,7 +41,6 @@ def set_domain(dom):
         import sys
         sys.path.insert(0, DOMAIN_PATH)
         from log_opt import LogOpt
-        import ipdb; ipdb.set_trace() # BREAKPOINT
         pddlToOpt = LogOpt
         PLANNER_TO_USE = FD
 

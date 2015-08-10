@@ -29,7 +29,6 @@ class Move(HLAction):
         else:
             self.obj, _ = obj_param.new_hla_var(self, env)
             self.gp, self.hl_gp = gp_param.new_hla_var(self)
-            import ipdb; ipdb.set_trace() # BREAKPOINT
         self.name = name
 
         self.T = 40
