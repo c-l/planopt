@@ -6,10 +6,6 @@ from numpy.linalg import norm
 
 from utils import *
 
-import sys
-sys.path.insert(0,"../")
-# from envs.world import World
-
 class HLParam(object):
     def __init__(self, name, rows, cols, is_var=True, value=None, ro=2):
         self.name = name
@@ -31,6 +27,7 @@ class HLParam(object):
             self.consensus = cvx.Parameter(rows, cols, name="hl_" + name, value=value)
         # self.consensus_var = Variable(rows, cols, name="hlvar_"_name, cur_value=self.consensus)
         self.ro = ro
+        self.gen = None
         
     def get_eq_constraints(self):
         hl_var = Variable(self.rows, self.cols, name="hlvar_" + self.name, value=self.consensus.value)
@@ -64,8 +61,8 @@ class HLParam(object):
         if self.is_var is False:
             return
         for var in self.hla_vars:
-            if not var.initialized:
-                var.value = self.consensus.value
+            # if not var.initialized:
+            var.value = self.consensus.value
 
     # @profile
     def dual_update(self):
@@ -101,13 +98,36 @@ class HLParam(object):
 
         return diff
             
+    def resample(self):
+        if self.gen is None:
+            self.gen= self.generator()
+        self.consensus.value = next(self.gen)
+        self.initialize_to_consensus()
+
+    def reset(self):
+        for var in self.hla_dual_vars:
+            var.value = np.zeros((self.rows, self.cols))
+
+    # def generator(self):
+    #     if not self.is_var:
+    #         yield self.consensus.value
+
 class GP(HLParam):
     # grasp pose
     def __init__(self, name, rows, cols, is_var=True, value=None, ro=2):
         super(GP, self).__init__(name, rows, cols, is_var, value, ro)
 
-        self.consensus.value = np.array([[0],[1],[0]])
+        # self.consensus.value = np.array([[0],[1],[0]])
         # self.consensus.value = np.array([[1],[0],[0]])
+        # self.consensus.value = np.array([[-1],[0],[0]])
+        # self.consensus.value = np.array([[0],[-1],[0]])
+        # self.consensus.value = np.array([[-1],[1],[0]])
+
+
+    def generator(self):
+        yield np.array([[1],[0],[0]])
+        yield np.array([[-1],[0],[0]])
+        yield np.array([[0],[1],[0]])
         # self.consensus.value = np.array([[-1],[0],[0]])
         # self.consensus.value = np.array([[0],[-1],[0]])
         # self.consensus.value = np.array([[-1],[1],[0]])
@@ -133,6 +153,9 @@ class Movable(HLParam):
 
     def new_hla_var(self, hl_actions, env):
         return env.GetKinBody(self.name), None
+    
+    def reset(self):
+        return
 
 class Traj(HLParam):
     # do not add in dual costs because this variable is local to one high level action

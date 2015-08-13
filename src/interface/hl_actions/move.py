@@ -51,13 +51,13 @@ class Move(HLAction):
         else:
             self.obj_traj = None
 
-        self.preconditions = [RobotAt(self, self.start, self.traj)] 
+        self.preconditions = [RobotAt(self.env, self, self.start, self.traj)] 
         self.create_robot_clones()
         self.preconditions += [IsMP(self.env, self, robot, self.traj, self.obj, self.obj_traj)]
 
         if self.obj is not None:
             self.preconditions += [InManip(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
-        self.postconditions = [RobotAt(self, self.end, self.traj)]
+        self.postconditions = [RobotAt(self.env, self, self.end, self.traj)]
 
         # setting trajopt objective
         v = -1*np.ones((KT-K,1))
@@ -127,6 +127,12 @@ class Move(HLAction):
         self.end.initialized = True
         if self.obj is not None:
             self.gp.initialized = True
+    
+    def reset(self):
+        self.start.initialized = False
+        self.end.initialized = False
+        if self.obj is not None:
+            self.gp.initialized = False
 
 
     def solve_opt_prob(self):

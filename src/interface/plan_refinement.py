@@ -9,14 +9,10 @@ from interface.hl_actions.place import Place
 # from rapprentice.PR2 import PR2, Arm, mirror_arm_joints
 from interface.env_manager import EnvManager
 from hl_param import *
-
 from utils import *
-
-import sys
-sys.path.insert(0,"../")
-
-from envs.world import World
 from ll_plan import LLPlan
+
+import random
 
 try:
     import openrave_input
@@ -31,6 +27,7 @@ class PlanRefinement(object):
         self.world = world
         # self.hl_params = {}
         self.hl_params = world.hl_params
+        self.sampled_params = world.params_to_sample
         self.robot = self.env.GetRobots()[0]
 
 
@@ -137,34 +134,76 @@ class PlanRefinement(object):
 
     def _try_refine(self):
         # TODO: rewrite
-        num_boxes=1
+        initializations = 3
+        for param in self.sampled_params:
+            param.resample()
 
-        init_later_actions = []
-        for action in self.action_list:
-            if "pick" in action.name:
-                action.init_opt()
-            elif "place" in action.name:
-                action.init_opt()
-            else:
-                init_later_actions.append(action)
         params = self.hl_params.values()
 
-        for param in params:
-            param.dual_update()
-            param.initialize_to_consensus()
+        import ipdb; ipdb.set_trace() # BREAKPOINT
+        for _ in range(initializations):
+            init_later_actions = []
+            
+            for action in self.action_list:
+                action.reset()
+            for param in params:
+                param.reset()
 
-        for hl_action in self.action_list:
-            hl_action.plot()
+            for action in self.action_list:
+                if "pick" in action.name:
+                    action.init_opt()
+                elif "place" in action.name:
+                    action.init_opt()
+                else:
+                    init_later_actions.append(action)
 
-        for action in init_later_actions:
-            action.init_opt()
+            # action = self.action_list[3]
+            # for fluent in action.preconditions + action.postconditions:
+            #     if not fluent.satisfied():
+            #         constraints_satisfied = False
+            #         violated_action = action.name
+            #         violated_fluent = fluent.name
+            #         print violated_action, "'s fluent:", violated_fluent, "violates constraints"
+            for param in params:
+                param.dual_update()
+                param.initialize_to_consensus()
 
-        for hl_action in self.action_list:
-            hl_action.plot()
+            for hl_action in self.action_list:
+                hl_action.plot()
 
-        llplan = LLPlan(params, self.action_list)
-        llplan.solve()
+            import ipdb; ipdb.set_trace() # BREAKPOINT
+            for action in init_later_actions:
+                action.init_opt()
+
+            for hl_action in self.action_list:
+                hl_action.plot()
+
+            import ipdb; ipdb.set_trace() # BREAKPOINT
+            llplan = LLPlan(params, self.action_list)
+            llplan.solve()
+
+            constraints_satisfied = True
+            violated_action = None
+            violated_fluent = None
+            for action in self.action_list:
+                for fluent in action.preconditions + action.postconditions:
+                    if not fluent.satisfied():
+                        constraints_satisfied = False
+                        violated_action = action.name
+                        violated_fluent = fluent.name
+                        print violated_action, "'s fluent:", violated_fluent, "violates constraints"
+                        break
+                if not constraints_satisfied:
+                    break
+            else:
+                import ipdb; ipdb.set_trace() # BREAKPOINT
+                yield solution
+
+            import ipdb; ipdb.set_trace() # BREAKPOINT
+            random.choice(self.sampled_params).resample()
+
         
+        import ipdb; ipdb.set_trace() # BREAKPOINT
         yield None
         # print "\r\nTrying to find error-free instantiation..."
         # self.reset_actions(self.action_list[self.resume_from_lineno:])

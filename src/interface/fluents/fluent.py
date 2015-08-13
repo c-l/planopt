@@ -7,18 +7,28 @@ class Fluent(object):
     def __init__(self, env, hl_action):
         self.env = env
         self.hl_action = hl_action
+        self.constraints = None
+        self.tolerance = 1e-3
+
+    def satisfied(self):
+        if self.constraints is None:
+            return True
+        else:
+            return self.constraints.constraints_satisfied(self.tolerance)
 
     def precondition(self):
         linear_constraints = []
         func_eq_constraint = None
         func_ineq_constraint = None
-        return Constraints(linear_constraints, func_eq_constraint, func_ineq_constraint)
+        self.constraints = Constraints(linear_constraints, func_eq_constraint, func_ineq_constraint)
+        return self.constraints
 
     def postcondition(self):
         linear_constraints = []
         func_eq_constraint = None
         func_ineq_constraint = None
-        return Constraints(linear_constraints, func_eq_constraint, func_ineq_constraint)
+        self.constraints = Constraints(linear_constraints, func_eq_constraint, func_ineq_constraint)
+        return self.constraints
 
     @staticmethod
     def get_object_loc(obj_kinbody):

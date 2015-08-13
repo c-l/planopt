@@ -11,13 +11,16 @@ import time
 
 class IsMP(Fluent):
     def __init__(self, env, hl_action, robot, traj, obj, obj_traj):
-        self.env = env
+        super(IsMP, self).__init__(env, hl_action)
         self.plotting_env = hl_action.hl_plan.env
         self.hl_action = hl_action
         self.traj = traj
         self.obj = obj
         self.obj_traj = obj_traj
         self.robot = robot
+        self.constraints = None
+        self.name = "IsMP"
+        self.tolerance = 1e-2
         self.cc = ctrajoptpy.GetCollisionChecker(env)
 
     def precondition(self):
@@ -38,7 +41,8 @@ class IsMP(Fluent):
 
         g = Function(lambda x: self.collisions(x, 0.05, (K,T)), use_numerical=False) # function inequality constraint g(x) <= 0
         h = None # function equality constraint h(x) ==0
-        return Constraints(linear_constraints, (g, self.traj), h)
+        self.constraints = Constraints(linear_constraints, (g, self.traj), h)
+        return self.constraints
 
     # TODO: compute collisions properly
     # @profile

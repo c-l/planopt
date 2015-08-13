@@ -10,14 +10,15 @@ from utils import *
 
 class InManip(Fluent):
     def __init__(self, env, hl_action, robot, obj, gp, traj, obj_traj = None):
-        self.env = env
-        self.hl_action = hl_action
+        super(InManip, self).__init__(env, hl_action)
         self.plotting_env = hl_action.hl_plan.env
         self.robot = robot
         self.obj = obj
         self.gp = gp
         self.traj = traj
         self.obj_traj = obj_traj
+        self.constraints = None
+        self.name = "InManip"
         
         self.cc = ctrajoptpy.GetCollisionChecker(env)
 
@@ -30,19 +31,20 @@ class InManip(Fluent):
             # gp_all_timesteps = cvx.vstack(gp_all_timesteps, self.gp)
             linear_constraints += [self.traj[K*i:K*(i+1)] + self.gp == self.obj_traj[K*i:K*(i+1)]]
         # linear_constraints = [self.traj - gp_all_timesteps == self.obj_traj]
-        return Constraints(linear_constraints, None, None)
+        self.constraints = Constraints(linear_constraints, None, None)
+        return self.constraints
 
-    def postcondition(self):
-        # obj_pos = Fluent.get_object_loc(self.obj)
-        # linear_constraints = [self.traj[:,-1] - self.gp == obj_pos, cvx.norm(self.gp,2) == 1.26] 
-        K = self.hl_action.K
-        T = self.hl_action.T
-        linear_constraints = [self.traj[-K:] + self.gp == self.obj_traj[-K:]]
-        # h = lambda x: np.matrix(norm(x[-K:]-obj_pos) - .55)
-        # h = Function(lambda x: self.grasp(x))
-        # return Constraints(linear_constraints, None, (h, self.traj))
-        h = Function(lambda x: self.distance_from_obj(x, .06, (K,T)), use_numerical=False)
-        return Constraints(linear_constraints, None, (h, self.traj))
+    # def postcondition(self):
+    #     # obj_pos = Fluent.get_object_loc(self.obj)
+    #     # linear_constraints = [self.traj[:,-1] - self.gp == obj_pos, cvx.norm(self.gp,2) == 1.26] 
+    #     K = self.hl_action.K
+    #     T = self.hl_action.T
+    #     linear_constraints = [self.traj[-K:] + self.gp == self.obj_traj[-K:]]
+    #     # h = lambda x: np.matrix(norm(x[-K:]-obj_pos) - .55)
+    #     # h = Function(lambda x: self.grasp(x))
+    #     # return Constraints(linear_constraints, None, (h, self.traj))
+    #     h = Function(lambda x: self.distance_from_obj(x, .06, (K,T)), use_numerical=False)
+    #     return Constraints(linear_constraints, None, (h, self.traj))
 
 
 

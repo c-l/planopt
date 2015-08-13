@@ -13,6 +13,7 @@ from hl_action import HLAction
 
 from interface.fluents.is_mp import IsMP
 from interface.fluents.in_manip import InManip
+from interface.fluents.is_gp import IsGP as IsPDP
 from interface.fluents.robot_at import RobotAt
 from interface.fluents.obj_at import ObjAt
 
@@ -48,11 +49,12 @@ class Place(HLAction):
         self.obj_traj = Variable(K*T,1, name=self.name+'_obj_traj')
         # self.obj_traj.value = self.obj_init
 
-        self.preconditions = [RobotAt(self, self.pos, self.traj)]
-        # self.preconditions += [InManip(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
+        self.preconditions = [RobotAt(self.env, self, self.pos, self.traj)]
+        self.preconditions += [InManip(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
         # self.preconditions += [IsMP(self.env, self, robot, self.traj, self.obj, self.obj_traj)]
-        self.postconditions = [ObjAt(self, self.obj, self.loc, self.obj_traj)] 
-        self.postconditions += [InManip(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
+        self.preconditions += [IsPDP(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
+        self.postconditions = [ObjAt(self.env, self, self.obj, self.loc, self.obj_traj)] 
+        # self.postconditions += [InManip(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
         self.create_opt_prob()
         # self.initialize_opt()
 
@@ -106,6 +108,11 @@ class Place(HLAction):
         self.loc.initialized = True
         self.gp.initialized = True
 
+
+    def reset(self):
+        self.pos.initialized = False
+        self.loc.initialized = False
+        self.gp.initialized = False
 
     def create_opt_prob(self):
         super(Place, self).create_opt_prob()
