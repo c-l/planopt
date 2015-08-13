@@ -29,6 +29,7 @@ FDOPTEXEC = "../planners/FD/src/plan-ipc seq-opt-lmcut "
 MPEXEC = "../planners/M/Mp"
 
 LOG_DOMAIN = 0
+TWO_DOMAIN = 1
 
 def set_domain(dom):
     global DOMAIN, pddlDomainFile, pddlDomainFileNoGeomEff, initialProblemFile, pddlToOpt, PLANNER_TO_USE 
@@ -44,6 +45,16 @@ def set_domain(dom):
         pddlToOpt = LogOpt
         PLANNER_TO_USE = FD
 
+    elif dom == TWO_DOMAIN:
+        pddlDomainFile = DOMAIN_PATH + "twobox_dom.pddl"
+        pddlDomainFileNoGeomEff = pddlDomainFile
+        initialProblemFile = DOMAIN_PATH + "twobox_prob.pddl"
+
+        import sys
+        sys.path.insert(0, DOMAIN_PATH)
+        from twobox_opt import TwoBoxOpt
+        pddlToOpt = TwoBoxOpt
+        PLANNER_TO_USE = FD
 
 envFile = ENVPATH+"created_info.dae"
 

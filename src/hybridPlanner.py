@@ -361,7 +361,7 @@ def getObjSeqInPlan(file_object_or_name, objectNamePrefix = 'object'):
         return objSeq
 
 def usage_str():
-    return "Use -v for viewer, -m to use MP, -e for envfile name, -d [c|di|dr|l|t] for domain"
+    return "Use -v for viewer, -m to use MP, -e for envfile name, -d [l|t] for domain"
 
 if __name__ == "__main__":
     try:
@@ -391,8 +391,11 @@ if __name__ == "__main__":
             if arg == "l":
                 set_domain(LOG_DOMAIN)
                 print("\n\nRUNNING LOG DOMAIN\n\n")
+            elif arg == "t":
+                set_domain(TWO_DOMAIN)
+                print("\n\nRUNNING TWO BOX DOMAIN\n\n")
             else:
-                print("Bad domain input: need l for logistics domain")
+                print("Bad domain input: need l or t for logistics or two box domain respectively")
                 sys.exit(-1)
         elif opt == "-r":
             print("Transforming objects to match result of previous plannerWrapper run")

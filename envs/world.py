@@ -75,6 +75,50 @@ class World(object):
         wall = self.create_box(env, name, transform, dims, color=[.1,.1,.1]) 
         env.AddKinBody(wall)
         
+    def create_walls(self, env, points):
+        i = 0
+        for start, end in zip(points[0:-1], points[1:]):
+            self.create_aligned_wall(env, "wall" + str(i), start, end)
+            i+=1
+
+    def create_aligned_wall(self, env, name, start, end):
+        dim_x = 0
+        dim_y = 0
+        thickness = 0.05
+        if start[0] == end[0]:
+            length = abs(start[1] - end[1])
+
+            transform = np.eye(4)
+            transform[0,3] = start[0]
+            if start[1] < end[1]:
+                transform[1,3] = start[1] + length/2
+            else:
+                transform[1,3] = end[1] + length/2
+
+            
+            dim_x = thickness
+            dim_y = length/2 + thickness
+
+        elif start[1] == end[1]:
+            length = abs(start[0] - end[0])
+
+            transform = np.eye(4)
+            if start[0] < end[0]:
+                transform[0,3] = start[0] + length/2
+            else:
+                transform[0,3] = end[0] + length/2
+            transform[1,3] = start[1]
+            
+            dim_x = length/2 + thickness
+            dim_y = thickness
+        else:
+            import ipdb; ipdb.set_trace() # BREAKPOINT
+            print "creating non-axis-aligned wall"
+            raise
+        dims = [dim_x, dim_y, 1]
+        wall = self.create_box(env, name, transform, dims, color=[.1,.1,.1]) 
+        env.AddKinBody(wall)
+
     def create_box_around(self, env, name, radius, transform):
         radius = radius + 0.11
         x = transform[0,3]
@@ -150,7 +194,26 @@ class World(object):
         robot.SetTransform(transform)
 
         self.make_transparent(robot)
+        return robot
 
+    def generate_twobox_env(self):
+        env = self.env
+        robot = self.create_robot()
+        robot.SetTransform(base_pose_to_mat([3.5,1.5,0]))
+        self.create_walls(env, [[0.0,-2.0],[0.0,3.0],[3.0,3.0],[3.0,5.0],[4.0,5.0],[4.0,3.0],[7.0,3.0],[7.0,-2.0],[0.0,-2.0]])
+
+        dims = [0.35, 0.35, 1]
+        box1t= base_pose_to_mat([1,1.5,0])
+        box2t= base_pose_to_mat([6,1.5,0])
+        box1 = self.create_box(env, "box1", box1t, dims)
+        box2 = self.create_box(env, "box2", box2t, dims)
+        env.AddKinBody(box1)
+        env.AddKinBody(box2)
+        self.make_transparent(box1)
+        self.make_transparent(box2)
+
+        return env
+        
     def generate_boxes_env(self, num=1):
         env = self.env
         # self.create_obj()
@@ -274,7 +337,10 @@ class World(object):
 
 if __name__ == "__main__":
     world = World()
-    env, target_locations = world.generate_boxes_env(1)
-    env.Save("../envs/one_box_world.dae", Environment.SelectionOptions.Everything)
+    env = world.generate_twobox_env()
+    env.SetViewer('qtcoin') # attach viewer (optional)
+    # env, target_locations = world.generate_boxes_env(1)
+    # env.Save("../envs/one_box_world.dae", Environment.SelectionOptions.Everything)
+    env.Save("../envs/twobox_world.dae", Environment.SelectionOptions.Everything)
     import ipdb; ipdb.set_trace() # BREAKPOINT
 
