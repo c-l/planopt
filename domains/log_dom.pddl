@@ -8,8 +8,11 @@
         (ObjAt ?obj - movable ?loc - location)
         (IsMP ?l1 - pose ?l2 - pose)
 
-        (IsPickPose ?lrobot - pose)
-        (IsPlacePose ?lrobot - pose)
+        (Obstructs ?obj - movable ?p1 - pose ?p2 - pose)
+        (IsGP ?p - pose ?obj ?gp)
+        (IsPDP ?p - pose ?obj ?gp)
+        ;(IsPickPose ?lrobot - pose)
+        ;(IsPlacePose ?lrobot - pose)
 	)
 
     (:functions (total-cost) - number)
@@ -18,7 +21,8 @@
 		:precondition (and 
                     (RobotAt ?l1)
                     (InManip none none_gp)
-                    (IsMP ?l1 ?l2)
+                    ;(IsMP ?l1 ?l2)
+                    (forall (?o - movable) (and (not (Obstructs ?o ?l1 ?l2)) (not (Obstructs ?o ?l2 ?l1))))
         )
 		:effect (and 
                     (RobotAt ?l2)
@@ -32,7 +36,8 @@
 		:precondition (and 
                     (RobotAt ?l1)
                     (InManip ?obj ?gp)
-                    (IsMP ?l1 ?l2)
+                    ;(IsMP ?l1 ?l2)
+                    (forall (?o - movable) (and (not (Obstructs ?o ?l1 ?l2)) (not (Obstructs ?o ?l2 ?l1))))
         )
 		:effect (and 
                     (RobotAt ?l2)
@@ -44,7 +49,8 @@
    	(:action pick
 		:parameters (?lrobot - pose ?obj - movable ?loc - location ?gp - grasp)
 		:precondition (and 
-                    (IsPickPose ?lrobot)
+                    ;(IsPickPose ?lrobot)
+                    (IsGP ?lrobot ?obj ?gp)
                     (InManip none none_gp)
 					(RobotAt ?lrobot)
                     (ObjAt ?obj ?loc)
@@ -61,7 +67,8 @@
     (:action place
 		:parameters (?lrobot - pose ?obj - movable ?loc - location ?gp - grasp)
 		:precondition (and 
-                    (IsPlacePose ?lrobot)
+                    (IsPDP ?lrobot ?obj ?gp)
+                    ;(IsPlacePose ?lrobot)
                     (InManip ?obj ?gp)
 					(RobotAt ?lrobot)
         )
