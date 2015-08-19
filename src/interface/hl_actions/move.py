@@ -12,24 +12,44 @@ from hl_action import HLAction
 from interface.fluents.is_mp import IsMP
 from interface.fluents.in_manip import InManip
 from interface.fluents.robot_at import RobotAt
+from interface.fluents.obj_at import ObjAt
 
 from utils import *
 
 class Move(HLAction):
-    def __init__(self, lineno, hl_plan, env, robot, start_param=None, end_param=None, obj_param=None, gp_param=None, name="move"):
+    def __init__(self, lineno, hl_plan, env, robot, start_param=None, end_param=None, obj_param=None, loc_param=None, gp_param=None, name="move", place_obj_params=None, place_loc_params=None):
         super(Move, self).__init__(lineno, hl_plan, env, robot)
         assert start_param is not None
         assert end_param is not None
         self.start, self.hl_start = start_param.new_hla_var(self)
         self.end, self.hl_end = end_param.new_hla_var(self)
         if obj_param is None:
+            assert loc_param is None
             assert gp_param is None
             self.obj = obj_param
             self.gp = gp_param
         else:
             self.obj, _ = obj_param.new_hla_var(self, env)
+            self.loc, self.hl_loc = loc_param.new_hla_var(self)
             self.gp, self.hl_gp = gp_param.new_hla_var(self)
         self.name = name
+
+        self.place_objs = []
+        if self.name =='move6':
+            import ipdb; ipdb.set_trace() # BREAKPOINT
+
+        if place_obj_params is not None:
+            for param in place_obj_params:
+                obj, _ = param.new_hla_var(self, self.env)
+                self.place_objs.append(obj)
+        
+        self.place_locs = []
+        self.hl_place_locs = []
+        if place_loc_params is not None:
+            for param in place_loc_params:
+                loc, hl_loc = param.new_hla_var(self)
+                self.place_locs.append(loc)
+                self.hl_place_locs.append(hl_loc)
 
         self.T = 40
         self.K = 3
@@ -53,10 +73,11 @@ class Move(HLAction):
 
         self.preconditions = [RobotAt(self.env, self, self.start, self.traj)] 
         self.create_robot_clones()
-        self.preconditions += [IsMP(self.env, self, robot, self.traj, self.obj, self.obj_traj)]
+        self.preconditions += [IsMP(self.env, self, robot, self.traj, self.obj, self.obj_traj, place_objs=self.place_objs, place_locs=self.place_locs)]
 
         if self.obj is not None:
             self.preconditions += [InManip(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
+            self.preconditions += [ObjAt(self.env, self, self.obj, self.loc, self.obj_traj)] 
         self.postconditions = [RobotAt(self.env, self, self.end, self.traj)]
 
         # setting trajopt objective
@@ -64,7 +85,8 @@ class Move(HLAction):
         d = np.vstack((np.ones((KT-K,1)),np.zeros((K,1))))
         # [:,0] allows numpy to see v and d as one-dimensional so that numpy will create a diagonal matrix with v and d as a diagonal
         P = np.matrix(np.diag(v[:,0],K) + np.diag(d[:,0]) )
-        Q = np.transpose(P)*P
+        # Q = np.transpose(P)*P
+        Q = 2*np.transpose(P)*P
 
         self.cost += cvx.quad_form(self.traj, Q)
 
@@ -88,11 +110,15 @@ class Move(HLAction):
         # self.handles += super(Move, self).plot(handles)
         super(Move, self).plot()
         self.handles += handles
-        self.handles += self.plot_traj_line(self.traj, colors=(0,0,0.5))
+        # self.handles += self.plot_traj_line(self.traj, colors=(0,0,0.5))
 
-        if self.obj is not None:
-            self.handles += self.plot_traj_line(self.obj_traj, colors=(0,0.5,0))
+        # if self.obj is not None:
+        #     self.handles += self.plot_traj_line(self.obj_traj, colors=(0,0.5,0))
 
+        self.plot_consensus_pos()
+        self.plot_consensus_place_obj()
+
+    def plot_consensus_pos(self):
         if not np.allclose(self.start.value, self.hl_start.value):
             start = np.array(self.start.value)
             start[2] = 1
@@ -106,6 +132,20 @@ class Move(HLAction):
             hl_end = np.array(self.hl_end.value)
             hl_end[2] = 1
             self.handles += [self.hl_plan.env.drawarrow(p1=end, p2=hl_end, linewidth=0.01, color=(1,0,0))]
+
+
+    def plot_consensus_place_obj(self):
+        # if self.name == 'move6':
+        #     import ipdb; ipdb.set_trace() # BREAKPOINT
+        for loc, hl_loc in zip(self.place_locs, self.hl_place_locs):
+            plot_loc = np.array(loc.value)
+            plot_hl_loc = np.array(hl_loc.value)
+            plot_loc[2] = 1
+            plot_hl_loc[2] = 1
+            if not np.allclose(plot_loc, plot_hl_loc):
+                self.handles += [self.hl_plan.env.drawarrow(p1=plot_loc, p2=plot_hl_loc, linewidth=0.01, color=(1,0,0))]
+            self.handles += [self.hl_plan.env.plot3(points=plot_hl_loc[:, 0], pointsize=10, colors=(1,0,0))]
+
 
     def init_opt(self):
         start = self.hl_start.value
@@ -127,6 +167,9 @@ class Move(HLAction):
         self.end.initialized = True
         if self.obj is not None:
             self.gp.initialized = True
+
+        for place_loc in self.place_locs:
+            place_loc.initialized = True
     
     def reset(self):
         self.start.initialized = False
@@ -134,6 +177,8 @@ class Move(HLAction):
         if self.obj is not None:
             self.gp.initialized = False
 
+        for place_loc in self.place_locs:
+            place_loc.initialized = False
 
     def solve_opt_prob(self):
         sqp = SQP()
@@ -154,6 +199,8 @@ class Move(HLAction):
         super(Move, self).create_opt_prob()
         self.opt_prob.add_var(self.start)
         self.opt_prob.add_var(self.end)
+        for place_loc in self.place_locs:
+            self.opt_prob.add_var(place_loc)
 
 
 if __name__ == "__main__":

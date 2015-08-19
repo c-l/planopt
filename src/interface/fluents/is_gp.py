@@ -89,8 +89,10 @@ class IsGP(Fluent):
             # why is there a negative one?
             gradd = -1 * normal[:,0:2] * self.calcJacobian(np.transpose(ptB), xt)
 
-            val[t] = 3*(target_dist - c.GetDistance())
-            jac[t, K*t:K*(t+1)] = 3*gradd
+            val[t] = (target_dist - c.GetDistance())
+            jac[t, K*t:K*(t+1)] = gradd
+            # val[t] = 3*(target_dist - c.GetDistance())
+            # jac[t, K*t:K*(t+1)] = 3*gradd
             # print "distance collision = ", (target_dist - c.GetDistance())
             # print "distance = ", (self.grasp(x) / 3.0)
 

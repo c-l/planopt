@@ -16,6 +16,7 @@ from interface.fluents.in_manip import InManip
 from interface.fluents.is_gp import IsGP as IsPDP
 from interface.fluents.robot_at import RobotAt
 from interface.fluents.obj_at import ObjAt
+from interface.fluents.in_region import InRegion
 
 from utils import *
 
@@ -53,15 +54,14 @@ class Place(HLAction):
         self.preconditions += [InManip(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
         # self.preconditions += [IsMP(self.env, self, robot, self.traj, self.obj, self.obj_traj)]
         self.preconditions += [IsPDP(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
-        self.postconditions = [ObjAt(self.env, self, self.obj, self.loc, self.obj_traj)] 
+        self.postconditions = [ObjAt(self.env, self, self.obj, self.loc, self.obj_traj, loc_param=loc_param)] 
+        # self.postconditions = [InRegion(self.env, self, self.obj, self.loc, self.obj_traj)] 
+        # self.postconditions = [InRegion(self.env, self, self.obj, loc_param, self.obj_traj)] 
         # self.postconditions += [InManip(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
         self.create_opt_prob()
         # self.initialize_opt()
 
-    def plot(self, handles=[]):
-        self.handles = []
-        super(Place, self).plot()
-
+    def plot_consensus_pos(self):
         if not np.allclose(self.pos.value, self.hl_pos.value):
             place_pos = np.array(self.pos.value)
             place_pos[2] = 1
@@ -69,6 +69,35 @@ class Place(HLAction):
             hl_pos[2] = 1
             self.handles += [self.hl_plan.env.drawarrow(p1=place_pos, p2=hl_pos, linewidth=0.01, color=(1,0,0))]
             self.handles += [self.hl_plan.env.plot3(points=hl_pos[:, 0], pointsize=10, colors=(1,0,0))]
+
+    def plot_consensus_obj_pos(self):
+        if not np.allclose(self.loc.value, self.hl_loc.value):
+            # hl_gp = np.array(self.hl_gp.value)
+
+            # pick_pos = np.array(self.traj.value)
+            # pick_pos[2] = 1
+
+            hl_obj_pos = np.array(self.hl_loc.value)
+            hl_obj_pos[2]=1
+            pick_obj_pos = np.array(self.loc.value)
+            pick_obj_pos[2] = 1
+
+            self.handles += [self.hl_plan.env.drawarrow(p1=pick_obj_pos, p2=hl_obj_pos, linewidth=0.01, color=(1,0,0))]
+            self.handles += [self.hl_plan.env.plot3(points=hl_obj_pos[:, 0], pointsize=10, colors=(1,0,0))]
+
+    def plot(self, handles=[]):
+        self.handles = []
+        # del self.handles
+        super(Pick, self).plot()
+        # self.plot_consensus_pos()
+        self.plot_consensus_obj_pos()
+    def plot(self, handles=[]):
+        self.handles = []
+        super(Place, self).plot()
+
+        self.plot_consensus_pos()
+        self.plot_consensus_obj_pos()
+
         
         # if not np.allclose(self.gp.value, self.hl_gp.value):
         #     hl_gp = np.array(self.hl_gp.value)

@@ -53,11 +53,7 @@ class Pick(HLAction):
         self.create_opt_prob()
         # self.initialize_opt()
 
-    def plot(self, handles=[]):
-        self.handles = []
-        # del self.handles
-        super(Pick, self).plot()
-
+    def plot_consensus_pos(self):
         if not np.allclose(self.pos.value, self.hl_pos.value):
             pick_pos = np.array(self.pos.value)
             pick_pos[2] = 1
@@ -65,6 +61,29 @@ class Pick(HLAction):
             hl_pos[2] = 1
             self.handles += [self.hl_plan.env.drawarrow(p1=pick_pos, p2=hl_pos, linewidth=0.01, color=(1,0,0))]
             self.handles += [self.hl_plan.env.plot3(points=hl_pos[:, 0], pointsize=10, colors=(1,0,0))]
+
+    def plot_consensus_obj_pos(self):
+        if not np.allclose(self.loc.value, self.hl_loc.value):
+            # hl_gp = np.array(self.hl_gp.value)
+
+            # pick_pos = np.array(self.traj.value)
+            # pick_pos[2] = 1
+
+            hl_obj_pos = np.array(self.hl_loc.value)
+            hl_obj_pos[2]=1
+            pick_obj_pos = np.array(self.loc.value)
+            pick_obj_pos[2] = 1
+
+            self.handles += [self.hl_plan.env.drawarrow(p1=pick_obj_pos, p2=hl_obj_pos, linewidth=0.01, color=(1,0,0))]
+            self.handles += [self.hl_plan.env.plot3(points=hl_obj_pos[:, 0], pointsize=10, colors=(1,0,0))]
+
+    def plot(self, handles=[]):
+        self.handles = []
+        # del self.handles
+        super(Pick, self).plot()
+        self.plot_consensus_pos()
+        self.plot_consensus_obj_pos()
+
         
         # if not np.allclose(self.gp.value, self.hl_gp.value):
         #     hl_gp = np.array(self.hl_gp.value)
