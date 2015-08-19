@@ -29,6 +29,11 @@ class HLParam(object):
         self.ro = ro
         self.gen = None
         
+    def print_info(self):
+        print self.name, "'s consensus: ", self.consensus.value
+        for i in range(len(self.hlas)):
+            print self.hlas[i].name, "'s value is ", self.hla_vars[i].value, " with dual of ", self.hla_dual_vars[i].value
+
     def get_eq_constraints(self):
         hl_var = Variable(self.rows, self.cols, name="hlvar_" + self.name, value=self.consensus.value)
         eq_constraints = []
@@ -96,7 +101,7 @@ class HLParam(object):
             # print("dual var {0}: {1}".format(i, self.hla_dual_vars[i].value))
             # print("{0}'s {1} dual variable: {2}".format(self.hlas[i].name, self.name, self.hla_dual_vars[i].value))
 
-        return diff
+        return diff/num_vars
             
     def resample(self):
         if self.gen is None:
@@ -125,9 +130,11 @@ class GP(HLParam):
 
 
     def generator(self):
-        yield np.array([[1],[0],[0]])
-        yield np.array([[-1],[0],[0]])
+        # yield np.array([[1],[0],[0]])
+        # yield np.array([[-1],[0],[0]])
+        # yield np.array([[0],[-1],[0]])
         yield np.array([[0],[1],[0]])
+        yield np.array([[0],[-1],[0]])
         # self.consensus.value = np.array([[-1],[0],[0]])
         # self.consensus.value = np.array([[0],[-1],[0]])
         # self.consensus.value = np.array([[-1],[1],[0]])
@@ -139,9 +146,29 @@ class RP(HLParam):
 
 class ObjLoc(HLParam):
     # object location
-    # def __init__(self, name, rows, cols, is_var=True, value=None, ro=0.05):
-    #     super(ObjLoc, self).__init__(name, rows, cols, is_var, value, ro)
-    pass
+    def __init__(self, name, rows, cols, is_var=True, value=None, ro=2, region=None):
+        super(ObjLoc, self).__init__(name, rows, cols, is_var, value, ro)
+        self.region = region
+        if region is not None:
+            self.in_region = True
+        else:
+            self.in_region = False
+        if self.in_region:
+            assert is_var == True
+
+            self.min_x = region[0,0]
+            self.max_x = region[0,1]
+            self.min_y = region[1,0]
+            self.max_y = region[1,1]
+            self.min_z = region[2,0]
+            self.max_z = region[2,1]
+
+    def generator(self):
+        yield np.array([[3.5],[4.5],[0]])
+
+class ObjLoc2(ObjLoc):
+    def generator(self):
+        yield np.array([[3.5],[4.0],[0]])
 
 class Movable(HLParam):
     def __init__(self, name):

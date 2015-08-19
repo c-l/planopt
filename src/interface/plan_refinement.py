@@ -157,6 +157,7 @@ class PlanRefinement(object):
                 else:
                     init_later_actions.append(action)
 
+            import ipdb; ipdb.set_trace() # BREAKPOINT
             # action = self.action_list[3]
             # for fluent in action.preconditions + action.postconditions:
             #     if not fluent.satisfied():
@@ -171,7 +172,6 @@ class PlanRefinement(object):
             for hl_action in self.action_list:
                 hl_action.plot()
 
-            import ipdb; ipdb.set_trace() # BREAKPOINT
             for action in init_later_actions:
                 action.init_opt()
 
@@ -200,7 +200,14 @@ class PlanRefinement(object):
                 yield solution
 
             import ipdb; ipdb.set_trace() # BREAKPOINT
-            random.choice(self.sampled_params).resample()
+            while self.sampled_params is not None:
+                param = random.choice(self.sampled_params)
+                try:
+                    param.resample()
+                    break
+                except StopIteration:
+                    import ipdb; ipdb.set_trace() # BREAKPOINT
+                    self.sampled_params.remove(param)
 
         
         import ipdb; ipdb.set_trace() # BREAKPOINT
