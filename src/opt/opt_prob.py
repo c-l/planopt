@@ -11,8 +11,17 @@ class OptProb(object):
         self.objective = Objective()
 
         self.xs = [] # variables associated with the objectives and constraints that need to be convexified
+        self.saved_xs = []
 
         self.callbacks = []
+
+    def save_state(self):
+        self.saved_xs = [x.value for x in self.xs]
+
+    def restore_state(self):
+        for i in range(len(self.xs)):
+            # x's value needs to be also reset so that the merit can be computed correctly
+            self.xs[i].value = self.saved_xs[i]
 
     def add_callback(self, callback):
         self.callbacks.append(callback)
@@ -49,7 +58,11 @@ class OptProb(object):
 
     def convexify(self, penalty_coeff, trust_box_size):
         objective = self.objective.convexify(self.augmented_objective)
+        # print "convexify"
+        # if objective != 0:
+        #     print "objective value: ", objective.value
         penalty_objective, linear_constraints = self.constraints.convexify()
+        # print "penalty objective value: ", penalty_coeff.value * penalty_objective.value
         objective += penalty_coeff*penalty_objective
 
         trust_box_sum = 0

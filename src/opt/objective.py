@@ -39,6 +39,7 @@ class Objective(object):
         # else:
         #     self.qp_objective += dual.T*var + ro/2 * cvx.square(cvx.norm(var-consensus))
         if consensus is None:
+            import ipdb; ipdb.set_trace() # BREAKPOINT
             self.dual_terms += dual.T*var # dual gradient ascent
         else:
             self.dual_terms += dual.T*var + ro/2 * cvx.square(cvx.norm(var-consensus))
