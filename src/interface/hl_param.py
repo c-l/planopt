@@ -5,9 +5,18 @@ from opt.constraints import Constraints
 from numpy.linalg import norm
 
 from utils import *
+from numpy import random
+# from numpy.random import random
+# from numpy.random import seed
 
 class HLParam(object):
-    def __init__(self, name, rows, cols, is_var=True, value=None, ro=2):
+    # ro = 30
+    # ro = 100
+    ro = 300
+    # ro = 1000
+    # ro = 3000
+
+    def __init__(self, name, rows, cols, is_var=True, value=None, ro=None):
         self.name = name
         # hla stands for high level action
         self.hlas = []
@@ -26,7 +35,10 @@ class HLParam(object):
             assert value is not None
             self.consensus = cvx.Parameter(rows, cols, name="hl_" + name, value=value)
         # self.consensus_var = Variable(rows, cols, name="hlvar_"_name, cur_value=self.consensus)
-        self.ro = ro
+        if ro == None:
+            self.ro = HLParam.ro
+        else:
+            self.ro = ro
         self.gen = None
         
     def print_info(self):
@@ -57,8 +69,8 @@ class HLParam(object):
         self.hla_vars.append(hla_var)
         self.hla_dual_vars.append(dual_var)
 
-        if self.ro != 2:
-            import ipdb; ipdb.set_trace() # BREAKPOINT
+        # if self.ro != 2:
+        #     import ipdb; ipdb.set_trace() # BREAKPOINT
         hl_action.add_dual_cost(hla_var, dual_var, self.consensus, ro=self.ro)
         return hla_var, self.consensus
 
@@ -119,7 +131,7 @@ class HLParam(object):
 
 class GP(HLParam):
     # grasp pose
-    def __init__(self, name, rows, cols, is_var=True, value=None, ro=2):
+    def __init__(self, name, rows, cols, is_var=True, value=None, ro=None):
         super(GP, self).__init__(name, rows, cols, is_var, value, ro)
 
         # self.consensus.value = np.array([[0],[1],[0]])
@@ -134,7 +146,7 @@ class GP(HLParam):
         # yield np.array([[-1],[0],[0]])
         # yield np.array([[0],[-1],[0]])
         yield np.array([[0],[1],[0]])
-        yield np.array([[0],[-1],[0]])
+        # yield np.array([[0],[-1],[0]])
         # self.consensus.value = np.array([[-1],[0],[0]])
         # self.consensus.value = np.array([[0],[-1],[0]])
         # self.consensus.value = np.array([[-1],[1],[0]])
@@ -146,7 +158,7 @@ class RP(HLParam):
 
 class ObjLoc(HLParam):
     # object location
-    def __init__(self, name, rows, cols, is_var=True, value=None, ro=2, region=None):
+    def __init__(self, name, rows, cols, is_var=True, value=None, ro=None, region=None):
         super(ObjLoc, self).__init__(name, rows, cols, is_var, value, ro)
         self.region = region
         if region is not None:
@@ -164,11 +176,20 @@ class ObjLoc(HLParam):
             self.max_z = region[2,1]
 
     def generator(self):
-        yield np.array([[3.5],[4.5],[0]])
+        # random.seed([1])
+        # random.seed([3])
+        random.seed([5])
+        # random.seed([6])
+        while True:
+            x = random.random() * (self.max_x - self.min_x) + self.min_x
+            y = random.random() * (self.max_y - self.min_y) + self.min_y
+            yield np.array([[x],[y],[0]])
+        # yield np.array([[3.5],[4.3],[0]])
 
-class ObjLoc2(ObjLoc):
-    def generator(self):
-        yield np.array([[3.5],[4.0],[0]])
+# class ObjLoc2(ObjLoc):
+#     def generator(self):
+#         yield np.array([[3.5],[4.0],[0]])
+#         # yield np.array([[3.5],[4.5],[0]])
 
 class Movable(HLParam):
     def __init__(self, name):

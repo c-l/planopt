@@ -1,7 +1,9 @@
 import numpy as np
 import cvxpy as cvx
 from opt.variable import Variable
-from opt.sqp import SQP
+from opt.solver import Solver
+from opt.constraints import Constraints
+# from opt.sqp import SQP
 # from sqp_cvx import SQP
 import time
 import ipdb
@@ -17,20 +19,22 @@ from interface.fluents.obj_at import ObjAt
 from utils import *
 
 class Move(HLAction):
-    def __init__(self, lineno, hl_plan, env, robot, start_param=None, end_param=None, obj_param=None, loc_param=None, gp_param=None, name="move", place_obj_params=None, place_loc_params=None):
+    def __init__(self, lineno, hl_plan, env, robot, start_param=None, end_param=None, obj_param=None, obj_start_param=None, obj_end_param=None, gp_param=None, name="move", place_obj_params=None, place_loc_params=None):
         super(Move, self).__init__(lineno, hl_plan, env, robot)
         assert start_param is not None
         assert end_param is not None
         self.start, self.hl_start = start_param.new_hla_var(self)
         self.end, self.hl_end = end_param.new_hla_var(self)
         if obj_param is None:
-            assert loc_param is None
+            assert obj_start_param is None
+            assert obj_end_param is None
             assert gp_param is None
             self.obj = obj_param
             self.gp = gp_param
         else:
             self.obj, _ = obj_param.new_hla_var(self, env)
-            self.loc, self.hl_loc = loc_param.new_hla_var(self)
+            self.obj_start, self.hl_obj_start = obj_start_param.new_hla_var(self)
+            self.obj_end, self.hl_obj_end = obj_end_param.new_hla_var(self)
             self.gp, self.hl_gp = gp_param.new_hla_var(self)
         self.name = name
 
@@ -75,10 +79,12 @@ class Move(HLAction):
         self.create_robot_clones()
         self.preconditions += [IsMP(self.env, self, robot, self.traj, self.obj, self.obj_traj, place_objs=self.place_objs, place_locs=self.place_locs)]
 
+        self.postconditions = []
         if self.obj is not None:
             self.preconditions += [InManip(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
-            self.preconditions += [ObjAt(self.env, self, self.obj, self.loc, self.obj_traj)] 
-        self.postconditions = [RobotAt(self.env, self, self.end, self.traj)]
+            # self.preconditions += [ObjAt(self.env, self, self.obj, self.obj_start, self.obj_traj)] 
+            # self.postconditions += [ObjAt(self.env, self, self.obj, self.obj_end, self.obj_traj)] 
+        self.postconditions += [RobotAt(self.env, self, self.end, self.traj)]
 
         # setting trajopt objective
         v = -1*np.ones((KT-K,1))
@@ -119,18 +125,18 @@ class Move(HLAction):
         self.plot_consensus_place_obj()
 
     def plot_consensus_pos(self):
-        if not np.allclose(self.start.value, self.hl_start.value):
-            start = np.array(self.start.value)
-            start[2] = 1
-            hl_start = np.array(self.hl_start.value)
-            hl_start[2] = 1
+        start = np.array(self.start.value)
+        start[2] = 1
+        hl_start = np.array(self.hl_start.value)
+        hl_start[2] = 1
+        if not np.allclose(start, hl_start, atol=1e-3):
             self.handles += [self.hl_plan.env.drawarrow(p1=start, p2=hl_start, linewidth=0.01, color=(1,0,0))]
 
-        if not np.allclose(self.end.value, self.hl_end.value):
-            end = np.array(self.end.value)
-            end[2] = 1
-            hl_end = np.array(self.hl_end.value)
-            hl_end[2] = 1
+        end = np.array(self.end.value)
+        end[2] = 1
+        hl_end = np.array(self.hl_end.value)
+        hl_end[2] = 1
+        if not np.allclose(end, hl_end, atol=1e-3):
             self.handles += [self.hl_plan.env.drawarrow(p1=end, p2=hl_end, linewidth=0.01, color=(1,0,0))]
 
 
@@ -142,7 +148,7 @@ class Move(HLAction):
             plot_hl_loc = np.array(hl_loc.value)
             plot_loc[2] = 1
             plot_hl_loc[2] = 1
-            if not np.allclose(plot_loc, plot_hl_loc):
+            if not np.allclose(plot_loc, plot_hl_loc, atol=1e-3):
                 self.handles += [self.hl_plan.env.drawarrow(p1=plot_loc, p2=plot_hl_loc, linewidth=0.01, color=(1,0,0))]
             self.handles += [self.hl_plan.env.plot3(points=plot_hl_loc[:, 0], pointsize=10, colors=(1,0,0))]
 
@@ -163,10 +169,38 @@ class Move(HLAction):
         # self.traj_init = self.initial_traj()
         if self.obj is not None:
             self.obj_traj.value = self.traj.value + np.tile(self.hl_gp.value, (self.T,1))
+
+        solver = Solver()
+        # solver.initial_trust_box_size = 0.1
+        # solver.initial_trust_box_size = 1
+        solver.initial_trust_box_size = 3
+        # solver.min_trust_box_size=1e-2
+        solver.min_trust_box_size=1e-1
+        solver.initial_penalty_coeff = 0.1
+        # solver.initial_penalty_coeff = 0.01
+        solver.min_approx_improve = 1e-2
+        solver.max_merit_coeff_increases = 2
+        # self.opt_prob.make_primal()
+
+        K = self.K
+        linear_constraints = [self.traj[:K] == self.hl_start.value, self.traj[-K:] == self.hl_end.value] 
+        if self.obj is not None:
+            linear_constraints += [self.gp == self.hl_gp.value]
+        import ipdb; ipdb.set_trace() # BREAKPOINT
+        constraints = Constraints(linear_constraints, None, None)
+        old_linear_constraints = self.opt_prob.constraints.linear_constraints
+        constraints = old_linear_constraints + linear_constraints
+        self.opt_prob.constraints.linear_constraints = constraints
+
+        success = solver.penalty_sqp(self.opt_prob)
+        self.opt_prob.constraints.linear_constraints = old_linear_constraints
+
         self.start.initialized = True
         self.end.initialized = True
         if self.obj is not None:
             self.gp.initialized = True
+            # self.obj_start.initialized = True
+            # self.obj_end.initialized = True
 
         for place_loc in self.place_locs:
             place_loc.initialized = True
@@ -176,6 +210,8 @@ class Move(HLAction):
         self.end.initialized = False
         if self.obj is not None:
             self.gp.initialized = False
+            # self.obj_start.initialized = False
+            # self.obj_end.initialized = False
 
         for place_loc in self.place_locs:
             place_loc.initialized = False
@@ -188,7 +224,8 @@ class Move(HLAction):
         sqp.min_trust_box_size=1e-2
         sqp.initial_penalty_coeff = 0.1
         # sqp.initial_penalty_coeff = 0.01
-        sqp.min_approx_improve = 1e-2
+        # sqp.min_approx_improve = 1e-2
+        sqp.min_approx_improve = 1e-1
 
         # sqp.g_use_numerical = False
         self.opt_prob.make_primal()

@@ -21,7 +21,7 @@ from interface.fluents.in_region import InRegion
 from utils import *
 
 class Place(HLAction):
-    def __init__(self, lineno, hl_plan, env, robot, pos_param, obj_param, loc_param, gp_param, name="place"):
+    def __init__(self, lineno, hl_plan, env, robot, pos_param, obj_param, loc_param, gp_param, name="place", place_obj_params=None, place_loc_params=None):
         super(Place, self).__init__(lineno, hl_plan, env, robot)
 
         self.pos, self.hl_pos = pos_param.new_hla_var(self)
@@ -34,6 +34,21 @@ class Place(HLAction):
         self.K = 3
         T = self.T
         K = self.K
+
+        self.place_objs = []
+
+        if place_obj_params is not None:
+            for param in place_obj_params:
+                obj, _ = param.new_hla_var(self, self.env)
+                self.place_objs.append(obj)
+        
+        self.place_locs = []
+        self.hl_place_locs = []
+        if place_loc_params is not None:
+            for param in place_loc_params:
+                loc, hl_loc = param.new_hla_var(self)
+                self.place_locs.append(loc)
+                self.hl_place_locs.append(hl_loc)
 
         # self.traj_init = np.zeros((3,1))
         # self.traj_init = np.array([[3],[-1],[0]])
@@ -53,7 +68,9 @@ class Place(HLAction):
         self.preconditions = [RobotAt(self.env, self, self.pos, self.traj)]
         self.preconditions += [InManip(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
         # self.preconditions += [IsMP(self.env, self, robot, self.traj, self.obj, self.obj_traj)]
+        self.preconditions += [IsMP(self.env, self, robot, self.traj, self.obj, self.obj_traj, place_objs=self.place_objs, place_locs=self.place_locs)]
         self.preconditions += [IsPDP(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
+        # self.preconditions += [ObjAt(self.env, self, self.obj, self.loc, self.obj_traj, loc_param=loc_param)] 
         self.postconditions = [ObjAt(self.env, self, self.obj, self.loc, self.obj_traj, loc_param=loc_param)] 
         # self.postconditions = [InRegion(self.env, self, self.obj, self.loc, self.obj_traj)] 
         # self.postconditions = [InRegion(self.env, self, self.obj, loc_param, self.obj_traj)] 
@@ -67,7 +84,8 @@ class Place(HLAction):
             place_pos[2] = 1
             hl_pos = np.array(self.hl_pos.value)
             hl_pos[2] = 1
-            self.handles += [self.hl_plan.env.drawarrow(p1=place_pos, p2=hl_pos, linewidth=0.01, color=(1,0,0))]
+            if not np.allclose(place_pos, hl_pos, atol=1e-3):
+                self.handles += [self.hl_plan.env.drawarrow(p1=place_pos, p2=hl_pos, linewidth=0.01, color=(1,0,0))]
             self.handles += [self.hl_plan.env.plot3(points=hl_pos[:, 0], pointsize=10, colors=(1,0,0))]
 
     def plot_consensus_obj_pos(self):
@@ -82,7 +100,8 @@ class Place(HLAction):
             pick_obj_pos = np.array(self.loc.value)
             pick_obj_pos[2] = 1
 
-            self.handles += [self.hl_plan.env.drawarrow(p1=pick_obj_pos, p2=hl_obj_pos, linewidth=0.01, color=(1,0,0))]
+            if not np.allclose(pick_obj_pos, hl_obj_pos, atol=1e-3):
+                self.handles += [self.hl_plan.env.drawarrow(p1=pick_obj_pos, p2=hl_obj_pos, linewidth=0.01, color=(1,0,0))]
             self.handles += [self.hl_plan.env.plot3(points=hl_obj_pos[:, 0], pointsize=10, colors=(1,0,0))]
 
     def plot(self, handles=[]):

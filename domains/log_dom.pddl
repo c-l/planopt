@@ -56,7 +56,6 @@
                     (ObjAt ?obj ?loc)
         )
 		:effect (and 
-                    (not (InManip none ?gp))
                     (not (InManip none none_gp))
                     (InManip ?obj ?gp)
 					(not (ObjAt ?obj ?loc))

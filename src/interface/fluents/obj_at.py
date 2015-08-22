@@ -28,7 +28,7 @@ class ObjAt(Fluent):
 
     def postcondition(self):
         K = self.hl_action.K
-        linear_constraints = [self.obj_traj[-K:,-1] == self.loc] 
+        linear_constraints = [self.obj_traj[:K,-1] == self.loc] 
         # self.constraints = Constraints(linear_constraints, None, None)
 
         # adding constraints that location must be in designed region

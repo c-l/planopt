@@ -14,7 +14,8 @@
 
         box1_init_loc - location
         box2_init_loc - location
-        goal - location
+        goal1 - location
+        goal2 - location
     )
     (:init 
         (RobotAt robot_init_loc)
@@ -33,7 +34,10 @@
         ;(RobotAt robot_init_loc)
         ;(RobotAt pick_box1)
         ;(InManip box1 gp1)
-        (ObjAt box1 goal)
+        ;(ObjAt box1 goal)
+        ;(and (ObjAt box1 goal1) (InManip box2 gp2))
+        ;(and (ObjAt box1 goal1) (ObjAt box2 goal2))
+        (ObjAt box2 goal2)
     )
     (:metric minimize (total-cost))
 )

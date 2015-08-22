@@ -8,7 +8,8 @@ class Fluent(object):
         self.env = env
         self.hl_action = hl_action
         self.constraints = None
-        self.tolerance = 1e-3
+        # self.tolerance = 1e-3
+        self.tolerance = 1e-2
 
     def satisfied(self):
         if self.constraints is None:

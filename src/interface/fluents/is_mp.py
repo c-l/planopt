@@ -20,10 +20,15 @@ class IsMP(Fluent):
         self.robot = robot
         self.constraints = None
         self.name = "IsMP"
-        self.tolerance = 1e-2
+        # self.tolerance = 1e-2
 
-        self.place_objs = place_objs
-        self.place_locs = place_locs
+        if place_objs == None:
+            self.place_objs = []
+            self.place_locs = []
+        else:
+            self.place_objs = place_objs
+            self.place_locs = place_locs
+
         self.cc = ctrajoptpy.GetCollisionChecker(env)
 
     def precondition(self):
@@ -131,7 +136,7 @@ class IsMP(Fluent):
                     # plotting collision information
                     # handles.append(self.plotting_env.plot3(points=ptB, pointsize=10,colors=(1,0,0)))
                     # handles.append(self.plotting_env.plot3(points=ptA, pointsize=10,colors=(0,1,0)))
-                    if not np.all(ptA == ptB):
+                    if not np.allclose(ptA, ptB, atol=1e-3):
                         if distance < 0:
                             handles.append(self.plotting_env.drawarrow(p1=ptA, p2=ptB, linewidth=.01,color=(1,0,0)))
                         else:

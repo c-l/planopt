@@ -25,12 +25,18 @@ class Objective(object):
         convex_objective = 0
         if augment_lagrangian:
             convex_objective = copy(self.qp_objective) + copy(self.dual_terms)
+            if self.qp_objective != 0:
+                print "\tqp objective value: ", self.qp_objective.value
+
+            print "\tdual terms value: ", self.dual_terms.value
             # convex_objective = self.qp_objective + self.dual_terms
         else:
             convex_objective = copy(self.qp_objective)
         for f,x in self.fs:
             fval, fgrad, fhess = f.val_grad_and_hess(x.value)
             convex_objective += fval + fgrad*(x-x.value) + cvx.quad_form(x-x.value, fhess)
+            print "\tf function's value: ", fval
+            print "\ttotal objective: ", convex_objective.value
         return convex_objective
 
     def add_dual_cost(self, var, dual, consensus, ro):

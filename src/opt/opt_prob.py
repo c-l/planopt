@@ -64,6 +64,7 @@ class OptProb(object):
         penalty_objective, linear_constraints = self.constraints.convexify()
         # print "penalty objective value: ", penalty_coeff.value * penalty_objective.value
         objective += penalty_coeff*penalty_objective
+        print "\tpenalty objective: ",penalty_coeff.value*penalty_objective.value
 
         trust_box_sum = 0
         for x in self.xs:

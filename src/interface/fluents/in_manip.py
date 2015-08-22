@@ -20,12 +20,12 @@ class InManip(Fluent):
         self.constraints = None
         self.name = "InManip"
         
-        self.cc = ctrajoptpy.GetCollisionChecker(env)
+        # self.cc = ctrajoptpy.GetCollisionChecker(env)
 
     def precondition(self):
         K = self.hl_action.K
         T = self.hl_action.T
-        gp_all_timesteps = self.gp
+        # gp_all_timesteps = self.gp
         linear_constraints = []
         for i in range(T):
             # gp_all_timesteps = cvx.vstack(gp_all_timesteps, self.gp)
@@ -56,6 +56,7 @@ class InManip(Fluent):
         return 3*np.matrix(norm(x[-K:]-self.obj_traj[-K:].value) - .61)
 
     def distance_from_obj(self, x, target_dist, traj_shape):
+        assert False
         env = self.env
         K, T = traj_shape
         val = np.zeros((T,1))

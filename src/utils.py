@@ -44,3 +44,56 @@ def getStringFile(str):
     strPlanFileH.write(str)
     strPlanFileH.seek(0)
     return strPlanFileH
+
+
+def get_object_limits(obj):
+    """Returns the bounding box of an object.
+
+    Returns: min_x, max_x, min_y, max_y, z
+    """
+
+    ab = obj.ComputeAABB()
+    max_x = ab.pos()[0] + ab.extents()[0]
+    min_x = ab.pos()[0] - ab.extents()[0]
+
+    max_y = ab.pos()[1] + ab.extents()[1]
+    min_y = ab.pos()[1] - ab.extents()[1]
+    z = ab.pos()[2] + ab.extents()[2]
+
+    return min_x, max_x, min_y, max_y, z
+
+def get_object_limits_2(obj):
+    """
+    Returns the bounding box of an object.
+    Returns: min_x, max_x, min_y, max_y, min_z, max_z
+    """
+
+    ab = obj.ComputeAABB()
+    max_x = ab.pos()[0] + ab.extents()[0]
+    min_x = ab.pos()[0] - ab.extents()[0]
+
+    max_y = ab.pos()[1] + ab.extents()[1]
+    min_y = ab.pos()[1] - ab.extents()[1]
+
+    max_z = ab.pos()[2] + ab.extents()[2]
+    min_z = ab.pos()[2] - ab.extents()[2]
+
+    return min_x, max_x, min_y, max_y, min_z, max_z
+
+def get_object_center(obj):
+    min_x, max_x, min_y, max_y, z = get_object_limits(obj)
+    return [(min_x + max_x) / 2, (min_y + max_y) / 2, z]
+
+def get_object_height(obj):
+    ab = obj.ComputeAABB()
+    max_z = ab.pos()[2] + ab.extents()[2]
+    min_z = ab.pos()[2] - ab.extents()[2]
+    return max_z - min_z
+
+def create_body_at(env, T, name = "crash-test-dummy"):
+    body = openravepy.RaveCreateKinBody(env, "")
+    body.SetName(name)
+    body.InitFromBoxes(np.array([[0,0,0, 0.04, 0.04, 0.1]]), True)
+    p = openravepy.poseFromMatrix(T)
+    p[-1] += 0.101
+

@@ -106,14 +106,19 @@ class Solver(object):
                 # trust_box_sizes.append(self.initial_trust_box_size/10.0)
                 trust_box_sizes.append(self.initial_trust_box_size)
 
+            for param in params:
+                param.reset()
+
             success, updates = self.min_merit_fn_admm(opt_probs, params, penalty_coeff, trust_box_sizes)
             dual_updates += updates
+            # import ipdb; ipdb.set_trace() # BREAKPOINT
 
             for opt_prob in opt_probs:
                 if not opt_prob.constraints_satisfied(self.cnt_tolerance):
                     penalty_coeff.value = penalty_coeff.value*self.merit_coeff_increase_ratio
                     break
             else:
+                # import ipdb; ipdb.set_trace() # BREAKPOINT
                 success = True
                 break
 
@@ -155,7 +160,8 @@ class Solver(object):
             while True:
                 for opt_prob, i in zip(opt_probs, range(num_probs)):
                     print "solving ", opt_prob.hl_action.name, "'s prob"
-                    trust_box_size.value = np.minimum(trust_box_sizes[i] * 10, 3)
+                    # trust_box_size.value = np.minimum(trust_box_sizes[i] * 10, 3)
+                    trust_box_size.value = 3
                     trust_box_size, success = self.minimize_merit_function(opt_prob, penalty_coeff, trust_box_size)
                     opt_prob.callback()
                     # need to grow trust region so that you don't get stuck out a trust region size where all improvements are less than min approx improve
@@ -242,20 +248,21 @@ class Solver(object):
 
             # gp = opt_prob.hl_action.hl_plan.hl_actions[0].gp.value
 
-            prob = cvx.Problem(cvx.Minimize(obj), constraints)
-            try:
-                # wtf... why does changing it GUROBI give a strange trajectory later on?!?!
-                # prob.solve(verbose=False, solver='GUROBI')
-                prob.solve(verbose=False, solver='ECOS')
-            except:
-                # prob.solve(verbose=False, solver='GUROBI')
-                import ipdb; ipdb.set_trace() # BREAKPOINT
-                print ("solver error")
+            self.solve_opt_prob(obj, constraints)
+            # prob = cvx.Problem(cvx.Minimize(obj), constraints)
+            # try:
+            #     # wtf... why does changing it GUROBI give a strange trajectory later on?!?!
+            #     # prob.solve(verbose=False, solver='GUROBI')
+            #     prob.solve(verbose=False, solver='ECOS')
+            # except:
+            #     # prob.solve(verbose=False, solver='GUROBI')
+            #     import ipdb; ipdb.set_trace() # BREAKPOINT
+            #     print ("solver error")
 
-            if prob.status != "optimal":
-                import ipdb; ipdb.set_trace() # BREAKPOINT
-                success = False
-                print("Couldn't find a point satisfying linear constraints")
+            # if prob.status != "optimal":
+            #     import ipdb; ipdb.set_trace() # BREAKPOINT
+            #     success = False
+            #     print("Couldn't find a point satisfying linear constraints")
             # else:
             #     for x in opt_prob.xs:
             #         x.cur_value = x.value
@@ -268,20 +275,28 @@ class Solver(object):
             prob.solve(verbose=False, solver='ECOS')
             # prob.solve(verbose=True, solver='ECOS')
         except:
-            prob.solve(verbose=True, solver='GUROBI')
+            import ipdb; ipdb.set_trace() # BREAKPOINT
+            try:
+                # prob.solve(verbose=True, solver='ECOS')
+                prob.solve(verbose=True, solver='GUROBI')
+                print ("solver error")
+            except:
+                print ("both solvers failed")
+                return prob
             # prob.solve(verbose=True, solver='ECOS')
-            print ("solver error")
 
         if prob.status != 'optimal':
             print 'ECOS problem status: ', prob.status
+            import ipdb; ipdb.set_trace() # BREAKPOINT
             try:
                 prob.solve(verbose=True, solver='GUROBI')
             except:
                 print 'Gurobi problem status: ', prob.status
                 print('Failed to solve QP subproblem.')
                 success = False
-                import ipdb; ipdb.set_trace() # BREAKPOINT
-                return (trust_box_size, success)
+                # import ipdb; ipdb.set_trace() # BREAKPOINT
+                return prob
+                # return (trust_box_size, success)
         return prob
 
     def min_merit_fn_admm(self, opt_probs, params, penalty_coeff, trust_box_sizes):
@@ -301,7 +316,7 @@ class Solver(object):
                 # trust_box_size.value = np.minimum(size, self.initial_trust_box_size*10)
                 # trust_box_size.value = np.minimum(size, 3)
                 # trust_box_size.value = size
-                trust_box_size.value = 3
+                trust_box_size.value = self.initial_trust_box_size
                 objective, constraints = opt_prob.convexify(penalty_coeff, trust_box_size)
                 merit = objective.value
 
@@ -334,20 +349,25 @@ class Solver(object):
                         import ipdb; ipdb.set_trace() # BREAKPOINT
                         break
                     elif approx_merit_improve < self.min_approx_improve:
+                        print("Converged:becauase improvement was small ({0} < {1})".format(approx_merit_improve, self.min_approx_improve))
                         opt_prob.callback()
                         opt_prob.restore_state()
-                        print("Converged: y tolerance")
                         break
                         # return (trust_box_size, success)
+                    # elif approx_merit_improve/merit < self.min_approx_improve_frac:
+                    #     opt_prob.callback()
+                    #     opt_prob.restore_state()
+                    #     print("Converged because improvement ratio was small ({0} < {1})".format(approx_merit_improve/merit, self.min_approx_improve_frac))
+                    #     break
                     elif (exact_merit_improve < 0) or (merit_improve_ratio < self.improve_ratio_threshold):
+                        print("Shrinking trust region")
                         shrink = True
                         opt_prob.restore_state()
-                        print("Shrinking trust region")
                         trust_box_size.value = trust_box_size.value * self.trust_shrink_ratio
 
                     else:
-                        opt_prob.callback()
                         print("Growing trust region")
+                        opt_prob.callback()
                         break #from trust region loop
                 else:
                     print("Converged: x tolerance")
@@ -362,7 +382,7 @@ class Solver(object):
                     converged = False
                 print param.name, " disagree by ", diff
             dual_updates += 1
-            # import ipdb; ipdb.set_trace() # BREAKPOINT
+            # if penalty_coeff.value > 0.1:
         else:
             return True, dual_updates
 

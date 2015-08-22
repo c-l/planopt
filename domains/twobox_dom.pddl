@@ -32,16 +32,19 @@
 	)
 
 	(:action move_w_obj
-		:parameters (?l1 - pose ?l2 - pose ?obj - movable ?gp - grasp)
+		:parameters (?l1 - pose ?l2 - pose ?obj - movable ?loc1 - location ?loc2 - location ?gp - grasp)
 		:precondition (and 
                     (RobotAt ?l1)
                     (InManip ?obj ?gp)
+                    ;(ObjAt ?obj ?loc1)
                     ;(IsMP ?l1 ?l2)
                     (forall (?o - movable) (and (not (Obstructs ?o ?l1 ?l2)) (not (Obstructs ?o ?l2 ?l1))))
         )
 		:effect (and 
                     (RobotAt ?l2)
 					(not (RobotAt ?l1))
+					;(not (ObjAt ?obj ?loc1))
+                    ;(ObjAt ?obj ?loc2)
                     (increase (total-cost) 10)
         )
 	)
@@ -56,7 +59,6 @@
                     (ObjAt ?obj ?loc)
         )
 		:effect (and 
-                    (not (InManip none ?gp))
                     (not (InManip none none_gp))
                     (InManip ?obj ?gp)
 					(not (ObjAt ?obj ?loc))
@@ -73,9 +75,9 @@
 					(RobotAt ?lrobot)
         )
 		:effect (and 
+                    (ObjAt ?obj ?loc)
                     (InManip none none_gp)
                     (not (InManip ?obj ?gp))
-                    (ObjAt ?obj ?loc)
                     (increase (total-cost) 10)
         )
 	)

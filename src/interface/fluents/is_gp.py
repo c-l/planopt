@@ -74,7 +74,7 @@ class IsGP(Fluent):
             # plotting collision information
             # handles.append(self.plotting_env.plot3(points=ptB, pointsize=10,colors=(1,0,0)))
             # handles.append(self.plotting_env.plot3(points=ptA, pointsize=10,colors=(0,1,0)))
-            if not np.all(ptA == ptB):
+            if not np.allclose(ptA, ptB, atol=1e-3):
                 if distance < 0:
                     handles.append(self.plotting_env.drawarrow(p1=ptA, p2=ptB, linewidth=.01,color=(1,0,0)))
                 else:

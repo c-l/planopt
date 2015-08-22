@@ -41,6 +41,9 @@ class Constraints(object):
     # convexifies constraints around value of the current variable x which is saved in g and h
     # x is not necessarily the same between functions, it could be the traj from different hl actions
     def constraints_satisfied(self, tolerance):
+        # if tolerance != 1e-3:
+        #     import ipdb; ipdb.set_trace() # BREAKPOINT
+
         for g,x in self.gs:
             gval, gjac = g.val_and_grad(x.value)
             if any(gval > tolerance):
@@ -60,6 +63,7 @@ class Constraints(object):
         for h,x in self.hs:
             hval, hjac = h.val_and_grad(x.value)
             penalty_objective += cvx.norm(hval + hjac*(x-x.value), 1)
+        # print "\tpenalty objective: ",penalty_objective.value
         # import ipdb; ipdb.set_trace() # BREAKPOINT
         return penalty_objective, copy(self.linear_constraints)
 
