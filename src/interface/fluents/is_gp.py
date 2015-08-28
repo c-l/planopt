@@ -3,23 +3,25 @@ import cvxpy as cvx
 from numpy.linalg import norm
 import numpy as np
 from opt.constraints import Constraints
-from opt.function import Function
+from opt.function import CollisionFn
 
 import ctrajoptpy
 from utils import *
 
 class IsGP(Fluent):
-    def __init__(self, env, hl_action, robot, obj, gp, traj, obj_traj = None):
-        super(IsGP, self).__init__(env, hl_action)
+    def __init__(self, env, hl_action, model, robot, obj, gp, traj, obj_traj = None):
+        super(IsGP, self).__init__(env, hl_action, model)
         self.env = env
         self.hl_action = hl_action
         self.plotting_env = hl_action.hl_plan.env
         self.robot = robot
         self.obj = obj
-        self.gp = gp
-        self.traj = traj
-        self.obj_traj = obj_traj
-        self.constraints = None
+        self.gp = gp.grb_vars
+        self.traj = traj.grb_vars
+        self.traj_var = traj
+        if self.obj is not None:
+            self.obj_traj = obj_traj.grb_vars
+            self.obj_traj_var = obj_traj
         self.name = "IsGP"
         
         self.cc = ctrajoptpy.GetCollisionChecker(env)
@@ -29,13 +31,20 @@ class IsGP(Fluent):
         # linear_constraints = [self.traj[:,-1] - self.gp == obj_pos, cvx.norm(self.gp,2) == 1.26] 
         K = self.hl_action.K
         T = self.hl_action.T
-        linear_constraints = [self.traj[-K:] + self.gp == self.obj_traj[-K:]]
+
+        h = lambda x: self.distance_from_obj(x, 0.06, (K,T)) # function inequality constraint g(x) <= 0
+        h_func = CollisionFn(self.traj_var, h)
+        self.constraints.add_nonlinear_eq_constraint(h_func)
+
+        self.constraints.add_eq_cntr(self.traj[-K] + self.gp, self.obj_traj[-K:])
+
+        # linear_constraints = [self.traj[-K:] + self.gp == self.obj_traj[-K:]]
         # h = lambda x: np.matrix(norm(x[-K:]-obj_pos) - .55)
         # h = Function(lambda x: self.grasp(x))
         # return Constraints(linear_constraints, None, (h, self.traj))
-        h = Function(lambda x: self.distance_from_obj(x, .06, (K,T)), use_numerical=False)
+        # h = Function(lambda x: self.distance_from_obj(x, .06, (K,T)), use_numerical=False)
         # return Constraints(linear_constraints, None, (h, self.traj))
-        self.constraints = Constraints(linear_constraints, None, (h, self.traj))
+        # self.constraints = Constraints(linear_constraints, None, (h, self.traj))
         return self.constraints
 
     def distance_from_obj(self, x, target_dist, traj_shape):
@@ -53,7 +62,7 @@ class IsGP(Fluent):
         
         xt = x[-K:]
         robot.SetTransform(base_pose_to_mat(xt))
-        ot = self.obj_traj[-K:].value
+        ot = self.obj_traj_var.value[-K:]
         obj.SetTransform(base_pose_to_mat(ot))
 
         cc.SetContactDistance(np.infty)

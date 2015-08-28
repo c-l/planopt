@@ -37,24 +37,24 @@ class Pick(HLAction):
         # self.traj_init = np.array([[-1],[2],[0]]) # cool/strange wiggling into a good solution
         # self.traj_init = np.array([[0],[-2],[0]])
         # self.traj = Variable(K*T,1, name=self.name+"_traj",value=self.traj_init)
-        self.traj = Variable(K*T,1, name=self.name+"_traj")
+        self.traj = Variable(self.model, K*T, 1, name=self.name+"_traj")
         # self.traj.value = self.traj_init
 
         # self.obj_init = np.zeros((3,1))
         # self.obj_traj = Variable(K*T,1, name=self.name+'_obj_traj', value=self.traj_init)
-        self.obj_traj = Variable(K*T,1, name=self.name+'_obj_traj')
+        self.obj_traj = Variable(self.model, K*T, 1, name=self.name+'_obj_traj')
         # self.obj_traj.value = self.obj_init
 
-        self.preconditions = [RobotAt(self.env, self, self.pos, self.traj)]
-        self.preconditions += [ObjAt(self.env, self, self.obj, self.loc, self.obj_traj)] 
-        self.preconditions += [IsGP(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
-        # self.preconditions += [IsMP(self.env, self, robot, self.traj, self.obj, self.obj_traj)]
-        self.postconditions = [InManip(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
+        self.preconditions = [RobotAt(self.env, self, self.model, self.pos, self.traj)]
+        self.preconditions += [ObjAt(self.env, self, self.model, self.obj, self.loc, self.obj_traj)] 
+        self.preconditions += [IsGP(self.env, self, self.model, robot, self.obj, self.gp, self.traj, self.obj_traj)]
+        # self.preconditions += [IsMP(self.env, self, self.model, robot, self.traj, self.obj, self.obj_traj)]
+        self.postconditions = [InManip(self.env, self, self.model, robot, self.obj, self.gp, self.traj, self.obj_traj)]
         self.create_opt_prob()
         # self.initialize_opt()
 
     def plot_consensus_pos(self):
-        if not np.allclose(self.pos.value, self.hl_pos.value):
+        if not np.allclose(self.pos.value, self.hl_pos.value, atol=1e-3):
             pick_pos = np.array(self.pos.value)
             pick_pos[2] = 1
             hl_pos = np.array(self.hl_pos.value)
@@ -63,7 +63,7 @@ class Pick(HLAction):
             self.handles += [self.hl_plan.env.plot3(points=hl_pos[:, 0], pointsize=10, colors=(1,0,0))]
 
     def plot_consensus_obj_pos(self):
-        if not np.allclose(self.loc.value, self.hl_loc.value):
+        if not np.allclose(self.loc.value, self.hl_loc.value, atol=1e-3):
             # hl_gp = np.array(self.hl_gp.value)
 
             # pick_pos = np.array(self.traj.value)

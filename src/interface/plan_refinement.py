@@ -140,7 +140,7 @@ class PlanRefinement(object):
 
         params = self.hl_params.values()
 
-        import ipdb; ipdb.set_trace() # BREAKPOINT
+        # import ipdb; ipdb.set_trace() # BREAKPOINT
         for _ in range(initializations):
             init_later_actions = []
             

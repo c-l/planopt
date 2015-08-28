@@ -1,7 +1,8 @@
 from fluent import Fluent
 import cvxpy as cvx
 from opt.constraints import Constraints
-from opt.function import Function
+# from opt.function import Function
+from opt.function import CollisionFn
 # from trajopt_cvx import Trajopt
 from utils import *
 from openravepy import *
@@ -10,15 +11,16 @@ import numpy as np
 import time
 
 class IsMP(Fluent):
-    def __init__(self, env, hl_action, robot, traj, obj, obj_traj, place_objs=None, place_locs=None):
-        super(IsMP, self).__init__(env, hl_action)
+    def __init__(self, env, hl_action, model, robot, traj, obj, obj_traj, place_objs=None, place_locs=None):
+        super(IsMP, self).__init__(env, hl_action, model)
         self.plotting_env = hl_action.hl_plan.env
         self.hl_action = hl_action
-        self.traj = traj
+        self.traj = traj.grb_vars
+        self.traj_var = traj
         self.obj = obj
-        self.obj_traj = obj_traj
+        if self.obj is not None:
+            self.obj_traj = obj_traj.grb_vars
         self.robot = robot
-        self.constraints = None
         self.name = "IsMP"
         # self.tolerance = 1e-2
 
@@ -45,24 +47,31 @@ class IsMP(Fluent):
         # positions between time steps are less than 0.2
         A_ineq = np.vstack((P, -P))
         b_ineq = 0.3*np.ones((2*K*T,1))
-        linear_constraints = [A_ineq * traj <= b_ineq]
+        # linear_constraints = [A_ineq * traj <= b_ineq]
+        self.constraints.add_lin_leq_cntr(traj, A_ineq, b_ineq[:])
 
-        # precompute index to object mapping
-        assert len(self.place_objs) == len(self.place_locs)
-        self.num_objs = len(self.place_objs)
-        self.obj_names = [obj.GetName() for obj in self.place_objs]
-        self.name_to_index = {}
-        for obj, i in zip(self.place_objs, range(self.num_objs)):
-            self.name_to_index[obj.GetName()] = i+T
+        # # precompute index to object mapping
+        # assert len(self.place_objs) == len(self.place_locs)
+        # self.num_objs = len(self.place_objs)
+        # self.obj_names = [obj.GetName() for obj in self.place_objs]
+        # self.name_to_index = {}
+        # for obj, i in zip(self.place_objs, range(self.num_objs)):
+        #     self.name_to_index[obj.GetName()] = i+T
+        self.num_objs = 0
 
         # TODO: fix this hack to work when place locations and trajectory have different dimensions (perhaps zero pad place locations or trajectory?)
         # x = place_locs + [self.traj]
-        x = [self.traj] + self.place_locs
-        x = cvx.vstack(*x)
-        g = Function(lambda x: self.collisions(x, 0.05, (K,T)), use_numerical=False) # function inequality constraint g(x) <= 0
-        h = None # function equality constraint h(x) ==0
+
+        # x = [self.traj] + self.place_locs
+        # x = cvx.vstack(*x)
+
+        # g = Function(lambda x: self.collisions(x, 0.05, (K,T)), use_numerical=False) # function inequality constraint g(x) <= 0
+        g = lambda x: self.collisions(x, 0.05, (K,T)) # function inequality constraint g(x) <= 0
+        g_func = CollisionFn(self.traj_var, g)
+        self.constraints.add_nonlinear_ineq_constraint(g_func)
+        # h = None # function equality constraint h(x) ==0
         # self.constraints = Constraints(linear_constraints, (g, self.traj), h)
-        self.constraints = Constraints(linear_constraints, (g, x), h)
+        # self.constraints = Constraints(linear_constraints, (g, x), h)
         return self.constraints
 
     # TODO: compute collisions properly
@@ -96,7 +105,7 @@ class IsMP(Fluent):
         distances = np.infty * np.ones(T+self.num_objs)
         for t in range(T):
             # xt = self.traj.value[K*t:K*(t+1)]
-            xt = traj[:,t]
+            xt = traj[:,t:t+1]
             robot.SetTransform(base_pose_to_mat(xt))
             if obj is not None:
                 # ot = self.obj_traj.value[K*t:K*(t+1)]

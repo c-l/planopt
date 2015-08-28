@@ -4,11 +4,16 @@ import errno
 import signal
 from functools import wraps
 import StringIO
+import numpy as np
 
 def base_pose_to_mat(pose):
-    x, y, rot = pose
+    # x, y, rot = pose
+    x = pose[0,0]
+    y = pose[1,0]
+    rot = pose[2,0]
     q = quatFromAxisAngle((0, 0, rot)).tolist()
     pos = [x, y, 0]
+    # pos = np.vstack((x,y,np.zeros(1)))
     matrix = matrixFromPose(q + pos)
     return matrix
 
@@ -17,7 +22,8 @@ def mat_to_base_pose(mat):
     x = pose[4]
     y = pose[5]
     rot = axisAngleFromRotationMatrix(mat)[2]
-    return [x, y, rot]
+    return np.array([[x],[y],[rot]])
+    # return [x, y, rot]
 
 
 class TimeoutError(Exception):

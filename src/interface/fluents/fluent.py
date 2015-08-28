@@ -4,31 +4,25 @@ import numpy as np
 from opt.constraints import Constraints
 
 class Fluent(object):
-    def __init__(self, env, hl_action):
+    def __init__(self, env, hl_action, model):
         self.env = env
         self.hl_action = hl_action
-        self.constraints = None
+        self.constraints = Constraints(model)
+        self.model = model
         # self.tolerance = 1e-3
         self.tolerance = 1e-2
 
     def satisfied(self):
-        if self.constraints is None:
-            return True
-        else:
-            return self.constraints.constraints_satisfied(self.tolerance)
+        return self.constraints.satisfied(self.tolerance)
+        # if self.constraints is None:
+        #     return True
+        # else:
+        #     return self.constraints.constraints_satisfied(self.tolerance)
 
     def precondition(self):
-        linear_constraints = []
-        func_eq_constraint = None
-        func_ineq_constraint = None
-        self.constraints = Constraints(linear_constraints, func_eq_constraint, func_ineq_constraint)
-        return self.constraints
+        raise NotImplementedError
 
     def postcondition(self):
-        linear_constraints = []
-        func_eq_constraint = None
-        func_ineq_constraint = None
-        self.constraints = Constraints(linear_constraints, func_eq_constraint, func_ineq_constraint)
         return self.constraints
 
     @staticmethod

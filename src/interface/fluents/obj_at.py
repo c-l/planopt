@@ -4,12 +4,12 @@ from opt.constraints import Constraints
 import numpy as np
 
 class ObjAt(Fluent):
-    def __init__(self, env, hl_action, obj, loc, obj_traj, loc_param=None):
-        super(ObjAt, self).__init__(env, hl_action)
+    def __init__(self, env, hl_action, model, obj, loc, obj_traj, loc_param=None):
+        super(ObjAt, self).__init__(env, hl_action, model)
         self.obj = obj
-        self.loc = loc
-        self.obj_traj = obj_traj
-        self.constraints = None
+        self.loc = loc.grb_vars
+        self.obj_traj = obj_traj.grb_vars
+
         self.name = "ObjAt"
 
         # self.in_region = False
@@ -22,13 +22,15 @@ class ObjAt(Fluent):
     # TODO: K currently depends on the robot's degrees of freedom when it shouldn't
     def precondition(self):
         K = self.hl_action.K
-        linear_constraints = [self.obj_traj[:K,0] == self.loc] 
-        self.constraints = Constraints(linear_constraints, None, None)
+        self.constraints.add_eq_cntr(self.obj_traj[:K], self.loc)
+        # linear_constraints = [self.obj_traj[:K,0] == self.loc] 
+        # self.constraints = Constraints(linear_constraints, None, None)
         return self.constraints
 
     def postcondition(self):
         K = self.hl_action.K
-        linear_constraints = [self.obj_traj[:K,-1] == self.loc] 
+        # linear_constraints = [self.obj_traj[:K,-1] == self.loc] 
+        self.constraints.add_eq_cntr(self.obj_traj[-K:], self.loc)
         # self.constraints = Constraints(linear_constraints, None, None)
 
         # adding constraints that location must be in designed region
@@ -46,7 +48,9 @@ class ObjAt(Fluent):
             max_xyz = np.array([[max_x],[max_y],[z]])
 
             K = self.hl_action.K
-            linear_constraints += [self.loc >= min_xyz] 
-            linear_constraints += [self.loc <= max_xyz] 
-        self.constraints = Constraints(linear_constraints, None, None)
+            self.constraints.add_geq_cnt(self.loc, min_xyz)
+            self.constraints.add_leq_cnt(self.loc, max_xyz)
+            # linear_constraints += [self.loc >= min_xyz] 
+            # linear_constraints += [self.loc <= max_xyz] 
+        # self.constraints = Constraints(linear_constraints, None, None)
         return self.constraints

@@ -18,6 +18,8 @@ class HLAction(object):
         # optimization sqp info
         self.cost = 0
         self.opt_prob = OptProb(self, augment_lagrangian=False)
+        self.model = self.opt_prob.get_model()
+        self.model.params.OutputFlag = 0 # suppresses output
 
         # list of precondition fluents
         self.preconditions = []
@@ -35,6 +37,7 @@ class HLAction(object):
         self.obj_clones = None
 
     def create_opt_prob(self):
+        self.model.update()
         self.opt_prob.add_var(self.traj)
         if self.obj is not None:
             self.opt_prob.add_var(self.obj_traj)
@@ -45,7 +48,8 @@ class HLAction(object):
         self.opt_prob.add_callback(self.plot)
 
     def add_cost_to_opt_prob(self):
-        self.opt_prob.add_objective(Objective(self.cost))
+        if self.cost != 0:
+            self.opt_prob.inc_obj(self.cost)
 
     def add_fluents_to_opt_prob(self):
         for precondition in self.preconditions:
@@ -84,9 +88,9 @@ class HLAction(object):
             with robot:
             
                 transparency = 0.85
-                traj = self.traj.value.reshape((self.K,self.T), order='F')
+                # traj = self.traj.value.reshape((self.K,self.T), order='F')
                 for t in range(self.T):
-                    xt = traj[:,t]
+                    xt = self.traj.value[self.K*t:self.K*(t+1)]
                     # env.Load(robot.GetXMLFilename())
                     newrobot = self.create_robot_kinbody(name=self.name + "_" + robot.GetName() + str(t), transparency=transparency)
                     # newrobot = RaveCreateRobot(env,robot.GetXMLId())
@@ -104,12 +108,13 @@ class HLAction(object):
 
 
     def plot_traj_robot_kinbodies(self):
-        traj = self.traj.value.reshape((self.K,self.T), order='F')
+        # traj = self.traj.value.reshape((self.K,self.T), order='F')
         if self.robot_clones is None:
             self.create_robot_clones()
 
         for t in range(self.T):
-            xt = traj[:,t]
+            # xt = traj[:,t]
+            xt = self.traj.value[self.K*t:self.K*(t+1)]
             self.robot_clones[t].SetTransform(base_pose_to_mat(xt))
         return self.robot_clones
 
@@ -122,9 +127,10 @@ class HLAction(object):
             with obj:
 
                 transparency = 0.85
-                traj = self.obj_traj.value.reshape((self.K,self.T), order='F')
+                # traj = self.obj_traj.value.reshape((self.K,self.T), order='F')
                 for t in range(self.T):
-                    xt = traj[:,t]
+                    xt = self.obj_traj.value[self.K*t:self.K*(t+1)]
+                    # xt = traj[:,t]
                     newobj = self.create_obj_kinbody(name=self.name + "_" + obj.GetName() + str(t), transparency=transparency)
                     # newobj = RaveCreateKinBody(env, obj.GetXMLId())
                     # newobj = RaveCreateRobot(env, obj.GetXMLId())
@@ -147,12 +153,13 @@ class HLAction(object):
             # time.sleep(3)
 
     def plot_traj_obj_kinbodies(self):
-        traj = self.obj_traj.value.reshape((self.K,self.T), order='F')
+        # traj = self.obj_traj.value.reshape((self.K,self.T), order='F')
         if self.obj_clones is None:
             self.create_obj_clones()
 
         for t in range(self.T):
-            xt = traj[:,t]
+            xt = self.obj_traj.value[self.K*t:self.K*(t+1)]
+            # xt = traj[:,t]
             self.obj_clones[t].SetTransform(base_pose_to_mat(xt))
         return self.obj_clones
 
