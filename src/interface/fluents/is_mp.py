@@ -20,6 +20,7 @@ class IsMP(Fluent):
         self.obj = obj
         if self.obj is not None:
             self.obj_traj = obj_traj.grb_vars
+            self.obj_traj_var = obj_traj
         self.robot = robot
         self.name = "IsMP"
         # self.tolerance = 1e-2
@@ -42,7 +43,8 @@ class IsMP(Fluent):
         v = -1*np.ones((K*T-K,1))
         d = np.vstack((np.ones((K*T-K,1)),np.zeros((K,1))))
         # [:,0] allows numpy to see v and d as one-dimensional so that numpy will create a diagonal matrix with v and d as a diagonal
-        P = np.matrix(np.diag(v[:,0],K) + np.diag(d[:,0]) )
+        # P = np.matrix(np.diag(v[:,0],K) + np.diag(d[:,0]) )
+        P = np.diag(v[:,0],K) + np.diag(d[:,0]) 
 
         # positions between time steps are less than 0.2
         A_ineq = np.vstack((P, -P))
@@ -50,6 +52,7 @@ class IsMP(Fluent):
         # linear_constraints = [A_ineq * traj <= b_ineq]
         self.constraints.add_lin_leq_cntr(traj, A_ineq, b_ineq[:])
 
+        self.obj_names = []
         # # precompute index to object mapping
         # assert len(self.place_objs) == len(self.place_locs)
         # self.num_objs = len(self.place_objs)
@@ -109,7 +112,7 @@ class IsMP(Fluent):
             robot.SetTransform(base_pose_to_mat(xt))
             if obj is not None:
                 # ot = self.obj_traj.value[K*t:K*(t+1)]
-                ot = self.obj_traj.value[K*t:K*(t+1)]
+                ot = self.obj_traj_var.value[K*t:K*(t+1)]
                 obj.SetTransform(base_pose_to_mat(ot))
             bodies = []
             if obj is not None:
@@ -157,7 +160,9 @@ class IsMP(Fluent):
                         import ipdb; ipdb.set_trace() # BREAKPOINT
 
                     gradd = np.zeros((1,K))
-                    normal = np.matrix(c.GetNormal())
+                    # import ipdb; ipdb.set_trace() # BREAKPOINT
+                    # normal = np.matrix(c.GetNormal())
+                    normal = c.GetNormal()
                     
                     # normalObsToRobot2 = -1 * np.sign(c.GetDistance())*normalize(ptB-ptA)
 
@@ -169,8 +174,8 @@ class IsMP(Fluent):
                             distances[index] = distance
                             # need to flip the sign from the place objs point of reference
                             loc = self.place_locs[index-T]
-                            ptA = np.matrix(ptA)[:, 0:2]
-                            gradd = 10*normal[:,0:2] * self.calcJacobian(np.transpose(ptA), loc.value)
+                            ptA = ptA[0:2]
+                            gradd = np.dot(10*normal[0:2], self.calcJacobian(np.transpose(ptA), loc.value))
                             val[index] = dsafe - c.GetDistance()
                             jac[index, K*index:K*(index+1)] = gradd
                     if linkA in self.obj_names:
@@ -182,9 +187,10 @@ class IsMP(Fluent):
                     else:
                         distances[t] = distance
 
-                    ptB = np.matrix(ptB)[:, 0:2]
+                    # ptB = np.matrix(ptB)[:, 0:2]
+                    ptB = ptB[0:2]
                     # why is there a negative one?
-                    gradd = -1 * normal[:,0:2] * self.calcJacobian(np.transpose(ptB), traj[:,t])
+                    gradd = np.dot(-1 * normal[0:2], self.calcJacobian(np.transpose(ptB), traj[:,t]))
 
                     val[t] = dsafe - c.GetDistance()
                     jac[t, K*t:K*(t+1)] = gradd

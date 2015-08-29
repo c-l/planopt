@@ -48,8 +48,8 @@ class ObjAt(Fluent):
             max_xyz = np.array([[max_x],[max_y],[z]])
 
             K = self.hl_action.K
-            self.constraints.add_geq_cnt(self.loc, min_xyz)
-            self.constraints.add_leq_cnt(self.loc, max_xyz)
+            self.constraints.add_geq_cntr(self.loc, min_xyz)
+            self.constraints.add_leq_cntr(self.loc, max_xyz)
             # linear_constraints += [self.loc >= min_xyz] 
             # linear_constraints += [self.loc <= max_xyz] 
         # self.constraints = Constraints(linear_constraints, None, None)

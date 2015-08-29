@@ -208,7 +208,6 @@ class Move(HLAction):
             self.model.remove(constraint)
 
         self.start.initialized = True
-        import ipdb; ipdb.set_trace() # BREAKPOINT
         self.end.initialized = True
         if self.obj is not None:
             self.gp.initialized = True

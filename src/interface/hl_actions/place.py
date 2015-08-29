@@ -57,24 +57,24 @@ class Place(HLAction):
         # self.traj_init = np.array([[3],[2],[0]]) # cool/strange wiggling into a good solution
         # self.traj_init = np.zeros((3,1))
         # self.traj = Variable(K*T,1, name=self.name+"_traj",value=self.traj_init)
-        self.traj = Variable(K*T,1, name=self.name+"_traj")
+        self.traj = Variable(self.model, K*T,1, name=self.name+"_traj")
         # self.traj.value = self.traj_init
 
         # self.obj_init = np.zeros((3,1))
         # self.obj_traj = Variable(K*T,1, name=self.name+'_obj_traj', value=self.traj_init)
-        self.obj_traj = Variable(K*T,1, name=self.name+'_obj_traj')
+        self.obj_traj = Variable(self.model, K*T,1, name=self.name+'_obj_traj')
         # self.obj_traj.value = self.obj_init
 
-        self.preconditions = [RobotAt(self.env, self, self.pos, self.traj)]
-        self.preconditions += [InManip(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
+        self.preconditions = [RobotAt(self.env, self, self.model, self.pos, self.traj)]
+        self.preconditions += [InManip(self.env, self, self.model, robot, self.obj, self.gp, self.traj, self.obj_traj)]
         # self.preconditions += [IsMP(self.env, self, robot, self.traj, self.obj, self.obj_traj)]
-        self.preconditions += [IsMP(self.env, self, robot, self.traj, self.obj, self.obj_traj, place_objs=self.place_objs, place_locs=self.place_locs)]
-        self.preconditions += [IsPDP(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
-        # self.preconditions += [ObjAt(self.env, self, self.obj, self.loc, self.obj_traj, loc_param=loc_param)] 
-        self.postconditions = [ObjAt(self.env, self, self.obj, self.loc, self.obj_traj, loc_param=loc_param)] 
-        # self.postconditions = [InRegion(self.env, self, self.obj, self.loc, self.obj_traj)] 
-        # self.postconditions = [InRegion(self.env, self, self.obj, loc_param, self.obj_traj)] 
-        # self.postconditions += [InManip(self.env, self, robot, self.obj, self.gp, self.traj, self.obj_traj)]
+        self.preconditions += [IsMP(self.env, self, self.model, robot, self.traj, self.obj, self.obj_traj, place_objs=self.place_objs, place_locs=self.place_locs)]
+        self.preconditions += [IsPDP(self.env, self, self.model, robot, self.obj, self.gp, self.traj, self.obj_traj)]
+        # self.preconditions += [ObjAt(self.env, self, self.model, self.obj, self.loc, self.obj_traj, loc_param=loc_param)] 
+        self.postconditions = [ObjAt(self.env, self, self.model, self.obj, self.loc, self.obj_traj, loc_param=loc_param)] 
+        # self.postconditions = [InRegion(self.env, self, self.model, self.obj, self.loc, self.obj_traj)] 
+        # self.postconditions = [InRegion(self.env, self, self.model, self.obj, loc_param, self.obj_traj)] 
+        # self.postconditions += [InManip(self.env, self, self.model, robot, self.obj, self.gp, self.traj, self.obj_traj)]
         self.create_opt_prob()
         # self.initialize_opt()
 
