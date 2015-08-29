@@ -2,14 +2,16 @@ import gurobipy as grb
 GRB = grb.GRB
 
 
-def abs(model, affexpr):
+def abs(model, affexpr, temp=None):
     pos = model.addVar(lb=0, ub=GRB.INFINITY, name='pos')
     neg = model.addVar(lb=0, ub=GRB.INFINITY, name='neg')
 
     expr = grb.LinExpr(pos+neg)
 
     model.update()
-    model.addConstr(affexpr == pos - neg)
+    cntr = model.addConstr(affexpr == pos - neg)
+    if temp is not None:
+        temp.extend([pos, neg, cntr])
     return expr
 
 def diff(var, val):

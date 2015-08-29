@@ -344,8 +344,8 @@ class Solver(object):
                 # trust_box_size.value = np.minimum(size, self.initial_trust_box_size*10)
                 # trust_box_size.value = np.minimum(size, 3)
                 # trust_box_size.value = size
-                prob.convexify(penalty_coeff)
                 merit = prob.val(penalty_coeff)
+                prob.convexify(penalty_coeff)
                 prob.save()
 
                 trust_box_size = self.initial_trust_box_size

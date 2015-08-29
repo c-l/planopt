@@ -31,6 +31,7 @@ class OptProb(object):
         # self.nonlinear_cnts = NonlinCnts()
 
         self.trust_region_cnt = None
+        self.trust_temp = []
 
         self.callbacks = []
 
@@ -44,7 +45,7 @@ class OptProb(object):
     def find_closest_feasible_point(self):
         obj = grb.QuadExpr()
         for var in self.vars:
-            obj += self.l2_norm_squared(self.model, var)
+            obj += self.l2_norm_diff_squared(self.model, var)
 
         self.model.setObjective(obj)
         self.model.update()
@@ -59,6 +60,11 @@ class OptProb(object):
         self.model.optimize()
         self.update_vars()
 
+
+    def clean(self, temp):
+        for item in temp:
+            self.model.remove(item)
+
     def inc_obj(self, quad_fn):
         self.obj_fns += [quad_fn]
         self.obj += quad_fn.expr
@@ -68,7 +74,14 @@ class OptProb(object):
         for fn in self.obj_fns:
             val += fn.val()
 
-        for (var, dual, consensus, ro) in dual_terms:
+        if self.augmented_objective:
+            dual_val = 0
+            for (var, dual, consensus, ro) in self.dual_terms:
+                dual_val += np.dot(np.transpose(dual.value), var.value)[0,0] + ro/2 * np.square(np.linalg.norm(var.value - consensus.value, 2))
+                # import ipdb; ipdb.set_trace() # BREAKPOINT
+            val += dual_val
+
+        # for (var, dual, consensus, ro) in dual_terms:
         penalty_cost = penalty_coeff * sum([constraint.val() for constraint in self.constraints])
         val += penalty_cost
         return val
@@ -114,12 +127,17 @@ class OptProb(object):
         self.augmented_objective = False
 
     def add_dual_cost(self, var, dual, consensus=None, ro = 0.05):
-        return
+        self.dual_terms.append((var, dual, consensus, ro))
+        # obj = np.dot(np.transpose(dual.value), var.grb_vars) + ro/2 * self.l2_norm_squared(self.model, var, hl_param.consensus)
+        # self.dual_terms += dual.T*var + ro/2 * cvx.square(cvx.norm(var-consensus))
 
-    # def add_dual_costs(self):
-    #     if self.augmented_objective:
-    #         for (var, dual, hl_param, ro) in dual_terms:
-    #             self.obj_sqp += 
+    def add_dual_costs(self):
+        self.model.update()
+        if self.augmented_objective:
+            for (var, dual, consensus, ro) in self.dual_terms:
+                self.obj_sqp += np.dot(np.transpose(dual.value), var.grb_vars)[0,0] + ro/2 * self.l2_norm_squared(self.model, var, consensus.value) 
+                # import ipdb; ipdb.set_trace() # BREAKPOINT
+
     # def add_dual_cost(self, var, dual, consensus=None, ro = 0.05):
     #     self.objective.add_dual_cost(var, dual, consensus, ro)
 
@@ -138,9 +156,13 @@ class OptProb(object):
     # #     return self.constraints.constraints_satisfied(tolerance)
 
     def convexify(self, penalty_coeff):
+        for constraint in self.constraints:
+            constraint.clean()
+
         penalty_obj = grb.quicksum([constraint.convexify(self.model, penalty_coeff) for constraint in self.constraints])
         # self.obj_sqp = self.obj + penalty_coeff * self.nonlinear_cnts.convexify(self.model, penalty_coeff)
         self.obj_sqp = self.obj + penalty_obj
+        self.add_dual_costs()
 
     # # def convexify(self, penalty_coeff, trust_box_size):
     # #     objective = self.objective.convexify(self.augmented_objective)
@@ -191,6 +213,8 @@ class OptProb(object):
     def add_trust_region(self, trust_region_size):
         if self.trust_region_cnt is not None:
             self.model.remove(self.trust_region_cnt)
+        self.clean(self.trust_temp)
+
         var_list = [grb_var for var in self.vars for grb_var in var.grb_vars.flatten()]        
         val_list = [val for var in self.vars for val in var.value.flatten()]        
         self.trust_region_cnt = self.add_trust_region_cnt(var_list, val_list, trust_region_size)
@@ -200,10 +224,24 @@ class OptProb(object):
         rows = len(x)
         # expr = grb.quicksum(addAbs(grb.LinExpr(x[i]-xp[i])))
         for i in range(rows):
-            expr += abs(self.model, grb.LinExpr(x[i]-xp[i]))
+            expr += abs(self.model, grb.LinExpr(x[i]-xp[i]), temp=self.trust_temp)
         return self.model.addConstr(expr <= trust_box_size)
 
-    def l2_norm_squared(self, model, var):
+    def l2_norm_squared(self, model, var, consensus):
+        obj = grb.QuadExpr()
+        x = var.grb_vars
+        # value = consensus.value
+        value = consensus
+        rows, cols = x.shape
+        for i in range(rows):
+            for j in range(cols):
+                obj += x[i,j]*x[i,j] - 2*value[i,j]*x[i,j] + value[i,j]*value[i,j]
+        # size = len(x)
+        # for i in range(size):
+        #     obj += x[i]*x[i] - 2*value[i]*x[i] + value[i]*value[i]
+        return obj
+
+    def l2_norm_diff_squared(self, model, var):
         obj = grb.QuadExpr()
         x = var.grb_vars
         value = var.value

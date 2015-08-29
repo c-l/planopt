@@ -60,9 +60,8 @@ class Variable(object):
         self.value = self.saved_value
 
 class Constant(object):
-    def __init__(self, model, rows, cols, value=None, name=None):
+    def __init__(self, rows, cols, value=None, name=None):
         assert value is not None
-        self.model = model
         self.rows = rows
         self.cols = cols
         self.set(value)
@@ -72,7 +71,7 @@ class Constant(object):
 
     def set(self, value):
         assert value.shape == (self.rows, self.cols)
-        self.value = value
+        self.value = value.copy()
 
     def update(self):
         pass

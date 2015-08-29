@@ -25,6 +25,8 @@ class Constraints(object):
         else:
             self.hs = [h]
 
+        self.temp = []
+
     # def add_qp_constraint(self, constraints):
     #     self.linear_constraints += constraints
 
@@ -34,6 +36,10 @@ class Constraints(object):
     # def add_nonlinear_eq_constraint(self, h, x)
     #     self.hs.append((h,x))
     
+    def clean(self):
+        for item in self.temp:
+            self.model.remove(item)
+
     def add_eq_cntr(self, var, b):
         # x = var.grb_vars
         constraints = []
@@ -153,13 +159,15 @@ class Constraints(object):
         return exprlist
 
 
-    def add_hinge(self, model, affexpr):
+    def add_hinge(self, model, affexpr, temp=None):
         hinge = model.addVar(lb=0, ub=GRB.INFINITY, name='hinge')
         model.update() # this may be really slow, need to change this
-        model.addConstr(affexpr <= hinge)
+        cntr = model.addConstr(affexpr <= hinge)
         expr = grb.LinExpr(hinge)
+        if temp is not None:
+            temp.extend([hinge, cntr])
         return expr
 
     def l1_norm(self, model, affexprlist):
-        return [abs(model, affexpr) for affexpr in affexprlist]
+        return [abs(model, affexpr, temp=self.temp) for affexpr in affexprlist]
 
