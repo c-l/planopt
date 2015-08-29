@@ -64,16 +64,9 @@ class Move(HLAction):
         KT = K*T
 
 
-        # self.traj_init = np.matrix([np.linspace(i,j,T) for i,j in zip(np.array(self.start.value), np.array(self.end.value))])
-        # self.traj_init = self.initial_traj()
-        # self.traj_init = np.reshape(self.traj_init, (self.K*self.T,1), order='F')
-        # self.traj = Variable(K*T,1,name=self.name+'_traj',value=self.traj_init)
         self.traj = Variable(self.model,K*T,1,name=self.name+'_traj')
 
         if self.obj is not None:
-            # self.obj_init = np.matrix([np.linspace(i,j,T) for i,j in zip(np.array(self.gp.value + self.start.value), np.array(self.gp.value + self.end.value))])
-            # self.obj_init = np.reshape(self.obj_init, (self.K*self.T,1), order='F')
-            # self.obj_traj = Variable(K*T,1,name=self.name+'_obj_traj',value=self.obj_init)
             self.obj_traj = Variable(self.model,K*T,1,name=self.name+'_obj_traj')
         else:
             self.obj_traj = None
@@ -85,25 +78,19 @@ class Move(HLAction):
         self.postconditions = []
         if self.obj is not None:
             self.preconditions += [InManip(self.env, self, self.model, robot, self.obj, self.gp, self.traj, self.obj_traj)]
-            # self.preconditions += [ObjAt(self.env, self, self.model, self.obj, self.obj_start, self.obj_traj)] 
-            # self.postconditions += [ObjAt(self.env, self, self.model, self.obj, self.obj_end, self.obj_traj)] 
         self.postconditions += [RobotAt(self.env, self, self.model, self.end, self.traj)]
 
         # setting trajopt objective
         v = -1*np.ones((KT-K,1))
         d = np.vstack((np.ones((KT-K,1)),np.zeros((K,1))))
         # [:,0] allows numpy to see v and d as one-dimensional so that numpy will create a diagonal matrix with v and d as a diagonal
-        # P = np.matrix(np.diag(v[:,0],K) + np.diag(d[:,0]) )
         P = np.diag(v[:,0],K) + np.diag(d[:,0])
-        # Q = np.transpose(P)*P
         Q = 2*np.dot(np.transpose(P),P)
 
-        # self.cost += cvx.quad_form(self.traj, Q)
         self.model.update()
         self.cost = QuadFn(self.traj, Q)
 
         self.create_opt_prob()
-        # self.initialize_opt()
 
     def initial_traj(self):
         waypoint = np.array([[3],[-1],[0]])
@@ -193,17 +180,10 @@ class Move(HLAction):
         constraints = Constraints(self.model)
         to_remove_cnts = constraints.add_eq_cntr(self.traj.grb_vars[:K], self.hl_start.value)
         to_remove_cnts += constraints.add_eq_cntr(self.traj.grb_vars[-K:], self.hl_end.value)
-        # linear_constraints = [self.traj[:K] == self.hl_start.value, self.traj[-K:] == self.hl_end.value] 
         if self.obj is not None:
             to_remove_cnts += constraints.add_eq_cntr(self.gp.grb_vars, self.hl_gp.value)
-            # linear_constraints += [self.gp == self.hl_gp.value]
-        # constraints = Constraints(linear_constraints, None, None)
-        # old_linear_constraints = self.opt_prob.constraints.linear_constraints
-        # constraints = old_linear_constraints + linear_constraints
-        # self.opt_prob.constraints.linear_constraints = constraints
 
         success = solver.penalty_sqp(self.opt_prob)
-        # self.opt_prob.constraints.linear_constraints = old_linear_constraints
         for constraint in to_remove_cnts:
             self.model.remove(constraint)
 

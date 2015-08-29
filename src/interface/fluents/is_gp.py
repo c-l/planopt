@@ -38,13 +38,6 @@ class IsGP(Fluent):
 
         self.constraints.add_eq_cntr(self.traj[-K] + self.gp, self.obj_traj[-K:])
 
-        # linear_constraints = [self.traj[-K:] + self.gp == self.obj_traj[-K:]]
-        # h = lambda x: np.matrix(norm(x[-K:]-obj_pos) - .55)
-        # h = Function(lambda x: self.grasp(x))
-        # return Constraints(linear_constraints, None, (h, self.traj))
-        # h = Function(lambda x: self.distance_from_obj(x, .06, (K,T)), use_numerical=False)
-        # return Constraints(linear_constraints, None, (h, self.traj))
-        # self.constraints = Constraints(linear_constraints, None, (h, self.traj))
         return self.constraints
 
     def distance_from_obj(self, x, target_dist, traj_shape):

@@ -12,14 +12,10 @@ class RobotAt(Fluent):
 
     def precondition(self):
         K = self.hl_action.K
-        # linear_constraints = [self.traj[:K] == self.pos] 
         self.constraints.add_eq_cntr(self.traj[:K], self.pos)
-        # self.constraints = Constraints(linear_constraints, None, None)
         return self.constraints
 
     def postcondition(self):
         K = self.hl_action.K
-        # linear_constraints = [self.traj[-K:] == self.pos] 
         self.constraints.add_eq_cntr(self.traj[-K:], self.pos)
-        # self.constraints = Constraints(linear_constraints, None, None)
         return self.constraints

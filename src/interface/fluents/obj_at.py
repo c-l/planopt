@@ -23,15 +23,11 @@ class ObjAt(Fluent):
     def precondition(self):
         K = self.hl_action.K
         self.constraints.add_eq_cntr(self.obj_traj[:K], self.loc)
-        # linear_constraints = [self.obj_traj[:K,0] == self.loc] 
-        # self.constraints = Constraints(linear_constraints, None, None)
         return self.constraints
 
     def postcondition(self):
         K = self.hl_action.K
-        # linear_constraints = [self.obj_traj[:K,-1] == self.loc] 
         self.constraints.add_eq_cntr(self.obj_traj[-K:], self.loc)
-        # self.constraints = Constraints(linear_constraints, None, None)
 
         # adding constraints that location must be in designed region
         if self.loc_param is not None and self.loc_param.in_region:
@@ -50,7 +46,4 @@ class ObjAt(Fluent):
             K = self.hl_action.K
             self.constraints.add_geq_cntr(self.loc, min_xyz)
             self.constraints.add_leq_cntr(self.loc, max_xyz)
-            # linear_constraints += [self.loc >= min_xyz] 
-            # linear_constraints += [self.loc <= max_xyz] 
-        # self.constraints = Constraints(linear_constraints, None, None)
         return self.constraints

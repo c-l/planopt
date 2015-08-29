@@ -28,19 +28,12 @@ class HLParam(object):
         self.is_var = is_var
         if is_var:
             if value is None:
-                # self.consensus = np.zeros((rows, cols))
                 self.consensus = Constant(rows, cols, name="hl_" + name, value=np.zeros((rows,cols)))
-                # self.consensus = cvx.Parameter(rows, cols, name="hl_" + name, value=np.zeros((rows,cols)))
             else:
                 self.consensus = Constant(rows, cols, name="hl_" + name, value=value)
-                # self.consensus = value
-                # self.consensus = cvx.Parameter(rows, cols, name="hl_" + name, value=value)
         else:
             assert value is not None
-            # self.consensus = cvx.Parameter(rows, cols, name="hl_" + name, value=value)
             self.consensus = Constant(rows, cols, name="hl_" + name, value=value)
-            # self.consensus = value
-        # self.consensus_var = Variable(rows, cols, name="hlvar_"_name, cur_value=self.consensus)
         if ro == None:
             self.ro = HLParam.ro
         else:
@@ -69,19 +62,13 @@ class HLParam(object):
 
         hla_var = Variable(model, rows, cols, name=self.name)
         hla_var.value = self.consensus.value.copy()
-        # import ipdb; ipdb.set_trace() # BREAKPOINT
-        # hla_var.value = self.consensus
 
-        # dual_var = cvx.Parameter(rows, cols, value=np.zeros((rows,cols)))
-        # dual_var = np.zeros((rows,cols))
         dual_var = Constant(rows, cols, value=np.zeros((rows, cols)), name=self.name)
 
         self.hlas.append(hl_action)
         self.hla_vars.append(hla_var)
         self.hla_dual_vars.append(dual_var)
 
-        # if self.ro != 2:
-        #     import ipdb; ipdb.set_trace() # BREAKPOINT
         hl_action.add_dual_cost(hla_var, dual_var, self.consensus, ro=self.ro)
         return hla_var, self.consensus
 

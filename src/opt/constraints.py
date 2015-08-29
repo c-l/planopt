@@ -27,15 +27,6 @@ class Constraints(object):
 
         self.temp = []
 
-    # def add_qp_constraint(self, constraints):
-    #     self.linear_constraints += constraints
-
-    # def add_nonliner_ineq_constraint(self, g, x)
-    #     self.gs.append((g,x))
-
-    # def add_nonlinear_eq_constraint(self, h, x)
-    #     self.hs.append((h,x))
-    
     def clean(self):
         for item in self.temp:
             self.model.remove(item)
@@ -80,14 +71,6 @@ class Constraints(object):
         var = np.dot(A_ineq, x)
         constraints = self.add_eq_cntr(var, b_ineq)
         return constraints
-        # for i in range(rows):
-        #     # expr = grb.LinExpr()
-        #     # for j in range(cols):
-        #     #     if A_eq[i,j] != 0:
-        #     #         expr += A_eq[i,j]*x[j]
-        #     epxr = np.dot(A_eq[i,:],x)
-        #     import ipdb; ipdb.set_trace() # BREAKPOINT
-        #     self.model.addConstr(expr == b_eq[i])
 
     def add_lin_leq_cntr(self, var, A_ineq, b_ineq):
         # x = var.grb_vars
@@ -102,19 +85,6 @@ class Constraints(object):
         var = np.dot(A_ineq, x)
         constraints = self.add_geq_cntr(var, b_ineq)
         return constraints
-
-    # def add_constraints(self, constraints):
-    #     self.linear_constraints += constraints.linear_constraints
-    #     self.gs += constraints.gs
-    #     self.hs += constraints.hs
-
-    # def linear_constraints_satisfied(self):
-    #     for constraint in self.linear_constraints:
-    #         if not np.all(constraint.value):
-    #             return False
-    #     return True
-    # convexifies constraints around value of the current variable x which is saved in g and h
-    # x is not necessarily the same between functions, it could be the traj from different hl actions
 
     def add_nonlinear_ineq_constraint(self, g):
         self.gs.append(g)
