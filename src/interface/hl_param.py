@@ -117,6 +117,7 @@ class HLParam(object):
         if self.gen is None:
             self.gen= self.generator()
         self.consensus.set(next(self.gen))
+        import ipdb; ipdb.set_trace() # BREAKPOINT
         self.initialize_to_consensus()
 
     def reset(self):

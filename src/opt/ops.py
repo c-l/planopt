@@ -2,6 +2,7 @@ import gurobipy as grb
 GRB = grb.GRB
 
 
+# @profile
 def abs(model, affexpr, temp=None):
     pos = model.addVar(lb=0, ub=GRB.INFINITY, name='pos')
     neg = model.addVar(lb=0, ub=GRB.INFINITY, name='neg')

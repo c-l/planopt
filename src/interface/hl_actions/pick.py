@@ -72,6 +72,7 @@ class Pick(HLAction):
         self.handles = []
         # del self.handles
         super(Pick, self).plot()
+        self.handles += handles
         self.plot_consensus_pos()
         self.plot_consensus_obj_pos()
 
@@ -96,6 +97,7 @@ class Pick(HLAction):
     def init_opt(self):
         # initialize trajectories
         self.traj.value = self.hl_loc.value - self.hl_gp.value
+        self.pos.value = self.traj.value.copy()
         self.obj_traj.value = self.hl_loc.value
 
         # solve initial optimization problem
@@ -108,6 +110,8 @@ class Pick(HLAction):
         # sqp.g_use_numerical = False
 
         self.opt_prob.make_primal()
+        self.opt_prob.init_trust_region = True
+        # import ipdb; ipdb.set_trace() # BREAKPOINT
         success = solver.penalty_sqp(self.opt_prob)
 
         self.pos.initialized = True

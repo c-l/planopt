@@ -34,10 +34,10 @@ class Solver(object):
         # self.initial_trust_box_size = 2
         self.initial_trust_box_size = 3
         # self.initial_trust_box_size = 10
-        # self.initial_penalty_coeff = 1.
+        self.initial_penalty_coeff = 1.
         # self.initial_penalty_coeff = 10
         # self.initial_penalty_coeff = 0.3
-        self.initial_penalty_coeff = 0.1
+        # self.initial_penalty_coeff = 0.1
         self.max_penalty_iter = 4
         self.callback = []
 
@@ -86,6 +86,7 @@ class Solver(object):
         print "sqp_iters: ", self.sqp_iters
         return True
 
+    # @profile
     def sqp_convexify_admm(self, opt_probs, params):
         start = time.time()
 
@@ -116,7 +117,7 @@ class Solver(object):
 
             for opt_prob in opt_probs:
                 if not opt_prob.constraints_satisfied(self.cnt_tolerance):
-                    penalty_coeff.value = penalty_coeff.value*self.merit_coeff_increase_ratio
+                    penalty_coeff = penalty_coeff*self.merit_coeff_increase_ratio
                     break
             else:
                 # import ipdb; ipdb.set_trace() # BREAKPOINT
@@ -124,7 +125,7 @@ class Solver(object):
                 break
 
             penalty_increases += 1
-            print penalty_increases, " penalty increase to ", penalty_coeff.value
+            print penalty_increases, " penalty increase to ", penalty_coeff
         else:
             success = False
 
@@ -132,6 +133,7 @@ class Solver(object):
         print "sqp_admm time: ", end-start
         print "sqp_iters: ", self.sqp_iters
         print "penalty increases: ", penalty_increases
+        import ipdb; ipdb.set_trace() # BREAKPOINT
         return success
 
     # @profile
@@ -327,6 +329,7 @@ class Solver(object):
                 # return (trust_box_size, success)
         return prob
 
+    # @profile
     def min_merit_fn_admm(self, opt_probs, params, penalty_coeff, trust_box_sizes):
         success = True
         # sqp_iter = 1
@@ -410,6 +413,7 @@ class Solver(object):
         else:
             return True, dual_updates
 
+    # @profile
     def minimize_merit_function(self, prob, penalty_coeff, trust_box_size):
         success = True
         sqp_iter = 1
@@ -467,64 +471,6 @@ class Solver(object):
                     return (trust_box_size, success) 
 
             sqp_iter = sqp_iter + 1
-
-
-    # # @profile
-    # def minimize_merit_function(self, opt_prob, penalty_coeff, trust_box_size):
-    #     success = True
-    #     sqp_iter = 1
-
-    #     # approximation loop
-    #     while True:
-    #         print("  sqp_iter: {0}".format(sqp_iter))
-    #         objective, constraints = opt_prob.convexify(penalty_coeff, trust_box_size)
-    #         merit = objective.value
-
-    #         # Trust region search
-    #         while True:
-    #             self.sqp_iters += 1
-    #             print("    trust region size: {0}".format(trust_box_size.value))
-
-    #             opt_prob.save_state()
-    #             prob = self.solve_opt_prob(objective, constraints)
-
-    #             model_merit = prob.value
-    #             objective_new, constraints_new = opt_prob.convexify(penalty_coeff, trust_box_size)
-    #             new_merit = objective_new.value
-
-    #             approx_merit_improve = merit - model_merit
-    #             exact_merit_improve = merit - new_merit
-    #             merit_improve_ratio = exact_merit_improve / approx_merit_improve
-
-    #             print("      approx_merit_improve: {0}. exact_merit_improve: {1}. merit_improve_ratio: {2}".format(approx_merit_improve, exact_merit_improve, merit_improve_ratio))
-
-    #             if approx_merit_improve < -1e-5:
-    #                 print("Approximate merit function got worse ({0})".format(approx_merit_improve))
-    #                 print("Either convexification is wrong to zeroth order, or you're in numerical trouble.")
-    #                 success = False
-    #                 opt_prob.restore_state()
-    #                 return  (trust_box_size, success)
-    #             elif approx_merit_improve < self.min_approx_improve:
-    #                 opt_prob.callback()
-    #                 opt_prob.restore_state()
-    #                 print("Converged: y tolerance")
-    #                 return (trust_box_size, success)
-    #             elif (exact_merit_improve < 0) or (merit_improve_ratio < self.improve_ratio_threshold):
-    #                 opt_prob.restore_state()
-    #                 print("Shrinking trust region")
-    #                 trust_box_size.value = trust_box_size.value * self.trust_shrink_ratio
-
-    #             else:
-    #                 opt_prob.callback()
-    #                 print("Growing trust region")
-    #                 trust_box_size.value = trust_box_size.value * self.trust_expand_ratio
-    #                 break #from trust region loop
-
-    #             if trust_box_size.value < self.min_trust_box_size:
-    #                 print("Converged: x tolerance")
-    #                 return (trust_box_size, success) 
-
-    #         sqp_iter = sqp_iter + 1
 
 if __name__ == "__main__":
     test_sqp()

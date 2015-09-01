@@ -33,10 +33,10 @@ class IsGP(Fluent):
         T = self.hl_action.T
 
         h = lambda x: self.distance_from_obj(x, 0.06, (K,T)) # function inequality constraint g(x) <= 0
-        h_func = CollisionFn(self.traj_var, h)
+        h_func = CollisionFn([self.traj_var], h)
         self.constraints.add_nonlinear_eq_constraint(h_func)
 
-        self.constraints.add_eq_cntr(self.traj[-K] + self.gp, self.obj_traj[-K:])
+        self.constraints.add_eq_cntr(self.traj[-K:] + self.gp, self.obj_traj[-K:])
 
         return self.constraints
 
@@ -89,9 +89,11 @@ class IsGP(Fluent):
 
             ptB = np.matrix(ptB)[:, 0:2]
             # why is there a negative one?
-            gradd = -1 * normal[:,0:2] * self.calcJacobian(np.transpose(ptB), xt)
 
             val[t] = (target_dist - c.GetDistance())
+
+            # gradd = -1 * np.sign(val[t]) * normal[:,0:2] * self.calcJacobian(np.transpose(ptB), xt)
+            gradd = np.sign(val[t]) * normal[:,0:2] * self.calcJacobian(np.transpose(ptB), xt)
             jac[t, K*t:K*(t+1)] = gradd
             # val[t] = 3*(target_dist - c.GetDistance())
             # jac[t, K*t:K*(t+1)] = 3*gradd

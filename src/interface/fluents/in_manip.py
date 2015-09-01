@@ -23,7 +23,7 @@ class InManip(Fluent):
         K = self.hl_action.K
         T = self.hl_action.T
         for i in range(T):
-            self.constraints.add_eq_cntr(self.traj[K*i:K*(i+1)], self.obj_traj[K*i:K*(i+1)])
+            self.constraints.add_eq_cntr(self.traj[K*i:K*(i+1)] + self.gp, self.obj_traj[K*i:K*(i+1)])
         return self.constraints
 
 

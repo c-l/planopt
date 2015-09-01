@@ -53,14 +53,13 @@ class IsMP(Fluent):
         self.constraints.add_lin_leq_cntr(traj, A_ineq, b_ineq[:])
 
         self.obj_names = []
-        # # precompute index to object mapping
-        # assert len(self.place_objs) == len(self.place_locs)
-        # self.num_objs = len(self.place_objs)
-        # self.obj_names = [obj.GetName() for obj in self.place_objs]
-        # self.name_to_index = {}
-        # for obj, i in zip(self.place_objs, range(self.num_objs)):
-        #     self.name_to_index[obj.GetName()] = i+T
-        self.num_objs = 0
+        # precompute index to object mapping
+        assert len(self.place_objs) == len(self.place_locs)
+        self.num_objs = len(self.place_objs)
+        self.obj_names = [obj.GetName() for obj in self.place_objs]
+        self.name_to_index = {}
+        for obj, i in zip(self.place_objs, range(self.num_objs)):
+            self.name_to_index[obj.GetName()] = i+T
 
         # TODO: fix this hack to work when place locations and trajectory have different dimensions (perhaps zero pad place locations or trajectory?)
         # x = place_locs + [self.traj]
@@ -70,7 +69,7 @@ class IsMP(Fluent):
 
         # g = Function(lambda x: self.collisions(x, 0.05, (K,T)), use_numerical=False) # function inequality constraint g(x) <= 0
         g = lambda x: self.collisions(x, 0.05, (K,T)) # function inequality constraint g(x) <= 0
-        g_func = CollisionFn(self.traj_var, g)
+        g_func = CollisionFn([self.traj_var] + self.place_locs, g)
         self.constraints.add_nonlinear_ineq_constraint(g_func)
         # h = None # function equality constraint h(x) ==0
         # self.constraints = Constraints(linear_constraints, (g, self.traj), h)
@@ -128,8 +127,10 @@ class IsMP(Fluent):
                     linkB = c.GetLinkBParentName()
                     if obj is not None:
                         if linkA == robot.GetName() and linkB == obj.GetName():
+                            import ipdb; ipdb.set_trace() # BREAKPOINT
                             continue
                         elif linkB == robot.GetName() and linkA == obj.GetName():
+                            import ipdb; ipdb.set_trace() # BREAKPOINT
                             continue
 
 
@@ -175,7 +176,8 @@ class IsMP(Fluent):
                             # need to flip the sign from the place objs point of reference
                             loc = self.place_locs[index-T]
                             ptA = ptA[0:2]
-                            gradd = np.dot(10*normal[0:2], self.calcJacobian(np.transpose(ptA), loc.value))
+                            # gradd = np.dot(10*normal[0:2], self.calcJacobian(np.transpose(ptA), loc.value[:,0]))
+                            gradd = np.dot(normal[0:2], self.calcJacobian(np.transpose(ptA), loc.value[:,0]))
                             val[index] = dsafe - c.GetDistance()
                             jac[index, K*index:K*(index+1)] = gradd
                     if linkA in self.obj_names:

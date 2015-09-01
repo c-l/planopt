@@ -125,7 +125,7 @@ class Constraints(object):
         return penalty_obj
 
     def add_hinges(self, model, affexprlist):
-        exprlist = [self.add_hinge(model, affexpr) for affexpr in affexprlist]
+        exprlist = [self.add_hinge(model, affexpr, temp=self.temp) for affexpr in affexprlist]
         return exprlist
 
 

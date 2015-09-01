@@ -30,7 +30,7 @@ class Variable(object):
 
     def set(self, value):
         assert value.shape == (self.rows, self.cols)
-        self.value = value
+        self.value = value.copy()
 
     def update(self):
         if self.value is None:
@@ -54,10 +54,10 @@ class Variable(object):
 
 
     def save(self):
-        self.saved_value = self.value
+        self.saved_value = self.value.copy()
     
     def restore(self):
-        self.value = self.saved_value
+        self.value = self.saved_value.copy()
 
 class Constant(object):
     def __init__(self, rows, cols, value=None, name=None):

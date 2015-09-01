@@ -41,8 +41,6 @@ class Move(HLAction):
         self.name = name
 
         self.place_objs = []
-        if self.name =='move6':
-            import ipdb; ipdb.set_trace() # BREAKPOINT
 
         if place_obj_params is not None:
             for param in place_obj_params:
@@ -164,6 +162,7 @@ class Move(HLAction):
         if self.obj is not None:
             self.obj_traj.value = self.traj.value + np.tile(self.hl_gp.value, (self.T,1))
 
+        import ipdb; ipdb.set_trace() # BREAKPOINT
         solver = Solver()
         # solver.initial_trust_box_size = 0.1
         # solver.initial_trust_box_size = 1
@@ -184,6 +183,8 @@ class Move(HLAction):
             to_remove_cnts += constraints.add_eq_cntr(self.gp.grb_vars, self.hl_gp.value)
 
         success = solver.penalty_sqp(self.opt_prob)
+        self.opt_prob.init_trust_region = True
+
         for constraint in to_remove_cnts:
             self.model.remove(constraint)
 

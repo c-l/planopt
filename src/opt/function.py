@@ -154,23 +154,58 @@ class QuadFn(Function):
     #     return 2*np.dot(Q,x)
 
 class CollisionFn(Function):
-    def __init__(self, var, f):
+    def __init__(self, vs, f):
         self.f = f
-        self.var = var
+        self.vs = vs
+        self.grb_vars = self.get_grb_vars()
+
+    def get_values(self):
+        values = [var.value.copy() for var in self.vs]
+        values = np.vstack(values)
+        return values
+
+    def get_grb_vars(self):
+        grb_vars = []
+        for var in self.vs:
+            grb_vars.extend(var.grb_vars)
+        grb_vars = np.vstack(grb_vars)
+        return grb_vars
 
     def val(self):
-        val, grad = self.f(self.var.value)
+        x = self.get_values()
+        val, grad = self.f(x)
         return np.sum(val)
 
     def grad(self):
-        val, grad = self.f(self.var.value)
+        x = self.get_values()
+        val, grad = self.f(x)
         return grad
 
     def convexify(self):
-        val, grad = self.f(self.var.value)
-        affexprlist = diff(self.var.grb_vars, self.var.value)
-        affexprlist = self.aff_expr(affexprlist, grad, val) 
+        x = self.get_values()
+        f_val, f_grad = self.f(x)
+        affexprlist = diff(self.grb_vars, x)
+        affexprlist = self.aff_expr(affexprlist, f_grad, f_val) 
         return affexprlist
+
+# class CollisionFn(Function):
+#     def __init__(self, var, f):
+#         self.f = f
+#         self.var = var
+
+#     def val(self):
+#         val, grad = self.f(self.var.value)
+#         return np.sum(val)
+
+#     def grad(self):
+#         val, grad = self.f(self.var.value)
+#         return grad
+
+#     def convexify(self):
+#         val, grad = self.f(self.var.value)
+#         affexprlist = diff(self.var.grb_vars, self.var.value)
+#         affexprlist = self.aff_expr(affexprlist, grad, val) 
+#         return affexprlist
 
 class NonQuadFn(Function):
     def __init__(self, var, f):

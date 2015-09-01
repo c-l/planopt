@@ -55,7 +55,7 @@ class Place(HLAction):
 
         self.preconditions = [RobotAt(self.env, self, self.model, self.pos, self.traj)]
         self.preconditions += [InManip(self.env, self, self.model, robot, self.obj, self.gp, self.traj, self.obj_traj)]
-        self.preconditions += [IsMP(self.env, self, self.model, robot, self.traj, self.obj, self.obj_traj, place_objs=self.place_objs, place_locs=self.place_locs)]
+        # self.preconditions += [IsMP(self.env, self, self.model, robot, self.traj, self.obj, self.obj_traj, place_objs=self.place_objs, place_locs=self.place_locs)]
         self.preconditions += [IsPDP(self.env, self, self.model, robot, self.obj, self.gp, self.traj, self.obj_traj)]
 
         self.postconditions = [ObjAt(self.env, self, self.model, self.obj, self.loc, self.obj_traj, loc_param=loc_param)] 
@@ -90,14 +90,9 @@ class Place(HLAction):
 
     def plot(self, handles=[]):
         self.handles = []
-        # del self.handles
-        super(Pick, self).plot()
-        # self.plot_consensus_pos()
-        self.plot_consensus_obj_pos()
-    def plot(self, handles=[]):
-        self.handles = []
         super(Place, self).plot()
 
+        self.handles += handles
         self.plot_consensus_pos()
         self.plot_consensus_obj_pos()
 
@@ -123,18 +118,21 @@ class Place(HLAction):
     def init_opt(self):
         # initialize trajectories
         self.traj.value = self.hl_loc.value - self.hl_gp.value
+        self.pos.value = self.traj.value.copy()
         self.obj_traj.value = self.hl_loc.value
 
         # sqp = SQP()
         solver = Solver()
-        # solver.initial_trust_box_size = 0.1
-        solver.initial_trust_box_size = 1
+        solver.initial_trust_box_size = 0.1
+        # solver.initial_trust_box_size = 1
         solver.min_trust_box_size=1e-4
         # solver.initial_penalty_coeff = 0.1
         solver.min_approx_improve = 1e-2
         # solver.g_use_numerical = False
 
         self.opt_prob.make_primal()
+        self.opt_prob.init_trust_region = True
+        import ipdb; ipdb.set_trace() # BREAKPOINT
         success = solver.penalty_sqp(self.opt_prob)
         self.pos.initialized = True
         self.loc.initialized = True
@@ -150,3 +148,6 @@ class Place(HLAction):
         super(Place, self).create_opt_prob()
         self.opt_prob.add_var(self.pos)
         self.opt_prob.add_var(self.loc)
+
+        for place_loc in self.place_locs:
+            self.opt_prob.add_var(place_loc)

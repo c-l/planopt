@@ -24,6 +24,7 @@ class OptProb(object):
 
         self.callbacks = []
 
+        self.init_trust_region = True
 
     def get_model(self):
         return self.model
@@ -53,6 +54,7 @@ class OptProb(object):
     def clean(self, temp):
         for item in temp:
             self.model.remove(item)
+        temp = []
 
     def inc_obj(self, quad_fn):
         self.obj_fns += [quad_fn]
@@ -124,6 +126,7 @@ class OptProb(object):
         self.obj_sqp = self.obj + penalty_obj
         self.add_dual_costs()
 
+    # @profile
     def add_trust_region(self, trust_region_size):
         if self.trust_region_cnt is not None:
             self.model.remove(self.trust_region_cnt)
@@ -133,13 +136,48 @@ class OptProb(object):
         val_list = [val for var in self.vars for val in var.value.flatten()]        
         self.trust_region_cnt = self.add_trust_region_cnt(var_list, val_list, trust_region_size)
 
+    # @profile
     def add_trust_region_cnt(self, x, xp, trust_box_size):
-        expr = grb.LinExpr()
-        rows = len(x)
-        # expr = grb.quicksum(addAbs(grb.LinExpr(x[i]-xp[i])))
-        for i in range(rows):
-            expr += abs(self.model, grb.LinExpr(x[i]-xp[i]), temp=self.trust_temp)
-        return self.model.addConstr(expr <= trust_box_size)
+        # expr = grb.LinExpr()
+        if self.init_trust_region:
+            rows = len(x)
+            # expr = grb.quicksum(addAbs(grb.LinExpr(x[i]-xp[i])))
+            pos = []
+            neg = []
+            expr = []
+            self.diffs = []
+            for i in range(rows):
+                pos.append(self.model.addVar(lb=0, ub=GRB.INFINITY, name='pos'+str(i)))
+                neg.append(self.model.addVar(lb=0, ub=GRB.INFINITY, name='neg'+str(i)))
+                # expr.append(pos-neg)
+            # import ipdb; ipdb.set_trace() # BREAKPOINT
+            coeffs = [1]*(2*rows)
+            expr = grb.LinExpr(coeffs, pos+neg)
+            # expr = grb.quicksum(pos+neg)
+            self.trust_temp.extend(pos+neg)
+
+            # self.trust_cnts = []
+            self.model.update()
+            for i in range(rows):
+                diff = grb.LinExpr(-1*x[i])
+                diff.addConstant(xp[i])
+                abs = grb.LinExpr([1, -1], [pos[i], neg[i]])
+                # self.trust_temp.append(self.model.addConstr(diff == pos[i] - neg[i]))
+                self.trust_temp.append(self.model.addConstr(diff, GRB.EQUAL, abs))
+                self.diffs.append(abs)
+            # self.model.update()
+
+            # import ipdb; ipdb.set_trace() # BREAKPOINT
+            # for i in range(rows):
+            #     expr += abs(self.model, grb.LinExpr(x[i]-xp[i]), temp=self.trust_temp)
+            # self.init_trust_region = False
+            return self.model.addConstr(expr <= trust_box_size)
+        else:
+            rows = len(x)
+            for i in range(rows):
+                diff = grb.LinExpr(-1*x[i])
+                diff.addConstant(xp[i])
+                self.trust_temp.append(self.model.addConstr(diff, GRB.EQUAL, self.diffs[i]))
 
     def l2_norm_squared(self, model, var, consensus):
         obj = grb.QuadExpr()
