@@ -59,7 +59,10 @@ class IsMP(Fluent):
         self.obj_names = [obj.GetName() for obj in self.place_objs]
         self.name_to_index = {}
         for obj, i in zip(self.place_objs, range(self.num_objs)):
-            self.name_to_index[obj.GetName()] = i+T
+            if self.obj is not None:
+                self.name_to_index[obj.GetName()] = i+2*T
+            else:
+                self.name_to_index[obj.GetName()] = i+T
 
         # TODO: fix this hack to work when place locations and trajectory have different dimensions (perhaps zero pad place locations or trajectory?)
         # x = place_locs + [self.traj]
@@ -69,7 +72,10 @@ class IsMP(Fluent):
 
         # g = Function(lambda x: self.collisions(x, 0.05, (K,T)), use_numerical=False) # function inequality constraint g(x) <= 0
         g = lambda x: self.collisions(x, 0.05, (K,T)) # function inequality constraint g(x) <= 0
-        g_func = CollisionFn([self.traj_var] + self.place_locs, g)
+        if self.obj is not None:
+            g_func = CollisionFn([self.traj_var, self.obj_traj_var] + self.place_locs, g)
+        else:
+            g_func = CollisionFn([self.traj_var] + self.place_locs, g)
         self.constraints.add_nonlinear_ineq_constraint(g_func)
         # h = None # function equality constraint h(x) ==0
         # self.constraints = Constraints(linear_constraints, (g, self.traj), h)
@@ -91,7 +97,10 @@ class IsMP(Fluent):
 
         traj = x[:K*T,:].reshape(traj_shape, order='F')
         # val = np.zeros((len(obstacles)*T,1))
-        val = np.zeros((T+self.num_objs, 1))
+        if self.obj is not None:
+            val = np.zeros((2*T+self.num_objs, 1))
+        else:
+            val = np.zeros((T+self.num_objs, 1))
         jac = np.zeros((val.size, x.size))
 
         cc = self.cc
@@ -104,7 +113,10 @@ class IsMP(Fluent):
         obj = self.obj
         collisions = []
         # distances = np.infty * np.ones(T)
-        distances = np.infty * np.ones(T+self.num_objs)
+        if self.obj is not None:
+            distances = np.infty * np.ones(2*T+self.num_objs)
+        else:
+            distances = np.infty * np.ones(T+self.num_objs)
         for t in range(T):
             # xt = self.traj.value[K*t:K*(t+1)]
             xt = traj[:,t:t+1]
@@ -118,8 +130,9 @@ class IsMP(Fluent):
                 bodies = [robot, obj]
             else:
                 bodies = [robot]
-            for body in bodies:
-                collisions = cc.BodyVsAll(body)
+            # for body in bodies:
+            for i in range(len(bodies)):
+                collisions = cc.BodyVsAll(bodies[i])
 
                 for c in collisions:
                     distance = c.GetDistance()
@@ -127,19 +140,11 @@ class IsMP(Fluent):
                     linkB = c.GetLinkBParentName()
                     if obj is not None:
                         if linkA == robot.GetName() and linkB == obj.GetName():
-                            import ipdb; ipdb.set_trace() # BREAKPOINT
                             continue
                         elif linkB == robot.GetName() and linkA == obj.GetName():
-                            import ipdb; ipdb.set_trace() # BREAKPOINT
                             continue
 
-
-
-                    # print "collision dist of ", distance, " between ", linkA, " ", linkB
-                    # if distance > distances[t]:
-                    #     continue
-                    # else:
-                    #     distances[t] = distance
+                    assert linkA == robot.GetName() or linkA == obj.GetName()
 
                     ptA = c.GetPtA()
                     ptA[2] = 1.01
@@ -174,7 +179,10 @@ class IsMP(Fluent):
                             # import ipdb; ipdb.set_trace() # BREAKPOINT
                             distances[index] = distance
                             # need to flip the sign from the place objs point of reference
-                            loc = self.place_locs[index-T]
+                            if obj is not None:
+                                loc = self.place_locs[index-2*T]
+                            else:
+                                loc = self.place_locs[index-T]
                             ptA = ptA[0:2]
                             # gradd = np.dot(10*normal[0:2], self.calcJacobian(np.transpose(ptA), loc.value[:,0]))
                             gradd = np.dot(normal[0:2], self.calcJacobian(np.transpose(ptA), loc.value[:,0]))
@@ -194,8 +202,9 @@ class IsMP(Fluent):
                     # why is there a negative one?
                     gradd = np.dot(-1 * normal[0:2], self.calcJacobian(np.transpose(ptB), traj[:,t]))
 
-                    val[t] = dsafe - c.GetDistance()
-                    jac[t, K*t:K*(t+1)] = gradd
+                    index = i*T + t
+                    val[index] = dsafe - distance
+                    jac[index, K*index:K*(index+1)] = gradd
 
         self.hl_action.plot(handles)
         self.plotting_env.UpdatePublishedBodies()

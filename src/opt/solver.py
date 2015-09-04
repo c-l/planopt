@@ -409,6 +409,7 @@ class Solver(object):
                     converged = False
                 print param.name, " disagree by ", diff
             dual_updates += 1
+            # import ipdb; ipdb.set_trace() # BREAKPOINT
             # if penalty_coeff.value > 0.1:
         else:
             return True, dual_updates

@@ -55,7 +55,7 @@ class Place(HLAction):
 
         self.preconditions = [RobotAt(self.env, self, self.model, self.pos, self.traj)]
         self.preconditions += [InManip(self.env, self, self.model, robot, self.obj, self.gp, self.traj, self.obj_traj)]
-        # self.preconditions += [IsMP(self.env, self, self.model, robot, self.traj, self.obj, self.obj_traj, place_objs=self.place_objs, place_locs=self.place_locs)]
+        self.preconditions += [IsMP(self.env, self, self.model, robot, self.traj, self.obj, self.obj_traj, place_objs=self.place_objs, place_locs=self.place_locs)]
         self.preconditions += [IsPDP(self.env, self, self.model, robot, self.obj, self.gp, self.traj, self.obj_traj)]
 
         self.postconditions = [ObjAt(self.env, self, self.model, self.obj, self.loc, self.obj_traj, loc_param=loc_param)] 
@@ -132,7 +132,7 @@ class Place(HLAction):
 
         self.opt_prob.make_primal()
         self.opt_prob.init_trust_region = True
-        import ipdb; ipdb.set_trace() # BREAKPOINT
+
         success = solver.penalty_sqp(self.opt_prob)
         self.pos.initialized = True
         self.loc.initialized = True

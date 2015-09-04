@@ -157,7 +157,6 @@ class PlanRefinement(object):
                 else:
                     init_later_actions.append(action)
 
-            import ipdb; ipdb.set_trace() # BREAKPOINT
             # action = self.action_list[3]
             # for fluent in action.preconditions + action.postconditions:
             #     if not fluent.satisfied():
@@ -173,12 +172,12 @@ class PlanRefinement(object):
                 hl_action.plot()
 
             for action in init_later_actions:
+                import ipdb; ipdb.set_trace() # BREAKPOINT
                 action.init_opt()
 
             for hl_action in self.action_list:
                 hl_action.plot()
 
-            import ipdb; ipdb.set_trace() # BREAKPOINT
             llplan = LLPlan(params, self.action_list)
             llplan.solve()
 

@@ -39,6 +39,7 @@ class Pick(HLAction):
         self.preconditions = [RobotAt(self.env, self, self.model, self.pos, self.traj)]
         self.preconditions += [ObjAt(self.env, self, self.model, self.obj, self.loc, self.obj_traj)] 
         self.preconditions += [IsGP(self.env, self, self.model, robot, self.obj, self.gp, self.traj, self.obj_traj)]
+        self.preconditions += [IsMP(self.env, self, self.model, robot, self.traj, self.obj, self.obj_traj, place_objs=None, place_locs=None)]
 
         self.postconditions = [InManip(self.env, self, self.model, robot, self.obj, self.gp, self.traj, self.obj_traj)]
 
@@ -69,10 +70,10 @@ class Pick(HLAction):
             self.handles += [self.hl_plan.env.plot3(points=hl_obj_pos[:, 0], pointsize=10, colors=(1,0,0))]
 
     def plot(self, handles=[]):
-        self.handles = []
+        # self.handles = []
+        self.handles += handles
         # del self.handles
         super(Pick, self).plot()
-        self.handles += handles
         self.plot_consensus_pos()
         self.plot_consensus_obj_pos()
 
@@ -106,7 +107,8 @@ class Pick(HLAction):
         solver.initial_trust_box_size = 1
         solver.min_trust_box_size=1e-4
         # sqp.initial_penalty_coeff = 0.1
-        solver.min_approx_improve = 1e-2
+        # solver.min_approx_improve = 1e-2
+        solver.min_approx_improve = 1e-4
         # sqp.g_use_numerical = False
 
         self.opt_prob.make_primal()

@@ -68,6 +68,9 @@ class IsGP(Fluent):
             linkA = c.GetLinkAParentName()
             linkB = c.GetLinkBParentName()
 
+            assert linkA == robot.GetName()
+            assert linkB == obj.GetName()
+
             ptA = c.GetPtA()
             ptA[2] = 1.01
             ptB = c.GetPtB()
@@ -90,11 +93,15 @@ class IsGP(Fluent):
             ptB = np.matrix(ptB)[:, 0:2]
             # why is there a negative one?
 
-            val[t] = (target_dist - c.GetDistance())
+            val[t] = 3*(target_dist - c.GetDistance())
 
             # gradd = -1 * np.sign(val[t]) * normal[:,0:2] * self.calcJacobian(np.transpose(ptB), xt)
-            gradd = np.sign(val[t]) * normal[:,0:2] * self.calcJacobian(np.transpose(ptB), xt)
+            # gradd = np.sign(val[t]) * normal[:,0:2] * self.calcJacobian(np.transpose(ptB), xt)
+            gradd =  -3*normal[:,0:2] * self.calcJacobian(np.transpose(ptB), xt)
             jac[t, K*t:K*(t+1)] = gradd
+            # print "normal: ", normal[:, 0:2]
+            # print "val: ", val[t]
+            # print "gradd: ", gradd
             # val[t] = 3*(target_dist - c.GetDistance())
             # jac[t, K*t:K*(t+1)] = 3*gradd
             # print "distance collision = ", (target_dist - c.GetDistance())

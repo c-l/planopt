@@ -117,7 +117,6 @@ class HLParam(object):
         if self.gen is None:
             self.gen= self.generator()
         self.consensus.set(next(self.gen))
-        import ipdb; ipdb.set_trace() # BREAKPOINT
         self.initialize_to_consensus()
 
     def reset(self):
@@ -158,6 +157,11 @@ class RP(HLParam):
 
 class ObjLoc(HLParam):
     # object location
+    random.seed([1])
+    # random.seed([3])
+    # random.seed([5])
+    # random.seed([6])
+
     def __init__(self, name, rows, cols, is_var=True, value=None, ro=None, region=None):
         super(ObjLoc, self).__init__(name, rows, cols, is_var, value, ro)
         self.region = region
@@ -176,10 +180,6 @@ class ObjLoc(HLParam):
             self.max_z = region[2,1]
 
     def generator(self):
-        # random.seed([1])
-        # random.seed([3])
-        random.seed([5])
-        # random.seed([6])
         while True:
             x = random.random() * (self.max_x - self.min_x) + self.min_x
             y = random.random() * (self.max_y - self.min_y) + self.min_y

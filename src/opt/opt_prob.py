@@ -34,6 +34,13 @@ class OptProb(object):
             var.update()
 
     def find_closest_feasible_point(self):
+        if self.trust_region_cnt is not None:
+            self.model.remove(self.trust_region_cnt)
+        self.clean(self.trust_temp)
+
+        for constraint in self.constraints:
+            constraint.clean()
+
         obj = grb.QuadExpr()
         for var in self.vars:
             obj += self.l2_norm_diff_squared(self.model, var)
@@ -45,6 +52,7 @@ class OptProb(object):
         return True
 
     def optimize(self):
+        self.hl_action.clear_plots()
         self.model.setObjective(self.obj_sqp)
         self.model.update()
         self.model.optimize()

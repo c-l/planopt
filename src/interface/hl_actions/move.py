@@ -99,7 +99,6 @@ class Move(HLAction):
         mid_time_step = self.T/2
         init_traj = np.hstack((np.array([np.linspace(i,j,mid_time_step) for i,j in zip(np.array(start), np.array(waypoint))]), \
                     np.array([np.linspace(i,j,self.T-mid_time_step) for i,j in zip(np.array(waypoint), np.array(end))])))
-        import ipdb; ipdb.set_trace() # BREAKPOINT
         return init_traj
                     
 
@@ -162,7 +161,6 @@ class Move(HLAction):
         if self.obj is not None:
             self.obj_traj.value = self.traj.value + np.tile(self.hl_gp.value, (self.T,1))
 
-        import ipdb; ipdb.set_trace() # BREAKPOINT
         solver = Solver()
         # solver.initial_trust_box_size = 0.1
         # solver.initial_trust_box_size = 1
@@ -173,7 +171,7 @@ class Move(HLAction):
         # solver.initial_penalty_coeff = 0.01
         solver.min_approx_improve = 1e-2
         solver.max_merit_coeff_increases = 2
-        # self.opt_prob.make_primal()
+        self.opt_prob.make_primal()
 
         K = self.K
         constraints = Constraints(self.model)
