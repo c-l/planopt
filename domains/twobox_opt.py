@@ -19,14 +19,14 @@ class TwoBoxOpt(object):
         rows = 3
         cols = 1
         self.robot = env.GetRobots()[0]
-        env.GetKinBody('box1').SetTransform(base_pose_to_mat(np.array([[3.5],[4.5],[0]])))
+        # env.GetKinBody('box1').SetTransform(base_pose_to_mat(np.array([[3.5],[4.5],[0]])))
         self.hl_params = {\
                 "robot_init_loc":RP("robot_init_loc", rows, cols, is_var=False, value=mat_to_base_pose(self.robot.GetTransform())),\
                 "box1_init_loc":ObjLoc("box1_init_loc", rows, cols, is_var=False, value=mat_to_base_pose(env.GetKinBody("box1").GetTransform())),\
                 "box2_init_loc":ObjLoc("box2_init_loc", rows, cols, is_var=False, value=mat_to_base_pose(env.GetKinBody("box2").GetTransform())),\
-                "goal1":ObjLoc("goal1", rows, cols, is_var=True, value=mat_to_base_pose(env.GetKinBody("box1").GetTransform())),\
+                # "goal1":ObjLoc("goal1", rows, cols, is_var=True, value=mat_to_base_pose(env.GetKinBody("box1").GetTransform())),\
                 # "goal":ObjLoc("goal", rows, cols, is_var=False, value=goal),\
-                # "goal1":ObjLoc("goal1", rows, cols, is_var=True, value=None, region=goal),\
+                "goal1":ObjLoc("goal1", rows, cols, is_var=True, value=None, region=goal),\
                 "goal2":ObjLoc("goal2", rows, cols, is_var=True, value=None, region=goal),\
                 "pick_box1":RP("pick_box1", rows, cols),\
                 "place_box1": RP("place_box1", rows, cols),\
@@ -38,8 +38,8 @@ class TwoBoxOpt(object):
                 "box2":Movable("box2")}
         self.params_to_sample = []
         # for name in ['gp1','goal']:
-        # for name in ['gp1','gp2','goal1', 'goal2']:
-        for name in ['gp2', 'goal2']:
+        for name in ['gp1','gp2','goal1', 'goal2']:
+        # for name in ['gp2', 'goal2']:
             self.params_to_sample.append(self.hl_params[name])
         self.name = "twobox_world"
         self.place_objs = []
@@ -85,8 +85,8 @@ class TwoBoxOpt(object):
         obj_start = d[obj_start_str]
         obj_end = d[obj_end_str]
         gp = d[gp_str]
-        self.place_objs.append(d['box1'])
-        self.place_locs.append(d['goal1'])
+        # self.place_objs.append(d['box1'])
+        # self.place_locs.append(d['goal1'])
         action = Move(lineno, pr, env, robot, start_param=start, end_param=end, obj_param=obj, obj_start_param=obj_start, obj_end_param=obj_end, gp_param=gp, name="move"+str(lineno), place_obj_params=self.place_objs[:], place_loc_params=self.place_locs[:])
         return action
 

@@ -398,6 +398,8 @@ class Solver(object):
                         break #from trust region loop
                 else:
                     print("Converged: x tolerance")
+                # if prob.hl_action.name == "move2":
+                #     import ipdb; ipdb.set_trace() # BREAKPOINT
 
             # sqp_iter = sqp_iter + 1
 
@@ -423,6 +425,7 @@ class Solver(object):
             print("  sqp_iter: {0}".format(sqp_iter))
             # fval, fgrad, fhess, gval, gjac, hval, hjac = self.convexify_fgh(x, f, g, h)
 
+            # import ipdb; ipdb.set_trace() # BREAKPOINT
             prob.convexify(penalty_coeff)
             merit = prob.val(penalty_coeff)
             prob.save()

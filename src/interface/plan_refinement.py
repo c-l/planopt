@@ -151,8 +151,10 @@ class PlanRefinement(object):
 
             for action in self.action_list:
                 if "pick" in action.name:
+                    import ipdb; ipdb.set_trace() # BREAKPOINT
                     action.init_opt()
                 elif "place" in action.name:
+                    import ipdb; ipdb.set_trace() # BREAKPOINT
                     action.init_opt()
                 else:
                     init_later_actions.append(action)
@@ -179,6 +181,7 @@ class PlanRefinement(object):
                 hl_action.plot()
 
             llplan = LLPlan(params, self.action_list)
+            import ipdb; ipdb.set_trace() # BREAKPOINT
             llplan.solve()
 
             constraints_satisfied = True

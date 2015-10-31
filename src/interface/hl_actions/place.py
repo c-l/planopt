@@ -89,7 +89,7 @@ class Place(HLAction):
             self.handles += [self.hl_plan.env.plot3(points=hl_obj_pos[:, 0], pointsize=10, colors=(1,0,0))]
 
     def plot(self, handles=[]):
-        self.handles = []
+        # self.handles = []
         super(Place, self).plot()
 
         self.handles += handles

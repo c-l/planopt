@@ -96,6 +96,9 @@ class IsMP(Fluent):
         K, T = traj_shape
 
         traj = x[:K*T,:].reshape(traj_shape, order='F')
+        obj_traj = None
+        if self.obj is not None:
+            obj_traj = x[K*T:2*K*T,:].reshape(traj_shape, order='F')
         # val = np.zeros((len(obstacles)*T,1))
         if self.obj is not None:
             val = np.zeros((2*T+self.num_objs, 1))
@@ -123,15 +126,17 @@ class IsMP(Fluent):
             robot.SetTransform(base_pose_to_mat(xt))
             if obj is not None:
                 # ot = self.obj_traj.value[K*t:K*(t+1)]
-                ot = self.obj_traj_var.value[K*t:K*(t+1)]
+                ot = obj_traj[:,t:t+1]
+                # ot = self.obj_traj_var.value[K*t:K*(t+1)]
                 obj.SetTransform(base_pose_to_mat(ot))
             bodies = []
             if obj is not None:
                 bodies = [robot, obj]
             else:
                 bodies = [robot]
+            num_bodies = len(bodies)
             # for body in bodies:
-            for i in range(len(bodies)):
+            for i in range(num_bodies):
                 collisions = cc.BodyVsAll(bodies[i])
 
                 for c in collisions:
@@ -172,39 +177,41 @@ class IsMP(Fluent):
                     
                     # normalObsToRobot2 = -1 * np.sign(c.GetDistance())*normalize(ptB-ptA)
 
+                    assert linkA not in self.obj_names
 
-                    if linkB in self.obj_names:
-                        index = self.name_to_index[linkB]
-                        if distance <= distances[index]:
-                            # import ipdb; ipdb.set_trace() # BREAKPOINT
-                            distances[index] = distance
-                            # need to flip the sign from the place objs point of reference
-                            if obj is not None:
-                                loc = self.place_locs[index-2*T]
-                            else:
-                                loc = self.place_locs[index-T]
-                            ptA = ptA[0:2]
-                            # gradd = np.dot(10*normal[0:2], self.calcJacobian(np.transpose(ptA), loc.value[:,0]))
-                            gradd = np.dot(normal[0:2], self.calcJacobian(np.transpose(ptA), loc.value[:,0]))
-                            val[index] = dsafe - c.GetDistance()
-                            jac[index, K*index:K*(index+1)] = gradd
-                    if linkA in self.obj_names:
-                        print "we shouldn't be here, making assumption that linkA is the obj or robot"
-                        import ipdb; ipdb.set_trace() # BREAKPOINT
+                    body_index = i*T + t
+                    placed_obj_index = None
+                    include_placed_obj = linkB in self.obj_names
+                    if include_placed_obj:
+                        placed_obj_index = self.name_to_index[linkB]
+                        # if distance <= distances[index]:
+                        # import ipdb; ipdb.set_trace() # BREAKPOINT
+                        distances[placed_obj_index] = distance
+                        # need to flip the sign from the place objs point of reference
+                        loc = self.place_locs[placed_obj_index-num_bodies*T]
+                        ptA = ptA[0:2]
+                        # gradd = np.dot(10*normal[0:2], self.calcJacobian(np.transpose(ptA), loc.value[:,0]))
+                        gradd = np.dot(normal[0:2], self.calcJacobian(np.transpose(ptA), loc.value[:,0]))
+                        val[placed_obj_index] += dsafe - c.GetDistance()
+                        jac[placed_obj_index, K*placed_obj_index:K*(placed_obj_index+1)] += gradd
+                        jac[body_index, K*placed_obj_index:K*(placed_obj_index+1)] += gradd
 
-                    if distance > distances[t]:
-                        continue
-                    else:
-                        distances[t] = distance
-
-                    # ptB = np.matrix(ptB)[:, 0:2]
                     ptB = ptB[0:2]
                     # why is there a negative one?
-                    gradd = np.dot(-1 * normal[0:2], self.calcJacobian(np.transpose(ptB), traj[:,t]))
+                    # robot gradient
+                    if i == 0:
+                        gradd = np.dot(-1 * normal[0:2], self.calcJacobian(np.transpose(ptB), traj[:,t]))
+                    # object gradient
+                    elif i == 1:
+                        gradd = np.dot(-1 * normal[0:2], self.calcJacobian(np.transpose(ptB), obj_traj[:,t]))
+                    else:
+                        print "this shouldn't happen we should only be iterating over the object and robot"
+                        assert False
 
-                    index = i*T + t
-                    val[index] = dsafe - distance
-                    jac[index, K*index:K*(index+1)] = gradd
+                    val[body_index] += dsafe - distance
+                    jac[body_index, K*body_index:K*(body_index+1)] += gradd
+                    if include_placed_obj:
+                        jac[placed_obj_index, K*body_index:K*(body_index+1)] += gradd
 
         self.hl_action.plot(handles)
         self.plotting_env.UpdatePublishedBodies()
@@ -243,5 +250,6 @@ class IsMP(Fluent):
         jac[1,1] = 1
         jac[0,2] = -r[1]
         jac[1,2] = r[0]
-        return np.matrix(jac)
+        # return np.matrix(jac)
+        return jac
 

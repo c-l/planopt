@@ -56,8 +56,8 @@ class LLPlan(object):
         solver.max_merit_coeff_increases = 3
         # solver.max_merit_coeff_increases = 2
         solver.merit_coeff_increase_ratio = 10
-        # solver.initial_trust_box_size = 0.1
-        solver.initial_trust_box_size = 0.3
+        solver.initial_trust_box_size = 0.1
+        # solver.initial_trust_box_size = 0.3
         # solver.initial_trust_box_size = 1
         # solver.initial_trust_box_size = 2
         # solver.initial_trust_box_size = 3

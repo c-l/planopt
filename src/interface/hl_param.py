@@ -157,10 +157,13 @@ class RP(HLParam):
 
 class ObjLoc(HLParam):
     # object location
-    random.seed([1])
+    # random.seed([1])
+    random.seed([2]) # difficult one
     # random.seed([3])
+    # random.seed([4])
     # random.seed([5])
     # random.seed([6])
+    # random.seed([7])
 
     def __init__(self, name, rows, cols, is_var=True, value=None, ro=None, region=None):
         super(ObjLoc, self).__init__(name, rows, cols, is_var, value, ro)

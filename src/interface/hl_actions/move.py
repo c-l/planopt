@@ -103,7 +103,7 @@ class Move(HLAction):
                     
 
     def plot(self, handles=[]):
-        self.handles = []
+        # self.handles = []
         # self.handles += super(Move, self).plot(handles)
         super(Move, self).plot()
         self.handles += handles
