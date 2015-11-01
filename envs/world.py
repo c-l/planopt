@@ -199,12 +199,12 @@ class World(object):
     def generate_twobox_env(self):
         env = self.env
         robot = self.create_robot()
-        robot.SetTransform(base_pose_to_mat([3.5,1.5,0]))
+        robot.SetTransform(base_pose_to_mat(np.array([[3.5],[1.5],[0]])))
         self.create_walls(env, [[0.0,-2.0],[0.0,3.0],[3.0,3.0],[3.0,5.0],[4.0,5.0],[4.0,3.0],[7.0,3.0],[7.0,-2.0],[0.0,-2.0]])
 
         dims = [0.35, 0.35, 1]
-        box1t= base_pose_to_mat([1,1.5,0])
-        box2t= base_pose_to_mat([6,1.5,0])
+        box1t= base_pose_to_mat(np.array([[1],[1.5],[0]]))
+        box2t= base_pose_to_mat(np.array([[6],[1.5],[0]]))
         box1 = self.create_box(env, "box1", box1t, dims)
         box2 = self.create_box(env, "box2", box2t, dims)
         env.AddKinBody(box1)
