@@ -1,5 +1,4 @@
 import numpy as np
-import cvxpy as cvx
 from opt.variable import Variable
 from opt.solver import Solver
 # from opt.sqp import SQP

@@ -1,5 +1,4 @@
 from fluent import Fluent
-import cvxpy as cvx
 from opt.constraints import Constraints
 
 class RobotAt(Fluent):

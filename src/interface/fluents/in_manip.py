@@ -1,5 +1,4 @@
 from fluent import Fluent
-import cvxpy as cvx
 from numpy.linalg import norm
 import numpy as np
 from opt.constraints import Constraints

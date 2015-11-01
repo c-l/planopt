@@ -1,5 +1,4 @@
 import numpy as np
-import cvxpy as cvx
 from copy import copy, deepcopy
 
 class Objective(object):

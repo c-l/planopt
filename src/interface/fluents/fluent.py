@@ -1,4 +1,3 @@
-import cvxpy as cvx
 import openravepy
 import numpy as np
 from opt.constraints import Constraints

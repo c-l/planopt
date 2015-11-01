@@ -1,5 +1,4 @@
 from fluent import Fluent
-import cvxpy as cvx
 from opt.constraints import Constraints
 # from opt.function import Function
 from opt.function import CollisionFn

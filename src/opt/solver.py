@@ -1,4 +1,3 @@
-import cvxpy as cvx
 from opt.opt_prob import OptProb
 from opt.variable import Variable
 import numpy as np

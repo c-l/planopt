@@ -1,5 +1,4 @@
 import numpy as np
-import cvxpy as cvx
 from opt.opt_prob import OptProb
 from opt.solver import Solver
 

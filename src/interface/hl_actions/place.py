@@ -1,5 +1,4 @@
 import numpy as np
-import cvxpy as cvx
 from opt.variable import Variable
 from opt.solver import Solver
 # from opt.sqp import SQP
@@ -16,7 +15,7 @@ from interface.fluents.in_manip import InManip
 from interface.fluents.is_gp import IsGP as IsPDP
 from interface.fluents.robot_at import RobotAt
 from interface.fluents.obj_at import ObjAt
-from interface.fluents.in_region import InRegion
+# from interface.fluents.in_region import InRegion
 
 from utils import *
 
