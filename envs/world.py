@@ -84,7 +84,8 @@ class World(object):
     def create_aligned_wall(self, env, name, start, end):
         dim_x = 0
         dim_y = 0
-        thickness = 0.05
+        # thickness = 0.05
+        thickness = 1
         if start[0] == end[0]:
             length = abs(start[1] - end[1])
 
@@ -200,7 +201,8 @@ class World(object):
         env = self.env
         robot = self.create_robot()
         robot.SetTransform(base_pose_to_mat(np.array([[3.5],[1.5],[0]])))
-        self.create_walls(env, [[0.0,-2.0],[0.0,3.0],[3.0,3.0],[3.0,5.0],[4.0,5.0],[4.0,3.0],[7.0,3.0],[7.0,-2.0],[0.0,-2.0]])
+        # self.create_walls(env, [[0.0,-2.0],[0.0,3.0],[3.0,3.0],[3.0,5.0],[4.0,5.0],[4.0,3.0],[7.0,3.0],[7.0,-2.0],[0.0,-2.0]])
+        self.create_walls(env, [[-1.0,-3.0],[-1.0,4.0],[2.0,4.0],[2.0,6.0],[5.0,6.0],[5.0,4.0],[8.0,4.0],[8.0,-3.0],[-1.0,-3.0]])
 
         dims = [0.35, 0.35, 1]
         box1t= base_pose_to_mat(np.array([[1],[1.5],[0]]))
