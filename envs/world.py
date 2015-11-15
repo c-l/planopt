@@ -226,8 +226,8 @@ class World(object):
         dims = [0.35, 2.0]
         can1t= base_pose_to_mat(np.array([[1],[1.5],[0]]))
         can2t= base_pose_to_mat(np.array([[6],[1.5],[0]]))
-        can1 = self.create_cylinder(env, "can1", can1t, dims)
-        can2 = self.create_cylinder(env, "can2", can2t, dims)
+        can1 = self.create_cylinder(env, "box1", can1t, dims)
+        can2 = self.create_cylinder(env, "box2", can2t, dims)
         env.AddKinBody(can1)
         env.AddKinBody(can2)
         self.make_transparent(can1)
@@ -358,11 +358,9 @@ class World(object):
 if __name__ == "__main__":
     world = World()
     env = world.generate_twocans_env()
-    # env = world.generate_twobox_env()
     env.SetViewer('qtcoin') # attach viewer (optional)
     # env, target_locations = world.generate_boxes_env(1)
     # env.Save("../envs/one_box_world.dae", Environment.SelectionOptions.Everything)
-    # env.Save("../envs/twobox_world.dae", Environment.SelectionOptions.Everything)
-    env.Save("../envs/twocan_world.dae", Environment.SelectionOptions.Everything)
+    env.Save("../envs/twobox_world.dae", Environment.SelectionOptions.Everything)
     import ipdb; ipdb.set_trace() # BREAKPOINT
 

@@ -176,8 +176,8 @@ class HLAction(object):
         return robot
 
     def create_obj_kinbody(self, name, color=[0,1,0], transparency=0.8):
-        obj = self.create_box(name, np.eye(4), [.35, .35, 1], transparency=transparency)
-        # obj = self.create_cylinder(name, np.eye(4), [0.35,2.01], color=color, transparency=transparency)
+        # obj = self.create_box(name, np.eye(4), [.35, .35, 1], transparency=transparency)
+        obj = self.create_cylinder(name, np.eye(4), [0.35,2.01], color=color, transparency=transparency)
         return obj
 
     def create_cylinder(self, body_name, t, dims, color=[0,1,1], transparency=0.8):
