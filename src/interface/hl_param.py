@@ -16,7 +16,7 @@ class HLParam(object):
     # ro = 1000
     # ro = 3000
 
-    def __init__(self, name, rows, cols, is_var=True, value=None, ro=None):
+    def __init__(self, name, rows, cols, is_var=True, value=None, ro=None, index=None):
         self.name = name
         # hla stands for high level action
         self.hlas = []
@@ -28,16 +28,17 @@ class HLParam(object):
         self.is_var = is_var
         if is_var:
             if value is None:
-                self.consensus = Constant(rows, cols, name="hl_" + name, value=np.zeros((rows,cols)))
+                self.consensus = Constant(self, rows, cols, name="hl_" + name, value=np.zeros((rows,cols)))
             else:
-                self.consensus = Constant(rows, cols, name="hl_" + name, value=value)
+                self.consensus = Constant(self, rows, cols, name="hl_" + name, value=value)
         else:
             assert value is not None
-            self.consensus = Constant(rows, cols, name="hl_" + name, value=value)
+            self.consensus = Constant(self, rows, cols, name="hl_" + name, value=value)
         if ro == None:
             self.ro = HLParam.ro
         else:
             self.ro = ro
+        self.index = index
         self.gen = None
         
     def print_info(self):
@@ -46,7 +47,7 @@ class HLParam(object):
             print self.hlas[i].name, "'s value is ", self.hla_vars[i].value, " with dual of ", self.hla_dual_vars[i]
 
     def get_eq_constraints(self):
-        hl_var = Variable(self.rows, name="hlvar_" + self.name, value=self.consensus.value.copy())
+        hl_var = Variable(self, self.rows, name="hlvar_" + self.name, value=self.consensus.value.copy())
         eq_constraints = []
         for var in self.hla_vars:
             eq_constraints += [hl_var == var]
@@ -60,10 +61,10 @@ class HLParam(object):
         if not self.is_var:
             return self.consensus, self.consensus
 
-        hla_var = Variable(model, rows, cols, name=self.name)
+        hla_var = Variable(self, model, rows, cols, name=self.name)
         hla_var.value = self.consensus.value.copy()
 
-        dual_var = Constant(rows, cols, value=np.zeros((rows, cols)), name=self.name)
+        dual_var = Constant(self, rows, cols, value=np.zeros((rows, cols)), name=self.name)
 
         self.hlas.append(hl_action)
         self.hla_vars.append(hla_var)
@@ -90,8 +91,8 @@ class HLParam(object):
             if var.initialized:
                 num_vars += 1
                 z += var.value
-            else:
-                print var.name, " hasn't been initialized yet"
+            # else:
+            #     print var.name, " hasn't been initialized yet"
         if num_vars == 0:
             return 0
 
@@ -108,6 +109,7 @@ class HLParam(object):
                 xi = var.value
                 diff += norm(z - xi, 1)
                 dual_var.value += self.ro*(xi - z)
+
             # print("dual var {0}: {1}".format(i, self.hla_dual_vars[i].value))
             # print("{0}'s {1} dual variable: {2}".format(self.hlas[i].name, self.name, self.hla_dual_vars[i].value))
 
@@ -124,14 +126,16 @@ class HLParam(object):
             # var.value = np.zeros((self.rows, self.cols))
             var.value = np.zeros((self.rows, self.cols))
 
+    def reset_gen(self):
+        self.gen = self.generator()
     # def generator(self):
     #     if not self.is_var:
     #         yield self.consensus.value
 
 class GP(HLParam):
     # grasp pose
-    def __init__(self, name, rows, cols, is_var=True, value=None, ro=None):
-        super(GP, self).__init__(name, rows, cols, is_var, value, ro)
+    # def __init__(self, name, rows, cols, is_var=True, value=None, ro=None):
+    #     super(GP, self).__init__(name, rows, cols, is_var, value, ro)
 
         # self.consensus.value = np.array([[0],[1],[0]])
         # self.consensus.value = np.array([[1],[0],[0]])
@@ -144,8 +148,12 @@ class GP(HLParam):
         # yield np.array([[1],[0],[0]], dtype=np.float)
         # yield np.array([[-1],[0],[0]], dtype=np.float)
         # yield np.array([[0],[-1],[0]], dtype=np.float)
-        yield np.array([[0],[1],[0]], dtype=np.float)
+        # yield np.array([[0],[1],[0]], dtype=np.float)
         # yield np.array([[0],[-1],[0]], dtype=np.float)
+        yield np.array([[0],[0.55],[0]], dtype=np.float)
+        yield np.array([[0],[-0.55],[0]], dtype=np.float)
+        yield np.array([[0.55],[0],[0]], dtype=np.float)
+        yield np.array([[-0.55],[0],[0]], dtype=np.float)
         # self.consensus.value = np.array([[-1],[0],[0]], dtype=np.float)
         # self.consensus.value = np.array([[0],[-1],[0]], dtype=np.float)
         # self.consensus.value = np.array([[-1],[1],[0]], dtype=np.float)
@@ -158,15 +166,15 @@ class RP(HLParam):
 class ObjLoc(HLParam):
     # object location
     # random.seed([1])
-    random.seed([2]) # difficult one
-    # random.seed([3])
+    # random.seed([2]) # difficult one
+    random.seed([3])
     # random.seed([4])
     # random.seed([5])
     # random.seed([6])
     # random.seed([7])
 
-    def __init__(self, name, rows, cols, is_var=True, value=None, ro=None, region=None):
-        super(ObjLoc, self).__init__(name, rows, cols, is_var, value, ro)
+    def __init__(self, name, rows, cols, is_var=True, value=None, ro=None, index=None, region=None):
+        super(ObjLoc, self).__init__(name, rows, cols, is_var, value, ro, index)
         self.region = region
         if region is not None:
             self.in_region = True
@@ -218,7 +226,7 @@ class Traj(HLParam):
         rows = self.rows
         cols = self.cols
 
-        hla_var = Variable(rows, cols, name=self.name)
+        hla_var = Variable(self, rows, cols, name=self.name)
         hla_var.value = self.consensus.value
 
         dual_var = cvx.Parameter(rows, cols, value=np.zeros((rows,cols)))

@@ -25,6 +25,9 @@ class IsGP(Fluent):
         
         self.cc = ctrajoptpy.GetCollisionChecker(env)
 
+    def hl_params(self):
+        return [self.gp.hl_param]
+        
     def precondition(self):
         # obj_pos = Fluent.get_object_loc(self.obj)
         # linear_constraints = [self.traj[:,-1] - self.gp == obj_pos, cvx.norm(self.gp,2) == 1.26] 

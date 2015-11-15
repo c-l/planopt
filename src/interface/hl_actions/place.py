@@ -49,8 +49,8 @@ class Place(HLAction):
                 self.place_locs.append(loc)
                 self.hl_place_locs.append(hl_loc)
 
-        self.traj = Variable(self.model, K*T,1, name=self.name+"_traj")
-        self.obj_traj = Variable(self.model, K*T,1, name=self.name+'_obj_traj')
+        self.traj = Variable(None, self.model, K*T,1, name=self.name+"_traj")
+        self.obj_traj = Variable(None, self.model, K*T,1, name=self.name+'_obj_traj')
 
         self.preconditions = [RobotAt(self.env, self, self.model, self.pos, self.traj)]
         self.preconditions += [InManip(self.env, self, self.model, robot, self.obj, self.gp, self.traj, self.obj_traj)]

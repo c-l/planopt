@@ -17,6 +17,8 @@ class ObjAt(Fluent):
         #     if loc_param.in_region:
         #         self.in_region = True
 
+    def hl_params(self):
+        return [self.loc.hl_param]
 
     # TODO: K currently depends on the robot's degrees of freedom when it shouldn't
     def precondition(self):

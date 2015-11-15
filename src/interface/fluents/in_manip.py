@@ -23,6 +23,9 @@ class InManip(Fluent):
         self.obj_traj = obj_traj
         self.name = "InManip"
         
+    def hl_params(self):
+        return [self.gp.hl_param]
+
     def precondition(self):
         K = self.hl_action.K
         T = self.hl_action.T

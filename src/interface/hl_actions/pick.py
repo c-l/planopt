@@ -32,8 +32,8 @@ class Pick(HLAction):
         T = self.T
         K = self.K
 
-        self.traj = Variable(self.model, K*T, 1, name=self.name+"_traj")
-        self.obj_traj = Variable(self.model, K*T, 1, name=self.name+'_obj_traj')
+        self.traj = Variable(None, self.model, K*T, 1, name=self.name+"_traj")
+        self.obj_traj = Variable(None, self.model, K*T, 1, name=self.name+'_obj_traj')
 
         self.preconditions = [RobotAt(self.env, self, self.model, self.pos, self.traj)]
         self.preconditions += [ObjAt(self.env, self, self.model, self.obj, self.loc, self.obj_traj)] 

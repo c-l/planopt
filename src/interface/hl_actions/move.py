@@ -61,10 +61,10 @@ class Move(HLAction):
         KT = K*T
 
 
-        self.traj = Variable(self.model,K*T,1,name=self.name+'_traj')
+        self.traj = Variable(None, self.model,K*T,1,name=self.name+'_traj')
 
         if self.obj is not None:
-            self.obj_traj = Variable(self.model,K*T,1,name=self.name+'_obj_traj')
+            self.obj_traj = Variable(None, self.model,K*T,1,name=self.name+'_obj_traj')
         else:
             self.obj_traj = None
 

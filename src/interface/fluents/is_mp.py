@@ -33,6 +33,9 @@ class IsMP(Fluent):
 
         self.cc = ctrajoptpy.GetCollisionChecker(env)
 
+    def hl_params(self):
+        return [self.gp.hl_param]
+        
     def precondition(self):
         traj = self.traj
         K = self.hl_action.K

@@ -18,6 +18,9 @@ class Fluent(object):
         # else:
         #     return self.constraints.constraints_satisfied(self.tolerance)
 
+    def hl_params(self):
+        raise NotImplementedError
+        
     def precondition(self):
         raise NotImplementedError
 
