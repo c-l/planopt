@@ -132,7 +132,108 @@ class PlanRefinement(object):
         if error is not None:
             raise error
 
+    def backtracking_resample(violated_fluents, sampled_params):
+        hl_params = []
+        for fluent in violated_fluents:
+            hl_params += fluent.hl_params()
+        hl_params.sort(key=lambda f: -f.index)
+
+        for param in hl_params:
+            try:
+                param.resample()
+                index = param.index
+                for param in sampled_params[index+1:]:
+                    param.reset_gen()
+                    param.resample()
+            except StopIteration:
+                continue
+        ipdb.set_trace()
+        # TODO: raise an error
+        print 'Need to raise an error'
+
     def _try_refine(self):
+        # TODO: rewrite
+        initializations = 20
+        index = 0
+        for param in self.sampled_params:
+            param.index = index
+            param.resample()
+            index += 1
+
+        params = self.hl_params.values()
+
+        # import ipdb; ipdb.set_trace() # BREAKPOINT
+        for _ in range(initializations):
+            self.init_actions(self.action_list, params)
+            llplan = LLPlan(params, self.action_list)
+
+            import ipdb; ipdb.set_trace() # BREAKPOINT
+            llplan.solve()
+
+            # otherwise hl actions's may not violate fluents but hl params
+            # disagree on values drastically
+            for param in params:
+                param.initialize_to_consensus()
+
+            violated_fluents = self.find_violated_fluents()
+            if violated_fluents is None:
+                import ipdb; ipdb.set_trace() # BREAKPOINT
+                return None
+            else:
+                import ipdb; ipdb.set_trace() # BREAKPOINT
+                self.backtracking_resample(violated_fluents, self.sampled_params)
+
+        
+        import ipdb; ipdb.set_trace() # BREAKPOINT
+        return None
+
+    def init_actions(self, action_list, params):
+        init_later_actions = []
+        for action in action_list:
+            action.reset()
+        for param in params:
+            param.reset()
+
+        for action in action_list:
+            if "pick" in action.name:
+                import ipdb; ipdb.set_trace() # BREAKPOINT
+                action.init_opt()
+            elif "place" in action.name:
+                import ipdb; ipdb.set_trace() # BREAKPOINT
+                action.init_opt()
+            else:
+                init_later_actions.append(action)
+
+        for param in params:
+            param.dual_update()
+            param.initialize_to_consensus()
+
+        for hl_action in action_list:
+            hl_action.plot()
+
+        for action in init_later_actions:
+            import ipdb; ipdb.set_trace() # BREAKPOINT
+            action.init_opt()
+
+        for hl_action in action_list:
+            hl_action.plot()
+
+    def find_violated_fluents(self):
+        violated_fluents = []
+
+        for action in self.action_list:
+            for fluent in action.preconditions + action.postconditions:
+                if not fluent.satisfied():
+                    violated_action = action.name
+                    violated_fluents.append(fluent)
+                    print violated_action, "'s fluent:", fluent, "violates constraints"
+
+        if len(violated_fluents) == 0:
+            return None
+        else:
+            return violated_fluents
+
+    def _try_refine_old(self):
         # TODO: rewrite
         initializations = 3
         for param in self.sampled_params:

@@ -337,7 +337,7 @@ class Solver(object):
         dual_updates = 0
         # trust_box_size = cvx.Parameter(sign="positive", value = self.initial_trust_box_size)
         converged = False
-        while not converged:
+        while not converged and dual_updates <= 4:
             for prob, size, i in zip(opt_probs, trust_box_sizes, range(len(opt_probs))):
                 sqp_iter = 1
                 print

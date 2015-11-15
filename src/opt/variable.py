@@ -4,7 +4,8 @@ import gurobipy as grb
 GRB = grb.GRB
 
 class Variable(object):
-    def __init__(self, model, rows, cols, value=None, name=None):
+    def __init__(self, hl_param, model, rows, cols, value=None, name=None):
+        self.hl_param = hl_param
         self.model = model
         # self.size = size
         self.rows = rows
@@ -60,8 +61,9 @@ class Variable(object):
         self.value = self.saved_value.copy()
 
 class Constant(object):
-    def __init__(self, rows, cols, value=None, name=None):
+    def __init__(self, hl_param, rows, cols, value=None, name=None):
         assert value is not None
+        self.hl_param = hl_param
         self.rows = rows
         self.cols = cols
         self.set(value)
