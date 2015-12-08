@@ -4,4 +4,4 @@ class Fluent(object):
         self.name = name
 
     def satisfied(self, tolerance=None):
-        return NotImplementedError
+        raise NotImplementedError

@@ -1,12 +1,11 @@
 import numpy as np
 # import cvxpy as cvx
-from copy import copy, deepcopy
 import gurobipy as grb
 GRB = grb.GRB
 
-from opt.ops import abs
 
 class Constraints(object):
+
     def __init__(self, model, g=None, h=None):
         self.model = model
         # linear_constraints = []
@@ -16,12 +15,12 @@ class Constraints(object):
         #     self.linear_constraints = linear_constraints
 
         if g is None:
-            self.gs = [] # non-linear inequality constraints
+            self.gs = []  # non-linear inequality constraints
         else:
             self.gs = [g]
 
         if h is None:
-            self.hs = [] # non-linear equality constraints
+            self.hs = []  # non-linear equality constraints
         else:
             self.hs = [h]
 
@@ -38,7 +37,7 @@ class Constraints(object):
         rows, cols = var.shape
         for i in range(rows):
             for j in range(cols):
-                constraints.append(self.model.addConstr(x[i,j] == b[i,j]))
+                constraints.append(self.model.addConstr(x[i, j] == b[i, j]))
         # x = var.flatten()
         # b = b.flatten()
         # for i in range(len(x)):
@@ -52,7 +51,7 @@ class Constraints(object):
         rows, cols = var.shape
         for i in range(rows):
             for j in range(cols):
-                constraints.append(self.model.addConstr(x[i,j] <= b[i,j]))
+                constraints.append(self.model.addConstr(x[i, j] <= b[i, j]))
         return constraints
 
     def add_geq_cntr(self, var, b):
@@ -62,14 +61,14 @@ class Constraints(object):
         rows, cols = var.shape
         for i in range(rows):
             for j in range(cols):
-                constraints.append(self.model.addConstr(x[i,j] >= b[i,j]))
+                constraints.append(self.model.addConstr(x[i, j] >= b[i, j]))
         return constraints
 
     def add_lin_eq_cntr(self, var, A_eq, b_eq):
         # x = var.grb_vars
         x = var
-        var = np.dot(A_ineq, x)
-        constraints = self.add_eq_cntr(var, b_ineq)
+        var = np.dot(A_eq, x)
+        constraints = self.add_eq_cntr(var, b_eq)
         return constraints
 
     def add_lin_leq_cntr(self, var, A_ineq, b_ineq):
@@ -91,7 +90,6 @@ class Constraints(object):
 
     def add_nonlinear_eq_constraint(self, h):
         self.hs.append(h)
-    
 
     def satisfied(self, tolerance):
         for g in self.gs:
@@ -112,26 +110,27 @@ class Constraints(object):
 
     def convexify(self, model, penalty_coeff):
         penalty_obj = grb.LinExpr()
-        for g in self.gs: # non-linear inequality constraints
+        for g in self.gs:  # non-linear inequality constraints
             hinges = self.add_hinges(model, g.convexify())
-            exprlist = grb.quicksum([penalty_coeff*expr for expr in hinges])
+            exprlist = grb.quicksum([penalty_coeff * expr for expr in hinges])
             penalty_obj += exprlist
             # exprlist = penalty_coeff * self.add_hinges(model, g.convexify())
             # penalty_obj += grb.quicksum(exprlist)
-        for h in self.hs: # non-linear equality constraints
+        for h in self.hs:  # non-linear equality constraints
             exprlist = self.l1_norm(model, h.convexify())
-            penalty_obj += grb.quicksum([penalty_coeff*expr for expr in exprlist])
+            penalty_obj += grb.quicksum([penalty_coeff *
+                                         expr for expr in exprlist])
 
         return penalty_obj
 
     def add_hinges(self, model, affexprlist):
-        exprlist = [self.add_hinge(model, affexpr, temp=self.temp) for affexpr in affexprlist]
+        exprlist = [self.add_hinge(model, affexpr, temp=self.temp)
+                    for affexpr in affexprlist]
         return exprlist
-
 
     def add_hinge(self, model, affexpr, temp=None):
         hinge = model.addVar(lb=0, ub=GRB.INFINITY, name='hinge')
-        model.update() # this may be really slow, need to change this
+        model.update()  # this may be really slow, need to change this
         cntr = model.addConstr(affexpr <= hinge)
         expr = grb.LinExpr(hinge)
         if temp is not None:
@@ -140,4 +139,3 @@ class Constraints(object):
 
     def l1_norm(self, model, affexprlist):
         return [abs(model, affexpr, temp=self.temp) for affexpr in affexprlist]
-
