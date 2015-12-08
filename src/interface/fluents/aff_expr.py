@@ -1,6 +1,5 @@
 import numpy as np
 from collections import Iterable
-from opt.variable import Variable
 
 
 class AffExpr(dict):
@@ -30,12 +29,10 @@ class AffExpr(dict):
             s += np.dot(v.get_value(), x)
         return s
 
-    def to_gurobi_expr(self, model):
+    def to_gurobi_expr(self, model, param_to_var):
         expr = 0.0 + self.constant
-        variables = []
 
-        for v, x in self.items():
-            var = Variable(model, v)
-            variables.append(var)
-            expr += np.dot(var.get_grb_vars(), x)
-        return expr, variables
+        for param, coeff in self.items():
+            var = param_to_var[param]
+            expr += np.dot(var.get_grb_vars(), coeff)
+        return expr

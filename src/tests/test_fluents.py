@@ -81,15 +81,18 @@ def test_eq_cnt_with_gurobi():
     lhs = AffExpr({param: 1})
     fluent = LinEqFluent('test_eq', lhs, zero)
 
+    variables = [Variable(model, param)]
+    param_to_var = {param: variables[0]}
+
     constraints = Constraints(model)
     if isinstance(fluent, LinEqFluent):
-        lhs, lhs_var = fluent.lhs.to_gurobi_expr(model)
-        rhs, rhs_var = fluent.rhs.to_gurobi_expr(model)
+        lhs = fluent.lhs.to_gurobi_expr(model, param_to_var)
+        rhs = fluent.rhs.to_gurobi_expr(model, param_to_var)
         model.update()
         constraints.add_eq_cntr(lhs, rhs)
     assert not fluent.satisfied()
 
-    for var in lhs_var:
+    for var in variables:
         for i in range(var.rows):
             for j in range(var.cols):
                 v = var.grb_vars[i, j]
@@ -118,15 +121,18 @@ def test_le_cnt_with_gurobi():
     lhs = AffExpr({param: 1})
     fluent = LinLEFluent('test_eq', lhs, twoe1)
 
+    variables = [Variable(model, param)]
+    param_to_var = {param: variables[0]}
+
     constraints = Constraints(model)
     if isinstance(fluent, LinLEFluent):
-        lhs, lhs_var = fluent.lhs.to_gurobi_expr(model)
-        rhs, rhs_var = fluent.rhs.to_gurobi_expr(model)
+        lhs = fluent.lhs.to_gurobi_expr(model, param_to_var)
+        rhs = fluent.rhs.to_gurobi_expr(model, param_to_var)
         model.update()
         constraints.add_leq_cntr(lhs, rhs)
     assert not fluent.satisfied()
 
-    for var in lhs_var:
+    for var in variables:
         for i in range(var.rows):
             for j in range(var.cols):
                 v = var.grb_vars[i, j]
@@ -139,7 +145,7 @@ def test_le_cnt_with_gurobi():
     var.update()
     var.update_hl_param()
     assert fluent.satisfied()
-    assert np.all(lhs_var[0].value == np.array([[1], [0], [-1]]))
+    assert np.all(variables[0].value == np.array([[1], [0], [-1]]))
     ipdb.set_trace()
 
 test_aff_expr()
