@@ -29,10 +29,13 @@ class AffExpr(dict):
             s += np.dot(v.get_value(), x)
         return s
 
-    def to_gurobi_expr(self, model, param_to_var):
+    def to_gurobi_expr(self, param_to_var):
         expr = 0.0 + self.constant
 
         for param, coeff in self.items():
-            var = param_to_var[param]
-            expr += np.dot(var.get_grb_vars(), coeff)
+            if param.is_var:
+                var = param_to_var[param]
+                expr += np.dot(var.get_grb_vars(), coeff)
+            else:
+                expr += np.dot(param.get_value(), coeff)
         return expr
