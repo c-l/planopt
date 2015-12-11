@@ -26,8 +26,8 @@ class Variable(object):
         self.grb_vars = np.array(self.grb_vars)
 
     def get_grb_vars(self):
-        return self.grb_vars
-        
+        return self.grb_vars.copy()
+
     def set(self, value):
         if value is None:
             self.value = None

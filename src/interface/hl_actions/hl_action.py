@@ -1,6 +1,5 @@
 import numpy as np
 from opt.opt_prob import OptProb
-from opt.opt_prob import Objective
 from openravepy import *
 import time
 from utils import *
@@ -14,59 +13,15 @@ class HLAction(object):
         self.handles = []
         self.name = "hla"
 
-        # optimization sqp info
-        self.cost = 0
-        self.opt_prob = OptProb(self, augment_lagrangian=False)
-        self.model = self.opt_prob.get_model()
-        self.model.params.OutputFlag = 0 # suppresses output
-
         # list of precondition fluents
         self.preconditions = []
 
         # list of effect fluents
         self.postconditions = []
 
-        self.obj = None
-        self.traj = None
-        self.obj_traj = None
-        self.gp = None
-
         # for graphing
         self.robot_clones = None
         self.obj_clones = None
-
-    def create_opt_prob(self):
-        self.model.update()
-        self.opt_prob.add_var(self.traj)
-        if self.obj is not None:
-            self.opt_prob.add_var(self.obj_traj)
-            self.opt_prob.add_var(self.gp)
-
-        self.add_cost_to_opt_prob()
-        self.add_fluents_to_opt_prob()
-        self.opt_prob.add_callback(self.plot)
-
-    def add_cost_to_opt_prob(self):
-        if self.cost != 0:
-            self.opt_prob.inc_obj(self.cost)
-
-    def add_fluents_to_opt_prob(self):
-        for precondition in self.preconditions:
-            self.add_precondition(precondition)
-        for postcondition in self.postconditions:
-            self.add_postcondition(postcondition)
-
-    def add_postcondition(self, fluent):
-        self.add_opt_info(fluent.postcondition())
-
-    def add_precondition(self, fluent):
-        self.add_opt_info(fluent.precondition())
-
-    def add_opt_info(self, constraints):
-        self.opt_prob.add_constraints(constraints)
-
-    def add_dual_cost(self, var, dual, consensus, ro):
-        self.opt_prob.add_dual_cost(var,dual,consensus,ro)
 
     def plot_traj_line(self, traj, colors=(0,0,1)):
         handles = []
@@ -85,11 +40,12 @@ class HLAction(object):
         robot = self.hl_plan.robot
         with env:
             with robot:
-            
+
                 transparency = 0.85
                 # traj = self.traj.value.reshape((self.K,self.T), order='F')
                 for t in range(self.T):
-                    xt = self.traj.value[self.K*t:self.K*(t+1)]
+                    # xt = self.traj.value[self.K*t:self.K*(t+1)]
+                    xt = self.traj.value[:, t:t+1]
                     # env.Load(robot.GetXMLFilename())
                     newrobot = self.create_robot_kinbody(name=self.name + "_" + robot.GetName() + str(t), transparency=transparency)
                     # newrobot = RaveCreateRobot(env,robot.GetXMLId())
@@ -112,8 +68,8 @@ class HLAction(object):
             self.create_robot_clones()
 
         for t in range(self.T):
-            # xt = traj[:,t]
-            xt = self.traj.value[self.K*t:self.K*(t+1)]
+            xt = self.traj.value[:,t:t+1]
+            # xt = self.traj.value[self.K*t:self.K*(t+1)]
             self.robot_clones[t].SetTransform(base_pose_to_mat(xt))
         return self.robot_clones
 
@@ -121,7 +77,7 @@ class HLAction(object):
         self.obj_clones = []
         env = self.hl_plan.env
         obj = env.GetKinBody(self.obj.GetName())
-        
+
         with env:
             with obj:
 
@@ -164,8 +120,8 @@ class HLAction(object):
 
     def plot(self):
         self.plot_traj_robot_kinbodies()
-        if self.obj is not None:
-            self.plot_traj_obj_kinbodies()
+        # if self.obj is not None:
+        #    self.plot_traj_obj_kinbodies()
         # return handles
 
     def clear_plots(self):

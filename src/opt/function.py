@@ -1,10 +1,11 @@
 import numpy as np
 import gurobipy as grb
+from opt.ops import diff
 GRB = grb.GRB
 
-from opt.ops import diff
 
 class Function(object):
+
     def __init__(self, f, var, use_numerical=True):
         self.f = f
         self.var = var
@@ -24,8 +25,8 @@ class Function(object):
         obj = grb.QuadExpr()
         for i in range(rows):
             for j in range(cols):
-                if Q[i,j] != 0:
-                    obj += Q[i,j]*x[i]*x[j]
+                if Q[i, j] != 0:
+                    obj += Q[i, j] * x[i] * x[j]
         return obj
 
     @staticmethod
@@ -37,8 +38,8 @@ class Function(object):
         for i in range(rows):
             expr = grb.LinExpr()
             for j in range(cols):
-                if A[i,j] != 0:
-                    expr += grb.LinExpr(A[i,j]*x[j])
+                if A[i, j] != 0:
+                    expr += grb.LinExpr(A[i, j] * x[j])
             expr += b[i]
             exprlist.append(expr)
         return exprlist
@@ -51,10 +52,9 @@ class Function(object):
         expr = grb.LinExpr()
         for i in range(rows):
             for j in range(cols):
-                if A[i,j] != 0:
-                    expr += A[i,j]*x[j]
+                if A[i, j] != 0:
+                    expr += A[i, j] * x[j]
         return expr
-
 
     def val(self, x):
         if self.use_numerical:
@@ -65,7 +65,7 @@ class Function(object):
     def val_and_grad(self, x):
         if self.use_numerical:
             val = self.f(x)
-            grad = Function.numerical_jac(self.f,x)
+            grad = Function.numerical_jac(self.f, x)
             return val, grad
         else:
             return self.f(x)
@@ -79,30 +79,30 @@ class Function(object):
             return self.f(x)
 
     @staticmethod
-    def numerical_jac(f,x):
+    def numerical_jac(f, x):
         y = f(x)
 
         # grad = np.matrix(np.zeros((y.size, x.size)))
         grad = np.zeros((y.size, x.size))
 
-        eps=1e-5
+        eps = 1e-5
         xp = x.copy()
 
         for i in range(x.size):
-            xp[i] = x[i] + eps/2
+            xp[i] = x[i] + eps / 2
             yhi = f(xp)
-            xp[i] = x[i] - eps/2
+            xp[i] = x[i] - eps / 2
             ylo = f(xp)
             xp[i] = x[i]
-            gradi = (yhi-ylo)/eps
-            grad[:, i] = gradi.reshape((gradi.size,1))
+            gradi = (yhi - ylo) / eps
+            grad[:, i] = gradi.reshape((gradi.size, 1))
 
         return grad
 
     # def numerical_grad_hess(f, x, full_hessian=True):
     @staticmethod
     def numerical_grad_hess(f, x):
-        y = f(x)
+        # y = f(x)
         # assert length(y) == 1
 
         grad = np.zeros((1, x.size))
@@ -111,10 +111,12 @@ class Function(object):
         # eps=1e-5
         # xp = x.copy()
 
-        grad = SQP.numerical_jac(f,x)
-        hess = SQP.numerical_jac(lambda x: SQP.numerical_jac(f,x), x)
-        hess = (hess + np.transpose(hess))/2
+        grad = Function.numerical_jac(f, x)
+        hess = Function.numerical_jac(
+            lambda x: Function.numerical_jac(f, x), x)
+        hess = (hess + np.transpose(hess)) / 2
 
+        from numpy import linalg
         w, v = linalg.eig(hess)
         mineig = np.min(w)
         if mineig < 0:
@@ -124,36 +126,46 @@ class Function(object):
 
 
 class AffineFn(Function):
+
     def __init__(self, var, A, b):
         self.var = var
         self.A = A
         self.b = b
-        self.expr = Fn.aff_expr(var, A, b)
+        self.expr = Function.aff_expr(var, A, b)
 
     def eval(self, x):
-        return np.dot(A, x) + b
+        return np.dot(self.A, x) + self.b
 
     # def grad(self, x):
     #     return A
 
+
 class QuadFn(Function):
-    def __init__(self, var, Q):
-        self.var = var
+
+    def __init__(self, param, Q):
+        self.param = param
         self.Q = Q
-        self.expr = QuadFn.quad_expr(var.grb_vars.flatten(), Q)
 
     def val(self):
-        x = np.reshape(np.array(self.var.value), (len(self.var.value),1))
+        x = np.reshape(np.array(self.param.get_value()), (len(self.param.get_value()), 1))
         val = np.dot(np.transpose(x), np.dot(self.Q, x))
-        return val[0,0]
-    
+        return val[0, 0]
+
+    def to_gurobi_fn(self, param_to_var):
+        var = param_to_var[self.param]
+        # TODO: need to specify format
+        self.expr = QuadFn.quad_expr(var.get_grb_vars().flatten(order='F'), self.Q)
+
+
     # def hess(self, x):
     #     return 2*Q
 
     # def grad(self, x):
     #     return 2*np.dot(Q,x)
 
+
 class CollisionFn(Function):
+
     def __init__(self, vs, f):
         self.f = f
         self.vs = vs
@@ -185,41 +197,5 @@ class CollisionFn(Function):
         x = self.get_values()
         f_val, f_grad = self.f(x)
         affexprlist = diff(self.grb_vars, x)
-        affexprlist = self.aff_expr(affexprlist, f_grad, f_val) 
+        affexprlist = self.aff_expr(affexprlist, f_grad, f_val)
         return affexprlist
-
-# class CollisionFn(Function):
-#     def __init__(self, var, f):
-#         self.f = f
-#         self.var = var
-
-#     def val(self):
-#         val, grad = self.f(self.var.value)
-#         return np.sum(val)
-
-#     def grad(self):
-#         val, grad = self.f(self.var.value)
-#         return grad
-
-#     def convexify(self):
-#         val, grad = self.f(self.var.value)
-#         affexprlist = diff(self.var.grb_vars, self.var.value)
-#         affexprlist = self.aff_expr(affexprlist, grad, val) 
-#         return affexprlist
-
-class NonQuadFn(Function):
-    def __init__(self, var, f):
-        self.f = f
-        self.var = var
-
-    def eval(self, x):
-        return self.f(x)
-
-    def grad(self, x):
-        return Fn.numerical_jac(self.f, x)
-
-    def convexify(self):
-        affexprlist = diff(self.var.value, self.var.grb_vars)
-        affexprlist = self.aff_expr(affexprlist, self.grad(x), self.eval(x)) 
-        return affexprlist
-

@@ -37,7 +37,7 @@ class Constraints(object):
         rows, cols = var.shape
         for i in range(rows):
             for j in range(cols):
-                constraints.append(self.model.addConstr(x[i, j] == b[i, j]))
+                constraints.append(self.model.addConstr(x[i, j], GRB.EQUAL, b[i, j]))
         # x = var.flatten()
         # b = b.flatten()
         # for i in range(len(x)):
@@ -51,7 +51,7 @@ class Constraints(object):
         rows, cols = var.shape
         for i in range(rows):
             for j in range(cols):
-                constraints.append(self.model.addConstr(x[i, j] <= b[i, j]))
+                constraints.append(self.model.addConstr(x[i, j], GRB.LESS_EQUAL, b[i, j]))
         return constraints
 
     def add_geq_cntr(self, var, b):
@@ -61,7 +61,7 @@ class Constraints(object):
         rows, cols = var.shape
         for i in range(rows):
             for j in range(cols):
-                constraints.append(self.model.addConstr(x[i, j] >= b[i, j]))
+                constraints.append(self.model.addConstr(x[i, j], GRB.GREATER_EQUAL, b[i, j]))
         return constraints
 
     def add_lin_eq_cntr(self, var, A_eq, b_eq):

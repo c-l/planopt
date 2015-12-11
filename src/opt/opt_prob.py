@@ -1,20 +1,23 @@
 import numpy as np
+from numpy import square, dot
+from numpy.linalg import norm
 # import cvxpy as cvx
 import gurobipy as grb
 GRB = grb.GRB
-from opt.objective import Objective
-from opt.constraints import Constraints
-from opt.ops import abs
+
 
 class OptProb(object):
-    def __init__(self, hl_action=None, augment_lagrangian=False):
-        self.hl_action = hl_action
+
+    def __init__(self, augment_lagrangian=False):
         self.augmented_objective = augment_lagrangian
         self.constraints = []
 
         self.model = grb.Model()
-        self.obj = grb.QuadExpr()
+        # quadratic objective
+        self.obj_quad = grb.QuadExpr()
+        # sqp objective
         self.obj_sqp = None
+        # objective functions that need to be convexified
         self.obj_fns = []
         self.vars = []
 
@@ -52,12 +55,10 @@ class OptProb(object):
         return True
 
     def optimize(self):
-        self.hl_action.clear_plots()
         self.model.setObjective(self.obj_sqp)
         self.model.update()
         self.model.optimize()
         self.update_vars()
-
 
     def clean(self, temp):
         for item in temp:
@@ -66,7 +67,7 @@ class OptProb(object):
 
     def inc_obj(self, quad_fn):
         self.obj_fns += [quad_fn]
-        self.obj += quad_fn.expr
+        self.obj_quad += quad_fn.expr
 
     def val(self, penalty_coeff):
         val = 0
@@ -76,10 +77,11 @@ class OptProb(object):
         if self.augmented_objective:
             dual_val = 0
             for (var, dual, consensus, ro) in self.dual_terms:
-                dual_val += np.dot(np.transpose(dual.value), var.value)[0,0] + ro/2 * np.square(np.linalg.norm(var.value - consensus.value, 2))
+                dual_val += np.dot(np.transpose(dual.value), var.value)[0, 0] + ro / 2 * square(norm(var.value - consensus.value, 2))
             val += dual_val
 
-        penalty_cost = penalty_coeff * sum([constraint.val() for constraint in self.constraints])
+        penalty_cost = penalty_coeff * \
+            sum([constraint.val() for constraint in self.constraints])
         val += penalty_cost
         return val
 
@@ -110,14 +112,14 @@ class OptProb(object):
     def make_primal(self):
         self.augmented_objective = False
 
-    def add_dual_cost(self, var, dual, consensus=None, ro = 0.05):
+    def add_dual_cost(self, var, dual, consensus=None, ro=0.05):
         self.dual_terms.append((var, dual, consensus, ro))
 
     def add_dual_costs(self):
         self.model.update()
         if self.augmented_objective:
             for (var, dual, consensus, ro) in self.dual_terms:
-                self.obj_sqp += np.dot(np.transpose(dual.value), var.grb_vars)[0,0] + ro/2 * self.l2_norm_squared(self.model, var, consensus.value) 
+                self.obj_sqp += np.dot(np.transpose(dual.value), var.grb_vars)[0, 0] + ro / 2 * self.l2_norm_squared(self.model, var, consensus.value)
 
     def constraints_satisfied(self, tolerance):
         for constraint in self.constraints:
@@ -129,9 +131,10 @@ class OptProb(object):
         for constraint in self.constraints:
             constraint.clean()
 
-        penalty_obj = grb.quicksum([constraint.convexify(self.model, penalty_coeff) for constraint in self.constraints])
+        penalty_obj = grb.quicksum([constraint.convexify(
+            self.model, penalty_coeff) for constraint in self.constraints])
         # self.obj_sqp = self.obj + penalty_coeff * self.nonlinear_cnts.convexify(self.model, penalty_coeff)
-        self.obj_sqp = self.obj + penalty_obj
+        self.obj_sqp = self.obj_quad + penalty_obj
         self.add_dual_costs()
 
     # @profile
@@ -140,9 +143,11 @@ class OptProb(object):
             self.model.remove(self.trust_region_cnt)
         self.clean(self.trust_temp)
 
-        var_list = [grb_var for var in self.vars for grb_var in var.grb_vars.flatten()]        
-        val_list = [val for var in self.vars for val in var.value.flatten()]        
-        self.trust_region_cnt = self.add_trust_region_cnt(var_list, val_list, trust_region_size)
+        var_list = [
+            grb_var for var in self.vars for grb_var in var.grb_vars.flatten()]
+        val_list = [val for var in self.vars for val in var.value.flatten()]
+        self.trust_region_cnt = self.add_trust_region_cnt(
+            var_list, val_list, trust_region_size)
 
     # @profile
     def add_trust_region_cnt(self, x, xp, trust_box_size):
@@ -155,23 +160,26 @@ class OptProb(object):
             expr = []
             self.diffs = []
             for i in range(rows):
-                pos.append(self.model.addVar(lb=0, ub=GRB.INFINITY, name='pos'+str(i)))
-                neg.append(self.model.addVar(lb=0, ub=GRB.INFINITY, name='neg'+str(i)))
+                pos.append(
+                    self.model.addVar(lb=0, ub=GRB.INFINITY, name='pos' + str(i)))
+                neg.append(
+                    self.model.addVar(lb=0, ub=GRB.INFINITY, name='neg' + str(i)))
                 # expr.append(pos-neg)
             # import ipdb; ipdb.set_trace() # BREAKPOINT
-            coeffs = [1]*(2*rows)
-            expr = grb.LinExpr(coeffs, pos+neg)
+            coeffs = [1] * (2 * rows)
+            expr = grb.LinExpr(coeffs, pos + neg)
             # expr = grb.quicksum(pos+neg)
-            self.trust_temp.extend(pos+neg)
+            self.trust_temp.extend(pos + neg)
 
             # self.trust_cnts = []
             self.model.update()
             for i in range(rows):
-                diff = grb.LinExpr(-1*x[i])
+                diff = grb.LinExpr(-1 * x[i])
                 diff.addConstant(xp[i])
                 abs = grb.LinExpr([1, -1], [pos[i], neg[i]])
                 # self.trust_temp.append(self.model.addConstr(diff == pos[i] - neg[i]))
-                self.trust_temp.append(self.model.addConstr(diff, GRB.EQUAL, abs))
+                self.trust_temp.append(
+                    self.model.addConstr(diff, GRB.EQUAL, abs))
                 self.diffs.append(abs)
             # self.model.update()
 
@@ -183,9 +191,10 @@ class OptProb(object):
         else:
             rows = len(x)
             for i in range(rows):
-                diff = grb.LinExpr(-1*x[i])
+                diff = grb.LinExpr(-1 * x[i])
                 diff.addConstant(xp[i])
-                self.trust_temp.append(self.model.addConstr(diff, GRB.EQUAL, self.diffs[i]))
+                self.trust_temp.append(
+                    self.model.addConstr(diff, GRB.EQUAL, self.diffs[i]))
 
     def l2_norm_squared(self, model, var, consensus):
         obj = grb.QuadExpr()
@@ -195,7 +204,8 @@ class OptProb(object):
         rows, cols = x.shape
         for i in range(rows):
             for j in range(cols):
-                obj += x[i,j]*x[i,j] - 2*value[i,j]*x[i,j] + value[i,j]*value[i,j]
+                obj += x[i, j] * x[i, j] - 2 * value[i, j] * \
+                    x[i, j] + value[i, j] * value[i, j]
         return obj
 
     def l2_norm_diff_squared(self, model, var):
@@ -205,5 +215,6 @@ class OptProb(object):
         rows, cols = x.shape
         for i in range(rows):
             for j in range(cols):
-                obj += x[i,j]*x[i,j] - 2*value[i,j]*x[i,j] + value[i,j]*value[i,j]
+                obj += x[i, j] * x[i, j] - 2 * value[i, j] * \
+                    x[i, j] + value[i, j] * value[i, j]
         return obj

@@ -4,6 +4,7 @@ from interface.fluents.lin_eq_fluent import LinEqFluent
 from interface.fluents.lin_le_fluent import LinLEFluent
 from interface.fluents.aff_expr import AffExpr
 import numpy as np
+from opt.opt_prob import OptProb
 from opt.constraints import Constraints
 from opt.variable import Variable
 import gurobipy as grb
@@ -146,10 +147,53 @@ def test_le_cnt_with_gurobi():
     var.update_hl_param()
     assert fluent.satisfied()
     assert np.all(variables[0].value == np.array([[1], [0], [-1]]))
-    ipdb.set_trace()
+
+
+def test_le_cnt_with_opt():
+    prob = OptProb()
+    model = prob.get_model()
+
+    param = TestParam("test", 3, 1)
+    param.resample()
+    var = Variable(model, param)
+    prob.add_var(var)
+
+    twoe1 = AffExpr(constant=np.array([[2], [0], [-1]], dtype=np.float))
+
+    # var = Variable(model, param)
+    lhs = AffExpr({param: 1})
+    fluent = LinLEFluent('test_eq', lhs, twoe1)
+
+    variables = [var]
+    param_to_var = {param: var}
+
+    constraints = Constraints(model)
+    if isinstance(fluent, LinLEFluent):
+        lhs = fluent.lhs.to_gurobi_expr(model, param_to_var)
+        rhs = fluent.rhs.to_gurobi_expr(model, param_to_var)
+        model.update()
+        constraints.add_leq_cntr(lhs, rhs)
+    assert not fluent.satisfied()
+
+    prob.add_constraints(constraints)
+
+    obj = grb.QuadExpr()
+    for var in variables:
+        for i in range(var.rows):
+            for j in range(var.cols):
+                v = var.grb_vars[i, j]
+                obj += v*v - 2*v + 1
+
+    prob.obj_sqp = obj
+    prob.optimize()
+
+    var.update_hl_param()
+    assert fluent.satisfied()
+    assert np.all(variables[0].value == np.array([[1], [0], [-1]]))
 
 test_aff_expr()
 test_fluent_zero_not_equal_to_e1()
 test_fluent_equals()
 test_eq_cnt_with_gurobi()
 test_le_cnt_with_gurobi()
+test_le_cnt_with_opt()

@@ -91,4 +91,17 @@ class Movable(HLParam):
 
 
 class Traj(HLParam):
-    pass
+    def __init__(self, hl_action, name, rows, cols, is_var=True, value=None, index=None):
+        super(Traj, self).__init__(name, rows, cols, is_var, value, index)
+        self.hl_action = hl_action
+
+
+    def get_value(self):
+        return self.value
+
+    def set(self, value):
+        self.value = value
+
+    # TODO: make this less hacky
+    def resample(self):
+        self.value = self.hl_action.straight_line_init()
