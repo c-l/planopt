@@ -1,7 +1,6 @@
 import ipdb
 from interface.hl_param import HLParam
-from interface.fluents.lin_eq_fluent import LinEqFluent
-from interface.fluents.lin_le_fluent import LinLEFluent
+from interface.fluents.fluent import LinEqFluent, LinLEFluent
 from interface.fluents.aff_expr import AffExpr
 import numpy as np
 from opt.opt_prob import OptProb
@@ -87,8 +86,8 @@ def test_eq_cnt_with_gurobi():
 
     constraints = Constraints(model)
     if isinstance(fluent, LinEqFluent):
-        lhs = fluent.lhs.to_gurobi_expr(model, param_to_var)
-        rhs = fluent.rhs.to_gurobi_expr(model, param_to_var)
+        lhs = fluent.lhs.to_gurobi_expr(param_to_var)
+        rhs = fluent.rhs.to_gurobi_expr(param_to_var)
         model.update()
         constraints.add_eq_cntr(lhs, rhs)
     assert not fluent.satisfied()
@@ -127,8 +126,8 @@ def test_le_cnt_with_gurobi():
 
     constraints = Constraints(model)
     if isinstance(fluent, LinLEFluent):
-        lhs = fluent.lhs.to_gurobi_expr(model, param_to_var)
-        rhs = fluent.rhs.to_gurobi_expr(model, param_to_var)
+        lhs = fluent.lhs.to_gurobi_expr(param_to_var)
+        rhs = fluent.rhs.to_gurobi_expr(param_to_var)
         model.update()
         constraints.add_leq_cntr(lhs, rhs)
     assert not fluent.satisfied()
@@ -169,8 +168,8 @@ def test_le_cnt_with_opt():
 
     constraints = Constraints(model)
     if isinstance(fluent, LinLEFluent):
-        lhs = fluent.lhs.to_gurobi_expr(model, param_to_var)
-        rhs = fluent.rhs.to_gurobi_expr(model, param_to_var)
+        lhs = fluent.lhs.to_gurobi_expr(param_to_var)
+        rhs = fluent.rhs.to_gurobi_expr(param_to_var)
         model.update()
         constraints.add_leq_cntr(lhs, rhs)
     assert not fluent.satisfied()
