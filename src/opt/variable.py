@@ -54,6 +54,7 @@ class Variable(object):
             for i in range(self.rows):
                 for j in range(self.cols):
                     assert self.value[i, j] == self.grb_vars[i, j].X
+            self.hl_param.set(self.value)
 
     def update_hl_param(self):
         self.hl_param.value = self.value.copy()

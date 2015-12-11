@@ -9,13 +9,18 @@ import ipdb
 import cvxpy as cvx
 import time
 
-from envs.world import World
+# from envs.world import World
 
 from utils import *
 
 from ll_plan import LLPlan
 
 class HLPlan(object):
+    def __init__(self, env, robot):
+        self.env = env
+        self.robot = robot
+
+class HLPlan2(object):
     def __init__(self):
         self.hl_actions = []
 
@@ -34,7 +39,7 @@ class HLPlan(object):
     def init_openrave_test_env(self):
         env = Environment() # create openrave environment
         env.SetViewer('qtcoin') # attach viewer (optional)
-        
+
 
         obstacles = np.matrix('-0.576036866359447, 0.918128654970760, 1;\
                         -0.806451612903226,-1.07017543859649, 1;\
@@ -53,14 +58,14 @@ class HLPlan(object):
         for link in body.GetLinks():
             for geom in link.GetGeometries():
                 geom.SetDiffuseColor((.9,.9,.9))
-        env.AddKinBody(body) 
+        env.AddKinBody(body)
 
         # create cylindrical object
         transform = np.eye(4)
         transform[0,3] = -2
         obj = self.create_cylinder(env, 'obj', np.eye(4), [.35, 2])
         obj.SetTransform(transform)
-        env.AddKinBody(obj) 
+        env.AddKinBody(obj)
 
         # import ipdb; ipdb.set_trace() # BREAKPOINT
         env.Load("robot.xml")
@@ -129,7 +134,7 @@ class HLPlan(object):
             hla_robots.append(robot)
             hla_objs.append(obj)
         return (hla_envs, hla_robots, hla_objs)
-    
+
     def clone_envs(self, num_actions):
         local_envs = []
 
@@ -137,7 +142,7 @@ class HLPlan(object):
             env = self.env.CloneSelf(1) # clones objects in the environment
             local_envs.append(env)
         return local_envs
-            
+
 
     # @profile
     def test_pick_move_and_place(self):
@@ -485,7 +490,7 @@ class HLPlan(object):
         params = rps + gps
         llplan = LLPlan(params, self.hl_actions)
         llplan.solve()
-    
+
     def test_move(self):
         self.env = self.init_openrave_test_env()
         self.robot = self.env.GetRobots()[0]

@@ -13,6 +13,7 @@ class OptProb(object):
         self.constraints = []
 
         self.model = grb.Model()
+        self.model.params.OutputFlag = 0 # suppresses output
         # quadratic objective
         self.obj_quad = grb.QuadExpr()
         # sqp objective
@@ -146,6 +147,7 @@ class OptProb(object):
         var_list = [
             grb_var for var in self.vars for grb_var in var.grb_vars.flatten()]
         val_list = [val for var in self.vars for val in var.value.flatten()]
+        
         self.trust_region_cnt = self.add_trust_region_cnt(
             var_list, val_list, trust_region_size)
 

@@ -147,9 +147,12 @@ class QuadFn(Function):
         self.Q = Q
 
     def val(self):
-        x = np.reshape(np.array(self.param.get_value()), (len(self.param.get_value()), 1))
-        val = np.dot(np.transpose(x), np.dot(self.Q, x))
-        return val[0, 0]
+        # x = np.reshape(np.array(self.param.get_value()), (len(self.param.get_value()), 1))
+        # val = np.dot(np.transpose(x), np.dot(self.Q, x))
+        x = self.param.get_value().flatten(order='F')
+        val = np.dot(x, np.dot(self.Q, x))
+        return val
+        # return val[0, 0]
 
     def to_gurobi_fn(self, param_to_var):
         var = param_to_var[self.param]
@@ -166,9 +169,14 @@ class QuadFn(Function):
 
 class CollisionFn(Function):
 
-    def __init__(self, vs, f):
+    def __init__(self, params, f):
         self.f = f
-        self.vs = vs
+        self.params = params
+
+    def to_gurobi_fn(self, param_to_var):
+        self.vs = []
+        for param in self.params:
+            self.vs.append(param_to_var[param])
         self.grb_vars = self.get_grb_vars()
 
     def get_values(self):
@@ -179,7 +187,7 @@ class CollisionFn(Function):
     def get_grb_vars(self):
         grb_vars = []
         for var in self.vs:
-            grb_vars.extend(var.grb_vars)
+            grb_vars.extend(var.grb_vars.flatten(order='F'))
         grb_vars = np.vstack(grb_vars)
         return grb_vars
 
@@ -196,6 +204,6 @@ class CollisionFn(Function):
     def convexify(self):
         x = self.get_values()
         f_val, f_grad = self.f(x)
-        affexprlist = diff(self.grb_vars, x)
+        affexprlist = diff(self.grb_vars, x.flatten(order='F'))
         affexprlist = self.aff_expr(affexprlist, f_grad, f_val)
         return affexprlist

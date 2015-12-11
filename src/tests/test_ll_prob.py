@@ -2,9 +2,11 @@ import numpy as np
 from opt.opt_prob import OptProb
 from opt.variable import Variable
 from opt.constraints import Constraints
+from opt.solver import Solver
 from interface.hl_param import HLParam, Traj
 from interface.fluents.lin_eq_fluent import LinEqFluent
 from interface.fluents.lin_le_fluent import LinLEFluent
+from interface.fluents.fn_le_fluent import FnLEFluent
 from interface.hl_plan import HLPlan
 from openravepy import *
 import ipdb
@@ -52,12 +54,12 @@ def init_openrave_test_env():
             geom.SetDiffuseColor((.9, .9, .9))
     env.AddKinBody(body)
 
-    # create cylindrical object
-    transform = np.eye(4)
-    transform[0, 3] = -2
-    obj = create_cylinder(env, 'obj', np.eye(4), [.35, 2])
-    obj.SetTransform(transform)
-    env.AddKinBody(obj)
+    # # create cylindrical object
+    # transform = np.eye(4)
+    # transform[0, 3] = -2
+    # obj = create_cylinder(env, 'obj', np.eye(4), [.35, 2])
+    # obj.SetTransform(transform)
+    # env.AddKinBody(obj)
 
     # import ipdb; ipdb.set_trace() # BREAKPOINT
     env.Load("robot.xml")
@@ -86,7 +88,7 @@ def init_openrave_test_env():
     return env
 
 
-def test_move():
+def test_no_obstructs_move():
     from interface.hl_actions.move import Move
     env = init_openrave_test_env()
     robot = env.GetRobots()[0]
@@ -119,13 +121,15 @@ def test_move():
         for fluent in hla.postconditions:
             fluent.post()
         for fluent in hla.preconditions + hla.postconditions:
-            lhs = fluent.lhs.to_gurobi_expr(param_to_var)
-            rhs = fluent.rhs.to_gurobi_expr(param_to_var)
-            model.update()
-
             if isinstance(fluent, LinLEFluent):
+                lhs = fluent.lhs.to_gurobi_expr(param_to_var)
+                rhs = fluent.rhs.to_gurobi_expr(param_to_var)
+                model.update()
                 constraints.add_leq_cntr(lhs, rhs)
             elif isinstance(fluent, LinEqFluent):
+                lhs = fluent.lhs.to_gurobi_expr(param_to_var)
+                rhs = fluent.rhs.to_gurobi_expr(param_to_var)
+                model.update()
                 constraints.add_eq_cntr(lhs, rhs)
     prob.add_constraints(constraints)
 
@@ -163,6 +167,73 @@ def test_move():
          0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
          0.        ,  0.        ,  0.        ,  0.        , -0.        ]])
     assert np.allclose(traj, param_to_var[move.traj].value)
+    move.plot()
+    ipdb.set_trace()
+
+def test_move():
+    from interface.hl_actions.move import Move
+    env = init_openrave_test_env()
+    robot = env.GetRobots()[0]
+
+    start = HLParam("start", 3, 1, is_var=False, value=np.array([[-2], [0], [0]]))
+    end = HLParam("end", 3, 1, is_var=False, value=np.array([[2], [0], [0]]))
+
+    # env = self.env.CloneSelf(1)  # clones objects in the environment
+    robot = env.GetRobots()[0]
+    # obj = env.GetKinBody('obj')
+    hl_plan = HLPlan(env, robot)
+    move_env = env.CloneSelf(1) # clones objects in the environment
+    move_robot = move_env.GetRobots()[0]
+    move = Move(0, hl_plan, move_env, move_robot, start, end)
+
+    prob = OptProb()
+    model = prob.get_model()
+
+    param_to_var = {}
+    params = move.get_params()
+    # needs to be before constructing variables so that variable will be set to
+    # traj value
+    move.traj.resample() # remove later
+    for param in params:
+        var = Variable(model, param)
+        param_to_var[param] = var
+        prob.add_var(var)
+    ipdb.set_trace()
+    model.update()
+
+    constraints = Constraints(model)
+    for hla in [move]:
+        for fluent in hla.preconditions:
+            fluent.pre()
+        for fluent in hla.postconditions:
+            fluent.post()
+        for fluent in hla.preconditions + hla.postconditions:
+            if isinstance(fluent, FnLEFluent):
+                fluent.fn.to_gurobi_fn(param_to_var)
+                constraints.add_nonlinear_ineq_constraint(fluent.fn)
+            if isinstance(fluent, LinLEFluent):
+                lhs = fluent.lhs.to_gurobi_expr(param_to_var)
+                rhs = fluent.rhs.to_gurobi_expr(param_to_var)
+                model.update()
+                constraints.add_leq_cntr(lhs, rhs)
+            elif isinstance(fluent, LinEqFluent):
+                lhs = fluent.lhs.to_gurobi_expr(param_to_var)
+                rhs = fluent.rhs.to_gurobi_expr(param_to_var)
+                model.update()
+                constraints.add_eq_cntr(lhs, rhs)
+    prob.add_constraints(constraints)
+
+    for hla in [move]:
+        hla.cost.to_gurobi_fn(param_to_var)
+        prob.inc_obj(hla.cost)
+
+    solver = Solver()
+    solver.penalty_sqp(prob)
+    # prob.convexify(0.1)
+    # prob.optimize()
+
+    for param, var in param_to_var.items():
+        var.update_hl_param()
     move.plot()
     ipdb.set_trace()
 

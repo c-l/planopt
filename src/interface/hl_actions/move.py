@@ -8,6 +8,8 @@ from interface.hl_param import Traj
 # from interface.fluents.is_mp import IsMP
 # from interface.fluents.in_manip import InManip
 from interface.fluents.robot_at import RobotAt
+from interface.fluents.not_obstructs import NotObstructs
+from interface.fluents.is_mp import IsMP
 from utils import *
 
 
@@ -31,6 +33,8 @@ class Move(HLAction):
 
         self.params = [start, end, self.traj]
         self.preconditions = [RobotAt(self, self.start, self.traj)]
+        self.preconditions += [NotObstructs(env, self, robot, self.traj)]
+        self.preconditions += [IsMP(self, self.traj)]
         # self.create_robot_clones()
 
         self.postconditions = []
@@ -45,6 +49,7 @@ class Move(HLAction):
         Q = 2 * np.dot(np.transpose(P), P)
 
         self.cost = QuadFn(self.traj, Q)
+        # self.create_robot_clones()
 
     def get_params(self):
         return self.params

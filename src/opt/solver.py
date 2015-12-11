@@ -238,7 +238,7 @@ class Solver(object):
             else:
                 return success
         return False
-    
+
     # def penalty_sqp(self, opt_prob):
     #     # trust_box_size = self.initial_trust_box_size
     #     # penalty_coeff = self.initial_penalty_coeff
@@ -259,7 +259,7 @@ class Solver(object):
     #         else:
     #             return success
     #     return False
-    
+
     def find_closest_feasible_point(self, opt_prob):
         success = True
         for x in opt_prob.xs:
@@ -419,7 +419,7 @@ class Solver(object):
     def minimize_merit_function(self, prob, penalty_coeff, trust_box_size):
         success = True
         sqp_iter = 1
-      
+
         while True:
             print("  sqp_iter: {0}".format(sqp_iter))
             # fval, fgrad, fhess, gval, gjac, hval, hjac = self.convexify_fgh(x, f, g, h)
@@ -471,7 +471,7 @@ class Solver(object):
 
                 if trust_box_size < self.min_trust_box_size:
                     print("Converged: x tolerance")
-                    return (trust_box_size, success) 
+                    return (trust_box_size, success)
 
             sqp_iter = sqp_iter + 1
 
