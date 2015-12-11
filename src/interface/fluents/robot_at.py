@@ -1,5 +1,5 @@
 import numpy as np
-from lin_eq_fluent import LinEqFluent
+from fluent import LinEqFluent
 from aff_expr import AffExpr
 
 

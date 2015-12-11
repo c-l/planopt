@@ -1,4 +1,4 @@
-from lin_le_fluent import LinLEFluent
+from fluent import LinLEFluent
 from aff_expr import AffExpr
 from utils import *
 from openravepy import *

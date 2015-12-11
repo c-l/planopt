@@ -1,5 +1,5 @@
 
-from fn_le_fluent import FnLEFluent
+from fluent import FnLEFluent
 from opt.function import CollisionFn
 from utils import *
 from openravepy import *
