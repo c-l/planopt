@@ -184,6 +184,11 @@ class CollisionFn(Function):
         values = np.vstack(values)
         return values
 
+    def get_flattened_values(self):
+        values = [var.value.copy().flatten(order='F') for var in self.vs]
+        values = np.vstack(values)
+        return values
+
     def get_grb_vars(self):
         grb_vars = []
         for var in self.vs:
@@ -204,6 +209,7 @@ class CollisionFn(Function):
     def convexify(self):
         x = self.get_values()
         f_val, f_grad = self.f(x)
-        affexprlist = diff(self.grb_vars, x.flatten(order='F'))
+        # TODO: fix temporary hack which get things to work (flattened_values)
+        affexprlist = diff(self.grb_vars, self.get_flattened_values())
         affexprlist = self.aff_expr(affexprlist, f_grad, f_val)
         return affexprlist

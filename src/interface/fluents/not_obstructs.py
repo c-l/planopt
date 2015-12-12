@@ -77,11 +77,14 @@ class NotObstructs(FnLEFluent):
 
         K, T = traj_shape
 
-        traj = x[:K*T,:].reshape(traj_shape, order='F')
+        # traj = x[:K*T,:].reshape(traj_shape, order='F')
+        
+        traj = x[:K, :]
 
         obj_traj = None
         if self.obj is not None:
-            obj_traj = x[K*T:2*K*T,:].reshape(traj_shape, order='F')
+            obj_traj = x[K:2*K, :]
+            # obj_traj = x[K*T:2*K*T,:].reshape(traj_shape, order='F')
         # val = np.zeros((len(obstacles)*T,1))
         if self.obj is not None:
             val = np.zeros((2*T+self.num_objs, 1))

@@ -11,9 +11,15 @@ class HLParam(object):
         self.cols = cols
 
         self.is_var = is_var
-        self.value = value
+        if value is None:
+            self.value = np.zeros((rows, cols))
+        else:
+            self.value = value
         self.index = index
         self.gen = None
+
+    def init(self):
+        pass
 
     def get_value(self):
         return self.value
@@ -95,7 +101,6 @@ class Traj(HLParam):
         super(Traj, self).__init__(name, rows, cols, is_var, value, index)
         self.hl_action = hl_action
 
-
     def get_value(self):
         return self.value
 
@@ -104,4 +109,4 @@ class Traj(HLParam):
 
     # TODO: make this less hacky
     def resample(self):
-        self.value = self.hl_action.straight_line_init()
+        self.value = straight_line()

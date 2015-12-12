@@ -424,7 +424,7 @@ class Solver(object):
             print("  sqp_iter: {0}".format(sqp_iter))
             # fval, fgrad, fhess, gval, gjac, hval, hjac = self.convexify_fgh(x, f, g, h)
 
-            # import ipdb; ipdb.set_trace() # BREAKPOINT
+            import ipdb; ipdb.set_trace()
             prob.convexify(penalty_coeff)
             merit = prob.val(penalty_coeff)
             prob.save()

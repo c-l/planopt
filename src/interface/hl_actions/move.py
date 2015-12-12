@@ -10,16 +10,18 @@ from interface.hl_param import Traj
 from interface.fluents.robot_at import RobotAt
 from interface.fluents.not_obstructs import NotObstructs
 from interface.fluents.is_mp import IsMP
+from interface.fluents.in_manip import InManip
 from utils import *
 
 
 class Move(HLAction):
 
-    def __init__(self, lineno, hl_plan, env, robot, start, end):
+    def __init__(self, lineno, hl_plan, env, robot, start, end, obj=None, gp=None):
         super(Move, self).__init__(lineno, hl_plan, env, robot)
 
         self.start = start
         self.end = end
+        self.obj = obj
 
         # TODO: set this using optimization domain
         self.T = 40
@@ -32,9 +34,17 @@ class Move(HLAction):
         self.traj = Traj(self, self.name + "_traj", 3, 40, is_var=True)
 
         self.params = [start, end, self.traj]
-        self.preconditions = [RobotAt(self, self.start, self.traj)]
-        self.preconditions += [NotObstructs(env, self, robot, self.traj)]
-        self.preconditions += [IsMP(self, self.traj)]
+        self.preconditions = [RobotAt(self, start, self.traj)]
+        self.preconditions += [IsMP(self, start, end, self.traj)]
+
+        if obj is None:
+            self.preconditions += [NotObstructs(env, self, robot, self.traj)]
+        else:
+            assert gp is not None
+            self.obj_traj = Traj(self, self.name + "_objtraj", 3, 40, is_var=True)
+            self.preconditions += [NotObstructs(env, self, robot, self.traj, obj, self.obj_traj)]
+            self.preconditions += [InManip(self, obj, gp, self.traj, self.obj_traj)]
+            self.params += [gp, self.obj_traj]
         # self.create_robot_clones()
 
         self.postconditions = []
@@ -50,9 +60,6 @@ class Move(HLAction):
 
         self.cost = QuadFn(self.traj, Q)
         # self.create_robot_clones()
-
-    def get_params(self):
-        return self.params
 
     def straight_line_init(self):
         start = self.start.value
@@ -72,8 +79,9 @@ class Move(HLAction):
         return init_traj
 
     def plot(self, handles=[]):
-        # self.handles = []
+        self.clear_plots()
         # self.handles += super(Move, self).plot(handles)
+
         super(Move, self).plot()
         self.handles += handles
         # self.handles += self.plot_traj_line(self.traj, colors=(0,0,0.5))

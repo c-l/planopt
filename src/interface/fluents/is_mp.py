@@ -7,13 +7,18 @@ import numpy as np
 import time
 
 class IsMP(LinLEFluent):
-    def __init__(self, hl_action, traj):
+    def __init__(self, hl_action, start, end, traj):
         self.hl_action = hl_action
+        self.start = start
+        self.end = end
         self.traj = traj
         self.name = "IsMP"
 
     def pre(self):
-        traj = self.traj
+        start = self.start.value
+        end = self.end.value
+        self.traj.value = np.array([np.linspace(i, j, self.traj.cols) for i, j in zip(np.array(start), np.array(end))])
+
         K = self.hl_action.K
         T = self.hl_action.T
         # K,T = traj.size

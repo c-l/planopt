@@ -1,34 +1,29 @@
-from fluent import Fluent
-from opt.constraints import Constraints
+from fluent import LinEqFluent
+from aff_expr import AffExpr
 import numpy as np
 
-class ObjAt(Fluent):
-    def __init__(self, env, hl_action, model, obj, loc, obj_traj, loc_param=None):
-        super(ObjAt, self).__init__(env, hl_action, model)
+class ObjAt(LinEqFluent):
+    def __init__(self, hl_action, obj, loc, obj_traj):
+        self.hl_action = hl_action
         self.obj = obj
-        self.loc = loc.grb_vars
-        self.obj_traj = obj_traj.grb_vars
+        self.loc = loc
+        self.obj_traj = obj_traj
 
-        self.name = "ObjAt"
+        self.name = "ObjAt(" + obj.GetName() + ", " + loc.name + ")"
 
-        # self.in_region = False
-        self.loc_param = loc_param
-        # if loc_param is not None:
-        #     if loc_param.in_region:
-        #         self.in_region = True
+    def pre(self):
+        # initialize obj_traj value
+        self.obj_traj.value[:,0:1] = self.loc.value
 
-    def hl_params(self):
-        return [self.loc.hl_param]
+        T = self.obj_traj.cols
+        coeff = np.zeros((T, 1), dtype=np.float)
+        coeff[0, 0] = 1.0
+        self.rhs = AffExpr({self.obj_traj: coeff})
+        self.lhs = AffExpr({self.loc: 1.0})
 
-    # TODO: K currently depends on the robot's degrees of freedom when it shouldn't
-    def precondition(self):
-        K = self.hl_action.K
-        self.constraints.add_eq_cntr(self.obj_traj[:K], self.loc)
-        return self.constraints
-
-    def postcondition(self):
-        K = self.hl_action.K
-        self.constraints.add_eq_cntr(self.obj_traj[-K:], self.loc)
+    def post(self):
+        T = self.obj_traj.cols
+        self.constraints.add_eq_cntr(self.obj_traj[-T:], self.loc)
 
         # adding constraints that location must be in designed region
         if self.loc_param is not None and self.loc_param.in_region:
@@ -44,7 +39,6 @@ class ObjAt(Fluent):
             min_xyz = np.array([[min_x],[min_y],[z]])
             max_xyz = np.array([[max_x],[max_y],[z]])
 
-            K = self.hl_action.K
             self.constraints.add_geq_cntr(self.loc, min_xyz)
             self.constraints.add_leq_cntr(self.loc, max_xyz)
         return self.constraints

@@ -22,6 +22,10 @@ class HLAction(object):
         # for graphing
         self.robot_clones = None
         self.obj_clones = None
+        self.params = []
+
+    def get_params(self):
+        return self.params
 
     def plot_traj_line(self, traj, colors=(0,0,1)):
         handles = []
@@ -45,7 +49,7 @@ class HLAction(object):
                 # traj = self.traj.value.reshape((self.K,self.T), order='F')
                 for t in range(self.T):
                     # xt = self.traj.value[self.K*t:self.K*(t+1)]
-                    xt = self.traj.value[:, t:t+1]
+                    xt = self.traj.get_value()[:, t:t+1]
                     # env.Load(robot.GetXMLFilename())
                     newrobot = self.create_robot_kinbody(name=self.name + "_" + robot.GetName() + str(t), transparency=transparency)
                     # newrobot = RaveCreateRobot(env,robot.GetXMLId())
@@ -68,7 +72,7 @@ class HLAction(object):
             self.create_robot_clones()
 
         for t in range(self.T):
-            xt = self.traj.value[:,t:t+1]
+            xt = self.traj.get_value()[:,t:t+1]
             # xt = self.traj.value[self.K*t:self.K*(t+1)]
             self.robot_clones[t].SetTransform(base_pose_to_mat(xt))
         return self.robot_clones
@@ -84,7 +88,7 @@ class HLAction(object):
                 transparency = 0.85
                 # traj = self.obj_traj.value.reshape((self.K,self.T), order='F')
                 for t in range(self.T):
-                    xt = self.obj_traj.value[self.K*t:self.K*(t+1)]
+                    xt = self.obj_traj.get_value()[:, t:t+1]
                     # xt = traj[:,t]
                     newobj = self.create_obj_kinbody(name=self.name + "_" + obj.GetName() + str(t), transparency=transparency)
                     # newobj = RaveCreateKinBody(env, obj.GetXMLId())
@@ -113,15 +117,15 @@ class HLAction(object):
             self.create_obj_clones()
 
         for t in range(self.T):
-            xt = self.obj_traj.value[self.K*t:self.K*(t+1)]
+            xt = self.obj_traj.value[:, t:t+1]
             # xt = traj[:,t]
             self.obj_clones[t].SetTransform(base_pose_to_mat(xt))
         return self.obj_clones
 
     def plot(self):
         self.plot_traj_robot_kinbodies()
-        # if self.obj is not None:
-        #    self.plot_traj_obj_kinbodies()
+        if self.obj is not None:
+           self.plot_traj_obj_kinbodies()
         # return handles
 
     def clear_plots(self):

@@ -47,7 +47,8 @@ class OptProb(object):
 
         obj = grb.QuadExpr()
         for var in self.vars:
-            obj += self.l2_norm_diff_squared(self.model, var)
+            if var.value is not None:
+                obj += self.l2_norm_diff_squared(self.model, var)
 
         self.model.setObjective(obj)
         self.model.update()
@@ -147,7 +148,7 @@ class OptProb(object):
         var_list = [
             grb_var for var in self.vars for grb_var in var.grb_vars.flatten()]
         val_list = [val for var in self.vars for val in var.value.flatten()]
-        
+
         self.trust_region_cnt = self.add_trust_region_cnt(
             var_list, val_list, trust_region_size)
 

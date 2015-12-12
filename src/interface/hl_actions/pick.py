@@ -1,8 +1,6 @@
 import numpy as np
 from opt.variable import Variable
 from opt.solver import Solver
-# from opt.sqp import SQP
-# from sqp_cvx import SQP
 import time
 import ipdb
 
@@ -14,35 +12,36 @@ from interface.fluents.in_manip import InManip
 from interface.fluents.is_gp import IsGP
 from interface.fluents.robot_at import RobotAt
 from interface.fluents.obj_at import ObjAt
+from interface.hl_param import Traj
 
 from utils import *
 
 class Pick(HLAction):
-    def __init__(self, lineno, hl_plan, env, robot, pos_param, obj_param, loc_param, gp_param, name="pick"):
+    def __init__(self, lineno, hl_plan, env, robot, pos, obj, loc, gp):
         super(Pick, self).__init__(lineno, hl_plan, env, robot)
 
-        self.pos, self.hl_pos = pos_param.new_hla_var(self)
-        self.obj, _ = obj_param.new_hla_var(self, env)
-        self.loc, self.hl_loc = loc_param.new_hla_var(self)
-        self.gp, self.hl_gp = gp_param.new_hla_var(self)
-        self.name = name
+        self.pos = pos
+        self.obj = obj
+        self.loc = loc
+        self.gp = gp
+        self.name = "pick" + str(lineno)
 
         self.T = 1
         self.K = 3
         T = self.T
         K = self.K
 
-        self.traj = Variable(None, self.model, K*T, 1, name=self.name+"_traj")
-        self.obj_traj = Variable(None, self.model, K*T, 1, name=self.name+'_obj_traj')
+        self.traj = Traj(self, self.name + "_traj", K, T, is_var=True)
+        self.obj_traj = Traj(self, self.name + "_objtraj", K, T, is_var=True)
+        self.params = [pos, loc, gp, self.traj, self.obj_traj]
 
-        self.preconditions = [RobotAt(self.env, self, self.model, self.pos, self.traj)]
-        self.preconditions += [ObjAt(self.env, self, self.model, self.obj, self.loc, self.obj_traj)] 
-        self.preconditions += [IsGP(self.env, self, self.model, robot, self.obj, self.gp, self.traj, self.obj_traj)]
-        self.preconditions += [IsMP(self.env, self, self.model, robot, self.traj, self.obj, self.obj_traj, place_objs=None, place_locs=None)]
+        self.preconditions = [RobotAt(self, pos, self.traj)]
+        self.preconditions += [ObjAt(self, obj, loc, self.obj_traj)]
+        self.preconditions += [IsGP(self.env, self, robot, obj, gp, self.traj, self.obj_traj)]
 
-        self.postconditions = [InManip(self.env, self, self.model, robot, self.obj, self.gp, self.traj, self.obj_traj)]
+        self.cost = 0.0
 
-        self.create_opt_prob()
+        # self.postconditions = [InManip(self.env, self, self.model, robot, self.obj, self.gp, self.traj, self.obj_traj)]
 
     def plot_consensus_pos(self):
         if not np.allclose(self.pos.value, self.hl_pos.value, atol=1e-3):
@@ -69,14 +68,14 @@ class Pick(HLAction):
             self.handles += [self.hl_plan.env.plot3(points=hl_obj_pos[:, 0], pointsize=10, colors=(1,0,0))]
 
     def plot(self, handles=[]):
-        # self.handles = []
+        self.clear_plots()
         self.handles += handles
         # del self.handles
         super(Pick, self).plot()
-        self.plot_consensus_pos()
-        self.plot_consensus_obj_pos()
+        # self.plot_consensus_pos()
+        # self.plot_consensus_obj_pos()
 
-        
+
         # if not np.allclose(self.gp.value, self.hl_gp.value):
         #     hl_gp = np.array(self.hl_gp.value)
 

@@ -12,17 +12,21 @@ class RobotAt(LinEqFluent):
         self.name = 'RobotAt(' + pos.name + ')'
 
     def pre(self):
-        K = self.traj.cols
+        self.traj.value[:,0:1] = self.pos.value
+
+        T = self.traj.cols
         # first time step of traj must equal pos
-        coeff = np.zeros((K, 1), dtype=np.float)
+        coeff = np.zeros((T, 1), dtype=np.float)
         coeff[0, 0] = 1.0
         self.rhs = AffExpr({self.traj: coeff})
         self.lhs = AffExpr({self.pos: 1.0})
 
     def post(self):
-        K = self.traj.cols
+        self.traj.value[:,-1:] = self.pos.value
+
+        T = self.traj.cols
         # last time step of traj must equal pos
-        coeff = np.zeros((K, 1), dtype=np.float)
-        coeff[K-1, 0] = 1.0
+        coeff = np.zeros((T, 1), dtype=np.float)
+        coeff[T-1, 0] = 1.0
         self.rhs = AffExpr({self.traj: coeff})
         self.lhs = AffExpr({self.pos: 1.0})

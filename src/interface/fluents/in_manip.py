@@ -1,54 +1,32 @@
 from fluent import Fluent
 from numpy.linalg import norm
 import numpy as np
-from opt.constraints import Constraints
 from opt.function import Function
+from fluent import LinEqFluent
+from aff_expr import AffExpr
 
 import ctrajoptpy
 from utils import *
 
 import gurobipy as grb
 
-class InManip(Fluent):
-    def __init__(self, env, hl_action, model, robot, obj, gp, traj, obj_traj = None):
-        super(InManip, self).__init__(env, hl_action, model)
+class InManip(LinEqFluent):
+    def __init__(self, hl_action, obj, gp, traj, obj_traj):
         self.plotting_env = hl_action.hl_plan.env
-        self.robot = robot
         self.obj = obj
-        # self.gp = gp.grb_vars
-        # self.traj = traj.grb_vars
-        # self.obj_traj = obj_traj.grb_vars
         self.gp = gp
         self.traj = traj
         self.obj_traj = obj_traj
         self.name = "InManip"
-        
-    def hl_params(self):
-        return [self.gp.hl_param]
 
-    def precondition(self):
-        K = self.hl_action.K
-        T = self.hl_action.T
+    def pre(self):
+        self.obj_traj.value = self.traj.value + self.gp.value
 
-        # equality constraints at each time step
-        # x_obj- x_robot - x_gp*cos(theta_gp) + y_gp*sin(theta_gp) = 0
-        # y_obj- y_robot - x_gp*sin(theta_gp) - y_gp*cos(theta_gp) = 0
-        # theta_obj - theta_robot = theta_gp = 0
-        traj_var = self.traj.grb_vars
-        obj_traj_var = self.obj_traj.grb_vars
-        gp_var = self.gp.grb_vars
+        self.lhs = AffExpr({self.traj: 1.0, self.gp: np.ones((1, self.traj.cols))})
+        self.rhs = AffExpr({self.obj_traj: 1.0})
 
-
-        for i in range(T):
-            self.constraints.add_eq_cntr(traj_var[K*i:K*(i+1)] + gp_var, obj_traj_var[K*i:K*(i+1)])
-        # for i in range(T):
-        #     self.constraints.add_eq_cntr(traj_var[K*i+2:K*i+3] + gp_var[2:3], obj_traj_var[K*i+2:K*i+3])
-        # h_func = GraspFn(self.traj, self.obj_traj, self.gp, K, T)
-        # self.constraints.add_nonlinear_eq_constraint(h_func)
-        return self.constraints
-
-    def postcondition(self):
-        return self.precondition()
+    def post(self):
+        pass
 
     def grasp(self, x):
         pass
@@ -62,7 +40,7 @@ class GraspFn(Function):
         self.K = K
         self.T = T
         self.weight= 3
-    
+
     # def grad(self):
     #     pass
 
@@ -124,7 +102,7 @@ class GraspFn(Function):
         # theta_gp_coeff = x_gp*np.sin(theta_gp)+y_gp*np.cos(theta_gp)
         theta_gp_coeff = x_gp*np.sin(theta_gp)-y_gp*np.cos(theta_gp)
         h1_gp_coeffs = [x_gp_coeff, y_gp_coeff, theta_gp_coeff]
-        
+
         # ensure gradient is computed correctly
         # f = lambda x:-x[0]*np.cos(x[2]) + x[1]*np.sin(x[2])
         f = lambda x:-x[0]*np.cos(x[2]) - x[1]*np.sin(x[2])
@@ -154,7 +132,7 @@ class GraspFn(Function):
 
         h1_vals, h2_vals = self.h_vals()
 
-        exprlist = [] 
+        exprlist = []
         for i in range(T):
             x_traj_var = traj_var[K*i,0]
             y_traj_var = traj_var[K*i+1,0]
@@ -182,13 +160,5 @@ class GraspFn(Function):
             h2_expr.addConstant(h2_constant)
             exprlist.append(h1_expr)
             exprlist.append(h2_expr)
-        
+
         return exprlist
-            
-
-
-
-    
-        
-
-

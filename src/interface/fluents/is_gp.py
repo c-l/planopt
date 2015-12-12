@@ -1,4 +1,5 @@
-from fluent import Fluent
+from fluent import AndFluent, FnEQFluent, LinEqFluent
+from aff_expr import AffExpr
 from numpy.linalg import norm
 import numpy as np
 from opt.constraints import Constraints
@@ -7,40 +8,42 @@ from opt.function import CollisionFn
 import ctrajoptpy
 from utils import *
 
-class IsGP(Fluent):
-    def __init__(self, env, hl_action, model, robot, obj, gp, traj, obj_traj = None):
-        super(IsGP, self).__init__(env, hl_action, model)
+class IsGP(AndFluent):
+    def __init__(self, env, hl_action, robot, obj, gp, traj, obj_traj):
         self.env = env
         self.hl_action = hl_action
         self.plotting_env = hl_action.hl_plan.env
         self.robot = robot
         self.obj = obj
-        self.gp = gp.grb_vars
-        self.traj = traj.grb_vars
-        self.traj_var = traj
-        if self.obj is not None:
-            self.obj_traj = obj_traj.grb_vars
-            self.obj_traj_var = obj_traj
-        self.name = "IsGP"
-        
+        self.gp = gp
+        self.traj = traj
+        self.obj_traj = obj_traj
+        self.name = "IsGP(" + self.obj.GetName() + ", " + self.gp.name + ')'
+
         self.cc = ctrajoptpy.GetCollisionChecker(env)
 
     def hl_params(self):
         return [self.gp.hl_param]
-        
-    def precondition(self):
-        # obj_pos = Fluent.get_object_loc(self.obj)
-        # linear_constraints = [self.traj[:,-1] - self.gp == obj_pos, cvx.norm(self.gp,2) == 1.26] 
+
+    def pre(self):
+        # TODO: remove assumption that grasp is one time step
+        self.traj.value = self.gp.value + self.obj_traj.value
+
         K = self.hl_action.K
         T = self.hl_action.T
 
         h = lambda x: self.distance_from_obj(x, 0.06, (K,T)) # function inequality constraint g(x) <= 0
-        h_func = CollisionFn([self.traj_var], h)
-        self.constraints.add_nonlinear_eq_constraint(h_func)
+        h_func = CollisionFn([self.traj], h)
 
-        self.constraints.add_eq_cntr(self.traj[-K:] + self.gp, self.obj_traj[-K:])
+        fneq_fluent = FnEQFluent('fneq_' + self.name)
+        fneq_fluent.fn = h_func
 
-        return self.constraints
+        coeff = np.zeros((T, 1), dtype=np.float)
+        coeff[0, 0] = 1.0
+        lhs = AffExpr({self.obj_traj: coeff})
+        rhs = AffExpr({self.traj: coeff, self.gp: 1.0})
+        lineq_fluent = LinEqFluent('lineq_' + self.name, lhs, rhs)
+        self.fluents = [fneq_fluent, lineq_fluent]
 
     def distance_from_obj(self, x, target_dist, traj_shape):
         env = self.env
@@ -54,10 +57,10 @@ class IsGP(Fluent):
         robot = self.robot
         obj = self.obj
         collisions = []
-        
+
         xt = x[-K:]
         robot.SetTransform(base_pose_to_mat(xt))
-        ot = self.obj_traj_var.value[-K:]
+        ot = self.obj_traj.value[:,-1:]
         obj.SetTransform(base_pose_to_mat(ot))
 
         cc.SetContactDistance(np.infty)
@@ -89,7 +92,7 @@ class IsGP(Fluent):
 
             gradd = np.zeros((1,K))
             normal = np.matrix(c.GetNormal())
-            
+
             # normalObsToRobot2 = -1 * np.sign(c.GetDistance())*normalize(ptB-ptA)
 
             ptB = np.matrix(ptB)[:, 0:2]
@@ -123,4 +126,3 @@ class IsGP(Fluent):
         jac[0,2] = -r[1]
         jac[1,2] = r[0]
         return np.matrix(jac)
-

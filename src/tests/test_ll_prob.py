@@ -1,14 +1,15 @@
 import numpy as np
+from interface.hl_actions.move import Move
+from interface.hl_actions.pick import Pick
 from opt.opt_prob import OptProb
 from opt.variable import Variable
 from opt.constraints import Constraints
 from opt.solver import Solver
-from interface.hl_param import HLParam, Traj
-from interface.fluents.lin_eq_fluent import LinEqFluent
-from interface.fluents.lin_le_fluent import LinLEFluent
-from interface.fluents.fn_le_fluent import FnLEFluent
+from interface.hl_param import HLParam, Traj, GP
+from interface.fluents.fluent import AndFluent, LinFluent, LinEqFluent, LinLEFluent, FnFluent, FnLEFluent, FnEQFluent
 from interface.hl_plan import HLPlan
 from openravepy import *
+from utils import mat_to_base_pose
 import ipdb
 
 
@@ -28,11 +29,21 @@ def create_cylinder(env, body_name, t, dims, color=[0, 1, 1]):
 
     return cylinder
 
+def make_transparent(body, transparency=0.7):
+    for link in body.GetLinks():
+        for geom in link.GetGeometries():
+            geom.SetTransparency(transparency)
 
-def init_openrave_test_env():
-    env = Environment()  # create openrave environment
-    env.SetViewer('qtcoin')  # attach viewer (optional)
+def add_cyl_robot(env):
+    env.Load("robot.xml")
 
+    robot = env.GetRobots()[0]
+    transform = np.eye(4)
+    transform[0, 3] = -1
+    robot.SetTransform(transform)
+    make_transparent(robot)
+
+def add_obstacle(env):
     obstacles = np.matrix('-0.576036866359447, 0.918128654970760, 1;\
                     -0.806451612903226,-1.07017543859649, 1;\
                     1.01843317972350,-0.988304093567252, 1;\
@@ -53,44 +64,41 @@ def init_openrave_test_env():
         for geom in link.GetGeometries():
             geom.SetDiffuseColor((.9, .9, .9))
     env.AddKinBody(body)
+    make_transparent(body)
 
-    # # create cylindrical object
-    # transform = np.eye(4)
-    # transform[0, 3] = -2
-    # obj = create_cylinder(env, 'obj', np.eye(4), [.35, 2])
-    # obj.SetTransform(transform)
-    # env.AddKinBody(obj)
-
-    # import ipdb; ipdb.set_trace() # BREAKPOINT
-    env.Load("robot.xml")
-
-    robot = env.GetRobots()[0]
+def add_object(env):
+    # create cylindrical object
     transform = np.eye(4)
-    transform[0, 3] = -1
-    robot.SetTransform(transform)
-    transparency = 0.7
-    # for body in [robot, body, obj]:
-    for body in [robot, body]:
-        for link in body.GetLinks():
-            for geom in link.GetGeometries():
-                geom.SetTransparency(transparency)
-    # import ctrajoptpy
-    # cc = ctrajoptpy.GetCollisionChecker(env)
-    # cc.SetContactDistance(np.infty)
-    # cc.SetContactDistance(np.infty)
-    # collisions = cc.BodyVsBody(robot, obj)
-    # for c in collisions:
-    # if c.GetDistance() > 0:
-    #     distance = c.GetDistance()
-    #     print "distance: ", distance
+    transform[0, 3] = -2
+    obj = create_cylinder(env, 'obj', np.eye(4), [.35, 2])
+    obj.SetTransform(transform)
+    env.AddKinBody(obj)
+    make_transparent(obj)
 
-    # import ipdb; ipdb.set_trace() # BREAKPOINT
+def move_test_env():
+    env = Environment()  # create openrave environment
+    env.SetViewer('qtcoin')  # attach viewer (optional)
+
+    add_cyl_robot(env)
+    add_obstacle(env)
+    raw_input('continue past warnings')
+
+    return env
+
+def pick_test_env():
+    env = Environment()  # create openrave environment
+    env.SetViewer('qtcoin')  # attach viewer (optional)
+
+    add_cyl_robot(env)
+    add_obstacle(env)
+    add_object(env)
+    raw_input('continue past warnings')
+
     return env
 
 
 def test_no_obstructs_move():
-    from interface.hl_actions.move import Move
-    env = init_openrave_test_env()
+    env = move_test_env()
     robot = env.GetRobots()[0]
 
     start = HLParam("start", 3, 1, is_var=False, value=np.array([[-2], [0], [0]]))
@@ -111,7 +119,6 @@ def test_no_obstructs_move():
         var = Variable(model, param)
         param_to_var[param] = var
         prob.add_var(var)
-    move.traj.resample() # remove later
     model.update()
 
     constraints = Constraints(model)
@@ -131,6 +138,7 @@ def test_no_obstructs_move():
                 rhs = fluent.rhs.to_gurobi_expr(param_to_var)
                 model.update()
                 constraints.add_eq_cntr(lhs, rhs)
+    return constraints
     prob.add_constraints(constraints)
 
     for hla in [move]:
@@ -170,9 +178,38 @@ def test_no_obstructs_move():
     move.plot()
     ipdb.set_trace()
 
+def add_fluent_to_constraints(constraints, fluent, param_to_var):
+    if isinstance(fluent, AndFluent):
+        for subfluent in fluent.fluents:
+            add_fluent_to_constraints(constraints, subfluent, param_to_var)
+    elif isinstance(fluent, FnFluent):
+        fluent.fn.to_gurobi_fn(param_to_var)
+        if isinstance(fluent, FnLEFluent):
+            constraints.add_nonlinear_ineq_constraint(fluent.fn)
+        elif isinstance(fluent, FnEQFluent):
+            constraints.add_nonlinear_eq_constraint(fluent.fn)
+    elif isinstance(fluent, LinFluent):
+        lhs = fluent.lhs.to_gurobi_expr(param_to_var)
+        rhs = fluent.rhs.to_gurobi_expr(param_to_var)
+        if isinstance(fluent, LinLEFluent):
+            constraints.add_leq_cntr(lhs, rhs)
+        elif isinstance(fluent, LinEqFluent):
+            constraints.add_eq_cntr(lhs, rhs)
+
+def model_cnts_from_hla(model, hlas, param_to_var):
+    constraints = Constraints(model)
+    for hla in hlas:
+        for fluent in hla.preconditions:
+            fluent.pre()
+        for fluent in hla.postconditions:
+            fluent.post()
+        for fluent in hla.preconditions + hla.postconditions:
+            add_fluent_to_constraints(constraints, fluent, param_to_var)
+    return constraints
+
+
 def test_move():
-    from interface.hl_actions.move import Move
-    env = init_openrave_test_env()
+    env = move_test_env()
     robot = env.GetRobots()[0]
 
     start = HLParam("start", 3, 1, is_var=False, value=np.array([[-2], [0], [0]]))
@@ -186,56 +223,103 @@ def test_move():
     move_robot = move_env.GetRobots()[0]
     move = Move(0, hl_plan, move_env, move_robot, start, end)
 
+    hlas = [move]
+    solve_ll_plan(hlas)
+    ipdb.set_trace()
+
+
+def test_pick():
+    env = pick_test_env()
+    robot = env.GetRobots()[0]
+
+    # start = HLParam("start", 3, 1, is_var=False, value=np.array([[-2], [0], [0]]))
+    # end = HLParam("end", 3, 1, is_var=False, value=np.array([[2], [0], [0]]))
+
+    hl_plan = HLPlan(env, robot)
+    pick_env = env.CloneSelf(1) # clones objects in the environment
+    pick_robot = pick_env.GetRobots()[0]
+
+    rp = HLParam("rp", 3, 1)
+    gp = GP("gp", 3, 1)
+    pick_obj = pick_env.GetKinBody('obj')
+    obj_loc = HLParam("obj_loc", 3, 1, is_var=False, value=mat_to_base_pose(pick_obj.GetTransform()))
+
+    gp.resample()
+
+    pick = Pick(0, hl_plan, env, robot, rp, pick_obj, obj_loc, gp)
+    hlas = [pick]
+
+    solve_ll_plan(hlas)
+    assert np.allclose(pick.pos.value, np.array([[-1.41840404],[-0.18333333],[ 0.        ]]))
+
+
+def solve_ll_plan(hlas):
     prob = OptProb()
     model = prob.get_model()
 
+    params = []
+    for hla in hlas:
+        params += hla.get_params()
+
     param_to_var = {}
-    params = move.get_params()
-    # needs to be before constructing variables so that variable will be set to
-    # traj value
-    move.traj.resample() # remove later
     for param in params:
         var = Variable(model, param)
         param_to_var[param] = var
         prob.add_var(var)
-    ipdb.set_trace()
     model.update()
 
-    constraints = Constraints(model)
-    for hla in [move]:
-        for fluent in hla.preconditions:
-            fluent.pre()
-        for fluent in hla.postconditions:
-            fluent.post()
-        for fluent in hla.preconditions + hla.postconditions:
-            if isinstance(fluent, FnLEFluent):
-                fluent.fn.to_gurobi_fn(param_to_var)
-                constraints.add_nonlinear_ineq_constraint(fluent.fn)
-            if isinstance(fluent, LinLEFluent):
-                lhs = fluent.lhs.to_gurobi_expr(param_to_var)
-                rhs = fluent.rhs.to_gurobi_expr(param_to_var)
-                model.update()
-                constraints.add_leq_cntr(lhs, rhs)
-            elif isinstance(fluent, LinEqFluent):
-                lhs = fluent.lhs.to_gurobi_expr(param_to_var)
-                rhs = fluent.rhs.to_gurobi_expr(param_to_var)
-                model.update()
-                constraints.add_eq_cntr(lhs, rhs)
+    constraints = model_cnts_from_hla(model, hlas, param_to_var)
     prob.add_constraints(constraints)
+    for param, var in param_to_var.items():
+        var.set(param.value)
 
-    for hla in [move]:
-        hla.cost.to_gurobi_fn(param_to_var)
-        prob.inc_obj(hla.cost)
+    for hla in hlas:
+        if hla.cost != 0.0:
+            hla.cost.to_gurobi_fn(param_to_var)
+            prob.inc_obj(hla.cost)
 
     solver = Solver()
     solver.penalty_sqp(prob)
-    # prob.convexify(0.1)
-    # prob.optimize()
 
     for param, var in param_to_var.items():
         var.update_hl_param()
-    move.plot()
+
+
+def test_pick_and_move():
+    env = pick_test_env()
+    robot = env.GetRobots()[0]
+
+    # start = HLParam("start", 3, 1, is_var=False, value=np.array([[-2], [0], [0]]))
+    # end = HLParam("end", 3, 1, is_var=False, value=np.array([[2], [0], [0]]))
+
+    hl_plan = HLPlan(env, robot)
+    pick_env = env.CloneSelf(1) # clones objects in the environment
+    pick_robot = pick_env.GetRobots()[0]
+    move_env = env.CloneSelf(1) # clones objects in the environment
+    move_robot = move_env.GetRobots()[0]
+
+    rp = HLParam("rp", 3, 1)
+    end = HLParam("end", 3, 1, is_var=False, value=np.array([[2],[0],[0]]))
+    gp = GP("gp", 3, 1)
+    pick_obj = pick_env.GetKinBody('obj')
+    move_obj = move_env.GetKinBody('obj')
+    obj_loc = HLParam("obj_loc", 3, 1, is_var=False, value=mat_to_base_pose(pick_obj.GetTransform()))
+
+    gp.resample()
+
+    pick = Pick(0, hl_plan, env, robot, rp, pick_obj, obj_loc, gp)
+    move = Move(0, hl_plan, move_env, move_robot, rp, end, move_obj, gp)
+    init_hlas = [pick]
+    hlas = [pick, move]
+
+    solve_ll_plan(init_hlas)
+    import ipdb; ipdb.set_trace()
+    solve_ll_plan(hlas)
+
     ipdb.set_trace()
 
 
-test_move()
+# test_no_obstructs_move()
+# test_move()
+# test_pick()
+test_pick_and_move()

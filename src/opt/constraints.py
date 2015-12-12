@@ -1,6 +1,6 @@
 import numpy as np
-# import cvxpy as cvx
 import gurobipy as grb
+from opt.ops import abs
 GRB = grb.GRB
 
 
