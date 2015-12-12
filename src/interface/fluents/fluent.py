@@ -10,6 +10,19 @@ class Fluent(object):
         raise NotImplementedError
 
 
+class AndFluent(Fluent):
+
+    def __init__(self, name):
+        super(AndFluent, self).__init__(name)
+        self.fluents = None
+
+    def satisfied(self):
+        for fluent in self.fluents:
+            if fluent.satisfied() is False:
+                return False
+        return True
+
+
 class LinFluent(Fluent):
     def __init__(self, name, lhs, rhs):
         super(LinFluent, self).__init__(name)
