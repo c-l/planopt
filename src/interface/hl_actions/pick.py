@@ -35,9 +35,9 @@ class Pick(HLAction):
         self.obj_traj = Traj(self, self.name + "_objtraj", K, T, is_var=True)
         self.params = [pos, loc, gp, self.traj, self.obj_traj]
 
-        self.preconditions = [RobotAt(self, pos, self.traj)]
-        self.preconditions += [ObjAt(self, obj, loc, self.obj_traj)]
-        self.preconditions += [IsGP(self.env, self, robot, obj, gp, self.traj, self.obj_traj)]
+        self.preconditions = [RobotAt(self, 0, pos, self.traj)]
+        self.preconditions += [ObjAt(self, 0, obj, loc, self.obj_traj)]
+        self.preconditions += [IsGP(self.env, self, robot, 0, obj, gp, self.traj, self.obj_traj)]
 
         self.cost = 0.0
 

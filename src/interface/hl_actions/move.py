@@ -34,21 +34,21 @@ class Move(HLAction):
         self.traj = Traj(self, self.name + "_traj", 3, 40, is_var=True)
 
         self.params = [start, end, self.traj]
-        self.preconditions = [RobotAt(self, start, self.traj)]
-        self.preconditions += [IsMP(self, start, end, self.traj)]
+        self.preconditions = [RobotAt(self, 0, start, self.traj)]
+        self.preconditions += [IsMP(self, 0, start, end, self.traj)]
 
         if obj is None:
-            self.preconditions += [NotObstructs(env, self, robot, self.traj)]
+            self.preconditions += [NotObstructs(env, self, robot, 1, self.traj)]
         else:
             assert gp is not None
             self.obj_traj = Traj(self, self.name + "_objtraj", 3, 40, is_var=True)
-            self.preconditions += [NotObstructs(env, self, robot, self.traj, obj, self.obj_traj)]
-            self.preconditions += [InManip(self, obj, gp, self.traj, self.obj_traj)]
+            self.preconditions += [NotObstructs(env, self, robot, 1, self.traj, obj, self.obj_traj)]
+            self.preconditions += [InManip(self, 0, obj, gp, self.traj, self.obj_traj)]
             self.params += [gp, self.obj_traj]
         # self.create_robot_clones()
 
         self.postconditions = []
-        self.postconditions += [RobotAt(self, self.end, self.traj)]
+        self.postconditions += [RobotAt(self, 0, self.end, self.traj)]
 
         # setting trajopt objective
         v = -1 * np.ones((KT - K, 1))

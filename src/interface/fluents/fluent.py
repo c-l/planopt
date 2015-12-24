@@ -3,8 +3,9 @@ import numpy as np
 
 class Fluent(object):
 
-    def __init__(self, name):
+    def __init__(self, name, priority):
         self.name = name
+        self.priority = priority
 
     def satisfied(self, tolerance=None):
         raise NotImplementedError
@@ -12,8 +13,8 @@ class Fluent(object):
 
 class AndFluent(Fluent):
 
-    def __init__(self, name):
-        super(AndFluent, self).__init__(name)
+    def __init__(self, name, priority):
+        super(AndFluent, self).__init__(name, prioriy)
         self.fluents = None
 
     def satisfied(self):
@@ -24,8 +25,8 @@ class AndFluent(Fluent):
 
 
 class LinFluent(Fluent):
-    def __init__(self, name, lhs, rhs):
-        super(LinFluent, self).__init__(name)
+    def __init__(self, name, priority, lhs, rhs):
+        super(LinFluent, self).__init__(name, priority)
         self.lhs = lhs
         self.rhs = rhs
 
@@ -55,8 +56,8 @@ class LinLEFluent(LinFluent):
 
 class FnFluent(Fluent):
 
-    def __init__(self, name, fn = None):
-        super(FnFluent, self).__init__(name)
+    def __init__(self, name, priority, fn = None):
+        super(FnFluent, self).__init__(name, priority)
         self.fn = None
 
     def satisfied(self):

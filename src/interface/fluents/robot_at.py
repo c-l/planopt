@@ -5,13 +5,15 @@ from aff_expr import AffExpr
 
 class RobotAt(LinEqFluent):
 
-    def __init__(self, hl_action, pos, traj):
+    def __init__(self, hl_action, priority, pos, traj):
         self.hl_action = hl_action
+        self.priority = priority
         self.pos = pos
         self.traj = traj
         self.name = 'RobotAt(' + pos.name + ')'
 
     def pre(self):
+        import ipdb; ipdb.set_trace()
         self.traj.value[:,0:1] = self.pos.value
 
         T = self.traj.cols

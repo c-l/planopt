@@ -7,8 +7,9 @@ import numpy as np
 import time
 
 class IsMP(LinLEFluent):
-    def __init__(self, hl_action, start, end, traj):
+    def __init__(self, hl_action, priority, start, end, traj):
         self.hl_action = hl_action
+        self.priority = priority
         self.start = start
         self.end = end
         self.traj = traj

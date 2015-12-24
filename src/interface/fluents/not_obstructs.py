@@ -8,7 +8,7 @@ import numpy as np
 import time
 
 class NotObstructs(FnLEFluent):
-    def __init__(self, env, hl_action, robot, traj, obj=None, obj_traj=None, place_objs=None, place_locs=None):
+    def __init__(self, env, hl_action, robot, priority, traj, obj=None, obj_traj=None, place_objs=None, place_locs=None):
         self.env = env
         self.plotting_env = hl_action.hl_plan.env
         self.hl_action = hl_action
@@ -17,6 +17,7 @@ class NotObstructs(FnLEFluent):
         if self.obj is not None:
             self.obj_traj = obj_traj
         self.robot = robot
+        self.priority = priority
 
         self.name = "NotObstructs"
         # self.tolerance = 1e-2
@@ -78,7 +79,7 @@ class NotObstructs(FnLEFluent):
         K, T = traj_shape
 
         # traj = x[:K*T,:].reshape(traj_shape, order='F')
-        
+
         traj = x[:K, :]
 
         obj_traj = None

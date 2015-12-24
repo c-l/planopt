@@ -196,7 +196,7 @@ def add_fluent_to_constraints(constraints, fluent, param_to_var):
         elif isinstance(fluent, LinEqFluent):
             constraints.add_eq_cntr(lhs, rhs)
 
-def model_cnts_from_hla(model, hlas, param_to_var):
+def model_cnts_from_hla(model, hlas, param_to_var, priority):
     constraints = Constraints(model)
     for hla in hlas:
         for fluent in hla.preconditions:
@@ -204,7 +204,10 @@ def model_cnts_from_hla(model, hlas, param_to_var):
         for fluent in hla.postconditions:
             fluent.post()
         for fluent in hla.preconditions + hla.postconditions:
-            add_fluent_to_constraints(constraints, fluent, param_to_var)
+            if fluent.priority == 1:
+                import ipdb; ipdb.set_trace()
+            if fluent.priority <= priority:
+                add_fluent_to_constraints(constraints, fluent, param_to_var)
     return constraints
 
 
@@ -253,7 +256,7 @@ def test_pick():
     assert np.allclose(pick.pos.value, np.array([[-1.41840404],[-0.18333333],[ 0.        ]]))
 
 
-def solve_ll_plan(hlas):
+def solve_ll_plan(hlas, priority):
     prob = OptProb()
     model = prob.get_model()
 
@@ -268,7 +271,7 @@ def solve_ll_plan(hlas):
         prob.add_var(var)
     model.update()
 
-    constraints = model_cnts_from_hla(model, hlas, param_to_var)
+    constraints = model_cnts_from_hla(model, hlas, param_to_var, priority)
     prob.add_constraints(constraints)
     for param, var in param_to_var.items():
         var.set(param.value)
@@ -318,8 +321,39 @@ def test_pick_and_move():
 
     ipdb.set_trace()
 
+def test_pick_and_move_with_cnt_reordering():
+    env = pick_test_env()
+    robot = env.GetRobots()[0]
 
+    # start = HLParam("start", 3, 1, is_var=False, value=np.array([[-2], [0], [0]]))
+    # end = HLParam("end", 3, 1, is_var=False, value=np.array([[2], [0], [0]]))
+
+    hl_plan = HLPlan(env, robot)
+    pick_env = env.CloneSelf(1) # clones objects in the environment
+    pick_robot = pick_env.GetRobots()[0]
+    move_env = env.CloneSelf(1) # clones objects in the environment
+    move_robot = move_env.GetRobots()[0]
+
+    rp = HLParam("rp", 3, 1)
+    end = HLParam("end", 3, 1, is_var=False, value=np.array([[2],[0],[0]]))
+    gp = GP("gp", 3, 1)
+    pick_obj = pick_env.GetKinBody('obj')
+    move_obj = move_env.GetKinBody('obj')
+    obj_loc = HLParam("obj_loc", 3, 1, is_var=False, value=mat_to_base_pose(pick_obj.GetTransform()))
+
+    gp.resample()
+
+    pick = Pick(0, hl_plan, env, robot, rp, pick_obj, obj_loc, gp)
+    move = Move(0, hl_plan, move_env, move_robot, rp, end, move_obj, gp)
+    hlas = [pick, move]
+
+    solve_ll_plan(hlas, 0)
+    import ipdb; ipdb.set_trace()
+    solve_ll_plan(hlas, 1)
+
+    ipdb.set_trace()
 # test_no_obstructs_move()
 # test_move()
 # test_pick()
-test_pick_and_move()
+# test_pick_and_move()
+test_pick_and_move_with_cnt_reordering()

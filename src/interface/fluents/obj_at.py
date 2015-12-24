@@ -3,8 +3,9 @@ from aff_expr import AffExpr
 import numpy as np
 
 class ObjAt(LinEqFluent):
-    def __init__(self, hl_action, obj, loc, obj_traj):
+    def __init__(self, hl_action, priority, obj, loc, obj_traj):
         self.hl_action = hl_action
+        self.priority = priority
         self.obj = obj
         self.loc = loc
         self.obj_traj = obj_traj
