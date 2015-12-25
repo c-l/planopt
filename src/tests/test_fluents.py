@@ -5,7 +5,7 @@ from interface.fluents.aff_expr import AffExpr
 import numpy as np
 from opt.opt_prob import OptProb
 from opt.constraints import Constraints
-from opt.variable import Variable
+from opt.variable import Variable, Constant
 import gurobipy as grb
 GRB = grb.GRB
 
@@ -15,6 +15,20 @@ class TestParam(HLParam):
     def generator(self):
         yield np.array([[1], [0], [0]], dtype=np.float)
 
+def to_gurobi_expr(aff_expr, param_to_var):
+    expr = 0.0 + aff_expr.constant
+
+    for param, coeff in aff_expr.items():
+        var = param_to_var[param]
+        if isinstance(var, Constant):
+            expr += np.dot(param.get_value(), coeff)
+        elif isinstance(var, Variable):
+            expr += np.dot(var.get_grb_vars(), coeff)
+        else:
+            raw_input("shouldn't be here")
+            import ipdb; ipdb.set_trace()
+
+    return expr
 
 def test_aff_expr():
     one = HLParam("x", 1, 1, value=np.array([[1.0]]))
@@ -31,7 +45,7 @@ def test_fluent_zero_not_equal_to_e1():
 
     lhs = AffExpr({param: 1})
 
-    fluent = LinEqFluent('test_eq', lhs, zero)
+    fluent = LinEqFluent('test_eq', 0, lhs, zero)
     assert not fluent.satisfied()
 
 
@@ -47,7 +61,7 @@ def test_fluent_equals():
     # var = Variable(model, param)
     lhs = AffExpr({param: 2}, constant=np.array([[1], [0], [-2]]))
 
-    fluent = LinEqFluent('test_eq', lhs, three)
+    fluent = LinEqFluent('test_eq', 0, lhs, three)
     assert fluent.satisfied()
 
 
@@ -63,7 +77,7 @@ def test_fluent_equal_after_opt():
     # var = Variable(model, param)
     lhs = AffExpr({param: 1})
 
-    fluent = LinEqFluent('test_eq', lhs, zero)
+    fluent = LinEqFluent('test_eq', 0, lhs, zero)
     assert not fluent.satisfied()
 
 
@@ -79,15 +93,15 @@ def test_eq_cnt_with_gurobi():
 
     # var = Variable(model, param)
     lhs = AffExpr({param: 1})
-    fluent = LinEqFluent('test_eq', lhs, zero)
+    fluent = LinEqFluent('test_eq', 0, lhs, zero)
 
     variables = [Variable(model, param)]
     param_to_var = {param: variables[0]}
 
     constraints = Constraints(model)
     if isinstance(fluent, LinEqFluent):
-        lhs = fluent.lhs.to_gurobi_expr(param_to_var)
-        rhs = fluent.rhs.to_gurobi_expr(param_to_var)
+        lhs = to_gurobi_expr(fluent.lhs, param_to_var)
+        rhs = to_gurobi_expr(fluent.rhs, param_to_var)
         model.update()
         constraints.add_eq_cntr(lhs, rhs)
     assert not fluent.satisfied()
@@ -119,15 +133,15 @@ def test_le_cnt_with_gurobi():
 
     # var = Variable(model, param)
     lhs = AffExpr({param: 1})
-    fluent = LinLEFluent('test_eq', lhs, twoe1)
+    fluent = LinLEFluent('test_eq', 0, lhs, twoe1)
 
     variables = [Variable(model, param)]
     param_to_var = {param: variables[0]}
 
     constraints = Constraints(model)
     if isinstance(fluent, LinLEFluent):
-        lhs = fluent.lhs.to_gurobi_expr(param_to_var)
-        rhs = fluent.rhs.to_gurobi_expr(param_to_var)
+        lhs = to_gurobi_expr(fluent.lhs, param_to_var)
+        rhs = to_gurobi_expr(fluent.rhs, param_to_var)
         model.update()
         constraints.add_leq_cntr(lhs, rhs)
     assert not fluent.satisfied()
@@ -161,15 +175,15 @@ def test_le_cnt_with_opt():
 
     # var = Variable(model, param)
     lhs = AffExpr({param: 1})
-    fluent = LinLEFluent('test_eq', lhs, twoe1)
+    fluent = LinLEFluent('test_eq', 0, lhs, twoe1)
 
     variables = [var]
     param_to_var = {param: var}
 
     constraints = Constraints(model)
     if isinstance(fluent, LinLEFluent):
-        lhs = fluent.lhs.to_gurobi_expr(param_to_var)
-        rhs = fluent.rhs.to_gurobi_expr(param_to_var)
+        lhs = to_gurobi_expr(fluent.lhs, param_to_var)
+        rhs = to_gurobi_expr(fluent.rhs, param_to_var)
         model.update()
         constraints.add_leq_cntr(lhs, rhs)
     assert not fluent.satisfied()
