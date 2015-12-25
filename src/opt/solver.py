@@ -19,8 +19,8 @@ class Solver(object):
         # self.min_trust_box_size = 1e-4
         self.min_trust_box_size = 1e-2
         # self.min_approx_improve = 1e-4
-        # self.min_approx_improve = 1e-2
-        self.min_approx_improve = 3e-1
+        self.min_approx_improve = 1e-2
+        # self.min_approx_improve = 3e-1
         # self.min_approx_improve = 1e-1
         self.max_iter = 50
         self.trust_shrink_ratio = .1
@@ -424,7 +424,6 @@ class Solver(object):
             print("  sqp_iter: {0}".format(sqp_iter))
             # fval, fgrad, fhess, gval, gjac, hval, hjac = self.convexify_fgh(x, f, g, h)
 
-            # import ipdb; ipdb.set_trace()
             prob.convexify(penalty_coeff)
             merit = prob.val(penalty_coeff)
             prob.save()
@@ -433,7 +432,9 @@ class Solver(object):
                 print("    trust region size: {0}".format(trust_box_size))
 
                 prob.add_trust_region(trust_box_size)
+                prob.clear_plots()
                 prob.optimize()
+                prob.plot()
 
                 model_merit = prob.model.objVal
                 # prob.convexify(penalty_coeff, trust_box_size)
@@ -444,6 +445,7 @@ class Solver(object):
                 merit_improve_ratio = exact_merit_improve / approx_merit_improve
 
                 print("      approx_merit_improve: {0}. exact_merit_improve: {1}. merit_improve_ratio: {2}".format(approx_merit_improve, exact_merit_improve, merit_improve_ratio))
+                import ipdb; ipdb.set_trace()
 
                 if approx_merit_improve < -1e-5:
                     print("Approximate merit function got worse ({0})".format(approx_merit_improve))
@@ -455,6 +457,7 @@ class Solver(object):
                     print("Converged: y tolerance")
                     #some sort of callback
                     # print "x: ", xp.value
+                    # why do we restore if there is some improvement?
                     prob.restore()
                     return (trust_box_size, success)
                 elif (exact_merit_improve < 0) or (merit_improve_ratio < self.improve_ratio_threshold):

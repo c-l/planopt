@@ -131,6 +131,9 @@ class HLAction(object):
     def clear_plots(self):
         self.handles = []
 
+    def add_plot_handles(self, handles):
+        self.handles += handles
+
     def create_robot_kinbody(self, name, color=[1,0,0], transparency=0.8):
         robot = self.create_cylinder(name, np.eye(4), [0.2,2.01], color=color, transparency=transparency)
         return robot

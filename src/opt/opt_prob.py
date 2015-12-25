@@ -22,6 +22,8 @@ class OptProb(object):
         self.obj_fns = []
         self.vars = []
 
+        self.hlas = []
+
         self.trust_region_cnt = None
         self.dual_terms = []
         self.trust_temp = []
@@ -36,6 +38,14 @@ class OptProb(object):
     def update_vars(self):
         for var in self.vars:
             var.update()
+
+    def plot(self):
+        for hla in self.hlas:
+            hla.plot()
+
+    def clear_plots(self):
+        for hla in self.hlas:
+            hla.clear_plots()
 
     def find_closest_feasible_point(self):
         if self.trust_region_cnt is not None:
@@ -101,6 +111,9 @@ class OptProb(object):
     def callback(self):
         for callback in self.callbacks:
             callback()
+
+    def add_hla(self, hla):
+        self.hlas.append(hla)
 
     def add_var(self, var):
         self.vars.append(var)
