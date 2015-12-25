@@ -67,11 +67,11 @@ class Pick(HLAction):
             self.handles += [self.hl_plan.env.drawarrow(p1=pick_obj_pos, p2=hl_obj_pos, linewidth=0.01, color=(1,0,0))]
             self.handles += [self.hl_plan.env.plot3(points=hl_obj_pos[:, 0], pointsize=10, colors=(1,0,0))]
 
-    def plot(self, handles=[]):
-        self.clear_plots()
-        self.handles += handles
-        # del self.handles
-        super(Pick, self).plot()
+    # def plot(self, handles=[]):
+    #     self.clear_plots()
+    #     self.handles += handles
+    #     # del self.handles
+    #     super(Pick, self).plot()
         # self.plot_consensus_pos()
         # self.plot_consensus_obj_pos()
 

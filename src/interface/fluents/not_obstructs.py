@@ -200,7 +200,7 @@ class NotObstructs(FnLEFluent):
                     if include_placed_obj:
                         jac[placed_obj_index, K*body_index:K*(body_index+1)] += gradd
 
-        self.hl_action.plot(handles)
+        self.hl_action.add_plot_handles(handles)
         self.plotting_env.UpdatePublishedBodies()
         handles = []
 

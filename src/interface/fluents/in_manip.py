@@ -12,7 +12,6 @@ import gurobipy as grb
 
 class InManip(LinEqFluent):
     def __init__(self, hl_action, priority, obj, gp, traj, obj_traj):
-        self.plotting_env = hl_action.hl_plan.env
         self.hl_action = hl_action
         self.priority = priority
         self.obj = obj
@@ -22,7 +21,7 @@ class InManip(LinEqFluent):
         self.name = "InManip"
 
     def pre(self):
-        self.obj_traj.value = self.traj.value + self.gp.value
+        # self.obj_traj.value = self.traj.value + self.gp.value
 
         self.lhs = AffExpr({self.traj: 1.0, self.gp: np.ones((1, self.traj.cols))})
         self.rhs = AffExpr({self.obj_traj: 1.0})

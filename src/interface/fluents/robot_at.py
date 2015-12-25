@@ -13,8 +13,8 @@ class RobotAt(LinEqFluent):
         self.name = 'RobotAt(' + pos.name + ')'
 
     def pre(self):
-        import ipdb; ipdb.set_trace()
-        self.traj.value[:,0:1] = self.pos.value
+        # import ipdb; ipdb.set_trace()
+        # self.traj.value[:,0:1] = self.pos.value
 
         T = self.traj.cols
         # first time step of traj must equal pos
@@ -24,7 +24,7 @@ class RobotAt(LinEqFluent):
         self.lhs = AffExpr({self.pos: 1.0})
 
     def post(self):
-        self.traj.value[:,-1:] = self.pos.value
+        # self.traj.value[:,-1:] = self.pos.value
 
         T = self.traj.cols
         # last time step of traj must equal pos

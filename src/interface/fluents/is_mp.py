@@ -16,9 +16,9 @@ class IsMP(LinLEFluent):
         self.name = "IsMP"
 
     def pre(self):
-        start = self.start.value
-        end = self.end.value
-        self.traj.value = np.array([np.linspace(i, j, self.traj.cols) for i, j in zip(np.array(start), np.array(end))])
+        # start = self.start.value
+        # end = self.end.value
+        # self.traj.value = np.array([np.linspace(i, j, self.traj.cols) for i, j in zip(np.array(start), np.array(end))])
 
         K = self.hl_action.K
         T = self.hl_action.T

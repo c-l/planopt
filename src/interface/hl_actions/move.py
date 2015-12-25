@@ -38,7 +38,7 @@ class Move(HLAction):
         self.preconditions += [IsMP(self, 0, start, end, self.traj)]
 
         if obj is None:
-            self.preconditions += [NotObstructs(env, self, robot, 1, self.traj)]
+            self.preconditions += [NotObstructs(env, self, robot, 2, self.traj)]
         else:
             assert gp is not None
             self.obj_traj = Traj(self, self.name + "_objtraj", 3, 40, is_var=True)
@@ -78,12 +78,12 @@ class Move(HLAction):
                                np.array([np.linspace(i, j, self.T - mid_time_step) for i, j in zip(np.array(waypoint), np.array(end))])))
         return init_traj
 
-    def plot(self, handles=[]):
-        self.clear_plots()
-        # self.handles += super(Move, self).plot(handles)
-
-        super(Move, self).plot()
-        self.handles += handles
+    # def plot(self, handles=[]):
+    #     self.clear_plots()
+    #     # self.handles += super(Move, self).plot(handles)
+    #
+    #     super(Move, self).plot()
+    #     self.handles += handles
         # self.handles += self.plot_traj_line(self.traj, colors=(0,0,0.5))
 
         # if self.obj is not None:

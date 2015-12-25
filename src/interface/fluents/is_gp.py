@@ -28,14 +28,15 @@ class IsGP(AndFluent):
 
     def pre(self):
         # TODO: remove assumption that grasp is one time step
-        import ipdb; ipdb.set_trace()
-        self.traj.value = self.gp.value + self.obj_traj.value
+        # import ipdb; ipdb.set_trace()
+        # self.traj.value = self.gp.value + self.obj_traj.value
 
 
         K = self.hl_action.K
         T = self.hl_action.T
 
-        h = lambda x: self.distance_from_obj(x, 0.06, (K,T)) # function inequality constraint g(x) <= 0
+        # h = lambda x: self.distance_from_obj(x, 0.06, (K,T)) # function inequality constraint g(x) <= 0
+        h = lambda x: self.distance_from_obj(x, 0.0, (K,T)) # function inequality constraint g(x) <= 0
         h_func = CollisionFn([self.traj], h)
 
         fneq_fluent = FnEQFluent('fneq_' + self.name, self.priority)
@@ -115,7 +116,7 @@ class IsGP(AndFluent):
             # print "distance collision = ", (target_dist - c.GetDistance())
             # print "distance = ", (self.grasp(x) / 3.0)
 
-        self.hl_action.plot(handles)
+        self.hl_action.add_plot_handles(handles)
 
         self.plotting_env.UpdatePublishedBodies()
         handles = []

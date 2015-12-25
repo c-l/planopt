@@ -14,7 +14,8 @@ class ObjAt(LinEqFluent):
 
     def pre(self):
         # initialize obj_traj value
-        self.obj_traj.value[:,0:1] = self.loc.value
+        # import ipdb; ipdb.set_trace()
+        # self.obj_traj.value[:,0:1] = self.loc.value
 
         T = self.obj_traj.cols
         coeff = np.zeros((T, 1), dtype=np.float)
