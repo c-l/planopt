@@ -5,7 +5,7 @@ from numpy import random
 
 class HLParam(object):
 
-    def __init__(self, name, rows, cols, is_var=True, value=None, index=None):
+    def __init__(self, name, rows, cols, is_var=True, value=None, index=None, is_resampled=False):
         self.name = name
         self.rows = rows
         self.cols = cols
@@ -16,6 +16,7 @@ class HLParam(object):
         else:
             self.value = value
         self.index = index
+        self.is_resampled = is_resampled
         self.gen = None
 
     def init(self):
