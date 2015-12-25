@@ -81,6 +81,9 @@ class Constant(object):
         assert value.shape == (self.rows, self.cols)
         self.value = value.copy()
 
+    def update_hl_param(self):
+        pass
+        
     def update(self):
         pass
 
