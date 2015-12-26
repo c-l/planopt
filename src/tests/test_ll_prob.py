@@ -2,13 +2,21 @@ import numpy as np
 from interface.hl_actions.move import Move
 from interface.hl_actions.pick import Pick
 from interface.ll_prob import LLProb
-from interface.hl_param import HLParam, Traj, GP
+from interface.hl_param import HLParam, Traj
 from interface.hl_plan import HLPlan
 from openravepy import *
 from utils import mat_to_base_pose
 from test_utils import *
 import ipdb
 
+
+class GP(HLParam):
+
+    def generator(self):
+        yield np.array([[0], [0.55], [0]], dtype=np.float)
+        yield np.array([[0], [-0.55], [0]], dtype=np.float)
+        yield np.array([[0.55], [0], [0]], dtype=np.float)
+        yield np.array([[-0.55], [0], [0]], dtype=np.float)
 
 def test_move():
     env = move_test_env()
@@ -54,7 +62,7 @@ def test_pick():
     assert np.allclose(pick.pos.value, np.array([[-1.41840404],[-0.18333333],[ 0.        ]]))
 
 
-def test_pick_and_move_with_cnt_reordering():
+def test_pick_and_move():
     env = pick_test_env()
     robot = env.GetRobots()[0]
 
@@ -88,4 +96,4 @@ def test_pick_and_move_with_cnt_reordering():
 
 # test_move()
 # test_pick()
-test_pick_and_move_with_cnt_reordering()
+test_pick_and_move()
