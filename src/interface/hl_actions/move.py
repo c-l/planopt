@@ -38,7 +38,7 @@ class Move(HLAction):
         self.preconditions += [IsMP(self, 0, start, end, self.traj)]
 
         if obj is None:
-            self.preconditions += [NotObstructs(env, self, robot, 2, self.traj)]
+            self.preconditions += [NotObstructs(env, self, robot, 1, self.traj)]
         else:
             assert gp is not None
             self.obj_traj = Traj(self, self.name + "_objtraj", 3, 40, is_var=True)

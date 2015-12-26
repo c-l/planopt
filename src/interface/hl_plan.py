@@ -6,7 +6,6 @@ from openravepy import *
 from hl_param import *
 import numpy as np
 import ipdb
-import cvxpy as cvx
 import time
 
 # from envs.world import World
