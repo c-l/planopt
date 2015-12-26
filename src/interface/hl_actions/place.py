@@ -1,9 +1,6 @@
 import numpy as np
 from opt.variable import Variable
 from opt.solver import Solver
-# from opt.sqp import SQP
-
-# from sqp_cvx import SQP
 import time
 import ipdb
 
@@ -15,51 +12,37 @@ from interface.fluents.in_manip import InManip
 from interface.fluents.is_gp import IsGP as IsPDP
 from interface.fluents.robot_at import RobotAt
 from interface.fluents.obj_at import ObjAt
-# from interface.fluents.in_region import InRegion
+from interface.hl_param import Traj
 
 from utils import *
 
 class Place(HLAction):
-    def __init__(self, lineno, hl_plan, env, robot, pos_param, obj_param, loc_param, gp_param, name="place", place_obj_params=None, place_loc_params=None):
+    def __init__(self, lineno, hl_plan, env, robot, pos, obj, loc, gp):
         super(Place, self).__init__(lineno, hl_plan, env, robot)
 
-        self.pos, self.hl_pos = pos_param.new_hla_var(self)
-        self.obj, _ = obj_param.new_hla_var(self, env)
-        self.loc, self.hl_loc = loc_param.new_hla_var(self)
-        self.gp, self.hl_gp = gp_param.new_hla_var(self)
-        self.name = name
+        self.pos = pos
+        self.obj = obj
+        self.loc = loc
+        self.gp = gp
+        self.name = "place" + str(lineno)
 
         self.T = 1
         self.K = 3
         T = self.T
         K = self.K
 
-        self.place_objs = []
+        self.traj = Traj(self, self.name + "_traj", K, T, is_var=True)
+        self.obj_traj = Traj(self, self.name + "_objtraj", K, T, is_var=True)
+        self.params = [pos, loc, gp, self.traj, self.obj_traj]
 
-        if place_obj_params is not None:
-            for param in place_obj_params:
-                obj, _ = param.new_hla_var(self, self.env)
-                self.place_objs.append(obj)
-        
-        self.place_locs = []
-        self.hl_place_locs = []
-        if place_loc_params is not None:
-            for param in place_loc_params:
-                loc, hl_loc = param.new_hla_var(self)
-                self.place_locs.append(loc)
-                self.hl_place_locs.append(hl_loc)
+        self.preconditions = [RobotAt(self, 0, pos, self.traj)]
+        self.preconditions += [InManip(self, 0, obj, gp, self.traj, self.obj_traj)]
+        self.preconditions += [IsPDP(self.env, self, robot, 0, obj, gp, self.traj, self.obj_traj)]
 
-        self.traj = Variable(None, self.model, K*T,1, name=self.name+"_traj")
-        self.obj_traj = Variable(None, self.model, K*T,1, name=self.name+'_obj_traj')
+        self.postconditions = []
+        self.postconditions += [ObjAt(self, 0, obj, loc, self.obj_traj)]
 
-        self.preconditions = [RobotAt(self.env, self, self.model, self.pos, self.traj)]
-        self.preconditions += [InManip(self.env, self, self.model, robot, self.obj, self.gp, self.traj, self.obj_traj)]
-        self.preconditions += [IsMP(self.env, self, self.model, robot, self.traj, self.obj, self.obj_traj, place_objs=self.place_objs, place_locs=self.place_locs)]
-        self.preconditions += [IsPDP(self.env, self, self.model, robot, self.obj, self.gp, self.traj, self.obj_traj)]
-
-        self.postconditions = [ObjAt(self.env, self, self.model, self.obj, self.loc, self.obj_traj, loc_param=loc_param)] 
-
-        self.create_opt_prob()
+        self.cost = 0.0
 
     def plot_consensus_pos(self):
         if not np.allclose(self.pos.value, self.hl_pos.value):
@@ -87,15 +70,15 @@ class Place(HLAction):
                 self.handles += [self.hl_plan.env.drawarrow(p1=pick_obj_pos, p2=hl_obj_pos, linewidth=0.01, color=(1,0,0))]
             self.handles += [self.hl_plan.env.plot3(points=hl_obj_pos[:, 0], pointsize=10, colors=(1,0,0))]
 
-    def plot(self, handles=[]):
-        # self.handles = []
-        super(Place, self).plot()
+    # def plot(self, handles=[]):
+    #     # self.handles = []
+    #     super(Place, self).plot()
+    #
+    #     self.handles += handles
+    #     self.plot_consensus_pos()
+    #     self.plot_consensus_obj_pos()
 
-        self.handles += handles
-        self.plot_consensus_pos()
-        self.plot_consensus_obj_pos()
 
-        
         # if not np.allclose(self.gp.value, self.hl_gp.value):
         #     hl_gp = np.array(self.hl_gp.value)
         #     # hl_gp[2] = 1

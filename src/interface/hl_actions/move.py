@@ -59,7 +59,6 @@ class Move(HLAction):
         Q = 2 * np.dot(np.transpose(P), P)
 
         self.cost = QuadFn(self.traj, Q)
-        # self.create_robot_clones()
 
     def straight_line_init(self):
         start = self.start.value
