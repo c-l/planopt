@@ -36,9 +36,9 @@ class LLProb(object):
         for param, coeff in aff_expr.items():
             var = param_to_var[param]
             if isinstance(var, Constant):
-                expr += np.dot(param.get_value(), coeff)
+                expr = expr + np.dot(param.get_value(), coeff)
             elif isinstance(var, Variable):
-                expr += np.dot(var.get_grb_vars(), coeff)
+                expr = expr + np.dot(var.get_grb_vars(), coeff)
             else:
                 raw_input("shouldn't be here")
                 import ipdb; ipdb.set_trace()
