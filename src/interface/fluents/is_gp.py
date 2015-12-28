@@ -19,7 +19,7 @@ class IsGP(AndFluent):
         self.gp = gp
         self.traj = traj
         self.obj_traj = obj_traj
-        self.name = "IsGP(" + self.obj.GetName() + ", " + self.gp.name + ')'
+        self.name = "IsGP(" + self.obj.name + ", " + self.gp.name + ')'
 
         self.cc = ctrajoptpy.GetCollisionChecker(env)
 
@@ -63,12 +63,12 @@ class IsGP(AndFluent):
         collisions = []
 
         xt = x[-K:]
-        robot.SetTransform(base_pose_to_mat(xt))
+        robot.set_pose(env, xt)
         ot = self.obj_traj.value[:,-1:]
-        obj.SetTransform(base_pose_to_mat(ot))
+        obj.set_pose(env, ot)
 
         cc.SetContactDistance(np.infty)
-        collisions = cc.BodyVsBody(robot, obj)
+        collisions = cc.BodyVsBody(robot.get_env_body(env), obj.get_env_body(env))
 
         t = T-1
         for c in collisions:
@@ -77,8 +77,8 @@ class IsGP(AndFluent):
             linkA = c.GetLinkAParentName()
             linkB = c.GetLinkBParentName()
 
-            assert linkA == robot.GetName()
-            assert linkB == obj.GetName()
+            assert linkA == robot.name
+            assert linkB == obj.name
 
             ptA = c.GetPtA()
             ptA[2] = 1.01

@@ -10,7 +10,7 @@ class ObjAt(LinEqFluent):
         self.loc = loc
         self.obj_traj = obj_traj
 
-        self.name = "ObjAt(" + obj.GetName() + ", " + loc.name + ")"
+        self.name = "ObjAt(" + obj.name + ", " + loc.name + ")"
 
     def pre(self):
         # initialize obj_traj value

@@ -40,13 +40,13 @@ class NotObstructs(FnLEFluent):
         # precompute index to object mapping
         assert len(self.place_objs) == len(self.place_locs)
         self.num_objs = len(self.place_objs)
-        self.obj_names = [obj.GetName() for obj in self.place_objs]
+        self.obj_names = [obj.name for obj in self.place_objs]
         self.name_to_index = {}
         for obj, i in zip(self.place_objs, range(self.num_objs)):
             if self.obj is not None:
-                self.name_to_index[obj.GetName()] = i+2*T
+                self.name_to_index[obj.name] = i+2*T
             else:
-                self.name_to_index[obj.GetName()] = i+T
+                self.name_to_index[obj.name] = i+T
 
         # TODO: fix this hack to work when place locations and trajectory have different dimensions (perhaps zero pad place locations or trajectory?)
         # x = place_locs + [self.traj]
@@ -74,7 +74,7 @@ class NotObstructs(FnLEFluent):
         # setting placed objects at consensus locations
         if self.num_objs > 0:
             for obj, loc in zip(self.place_objs, self.place_locs):
-                obj.SetTransform(base_pose_to_mat(loc.value))
+                obj.set_pose(env, loc.value)
 
         K, T = traj_shape
 
@@ -110,17 +110,17 @@ class NotObstructs(FnLEFluent):
         for t in range(T):
             # xt = self.traj.value[K*t:K*(t+1)]
             xt = traj[:,t:t+1]
-            robot.SetTransform(base_pose_to_mat(xt))
+            robot.set_pose(env, xt)
             if obj is not None:
                 # ot = self.obj_traj.value[K*t:K*(t+1)]
                 ot = obj_traj[:,t:t+1]
                 # ot = self.obj_traj_var.value[K*t:K*(t+1)]
-                obj.SetTransform(base_pose_to_mat(ot))
+                obj.set_pose(env, ot)
             bodies = []
             if obj is not None:
-                bodies = [robot, obj]
+                bodies = [robot.get_env_body(env), obj.get_env_body(env)]
             else:
-                bodies = [robot]
+                bodies = [robot.get_env_body(env)]
             num_bodies = len(bodies)
             # for body in bodies:
             for i in range(num_bodies):
@@ -131,12 +131,12 @@ class NotObstructs(FnLEFluent):
                     linkA = c.GetLinkAParentName()
                     linkB = c.GetLinkBParentName()
                     if obj is not None:
-                        if linkA == robot.GetName() and linkB == obj.GetName():
+                        if linkA == robot.name and linkB == obj.name:
                             continue
-                        elif linkB == robot.GetName() and linkA == obj.GetName():
+                        elif linkB == robot.name and linkA == obj.name:
                             continue
 
-                    assert linkA == robot.GetName() or linkA == obj.GetName()
+                    assert linkA == robot.name or linkA == obj.name
 
                     ptA = c.GetPtA()
                     ptA[2] = 1.01
@@ -152,7 +152,7 @@ class NotObstructs(FnLEFluent):
                         else:
                             handles.append(self.plotting_env.drawarrow(p1=ptA, p2=ptB, linewidth=.01,color=(0,0,0)))
 
-                    if not (robot.GetName() == linkA or obj.GetName() == linkA):
+                    if not (robot.name == linkA or obj.name == linkA):
                         self.hl_action.plot(handles)
                         self.plotting_env.UpdatePublishedBodies()
                         import ipdb; ipdb.set_trace() # BREAKPOINT

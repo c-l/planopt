@@ -90,12 +90,25 @@ class ObjLoc(HLParam):
         # yield np.array([[3.5],[4.3],[0]])
 
 
-class Movable(HLParam):
+class Obj(HLParam):
 
     def __init__(self, name):
         self.name = name
         self.is_var = False
 
+    def get_pose(self, env):
+        transform = self.get_env_body(env).GetTransform()
+        return mat_to_base_pose(transform)
+
+    def set_pose(self, env, t):
+        trans = base_pose_to_mat(t)
+        self.get_env_body(env).SetTransform(trans)
+
+    def get_env_body(self, env):
+        return env.GetKinBody(self.name)
+
+class Robot(Obj):
+    pass
 
 class Traj(HLParam):
     def __init__(self, hl_action, name, rows, cols, is_var=True, value=None, index=None):

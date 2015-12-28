@@ -41,7 +41,7 @@ class HLAction(object):
     def create_robot_clones(self):
         self.robot_clones = []
         env = self.hl_plan.env
-        robot = self.hl_plan.robot
+        robot = self.robot.get_env_body(env)
         with env:
             with robot:
 
@@ -80,7 +80,8 @@ class HLAction(object):
     def create_obj_clones(self):
         self.obj_clones = []
         env = self.hl_plan.env
-        obj = env.GetKinBody(self.obj.GetName())
+        obj = self.obj.get_env_body(env)
+
 
         with env:
             with obj:

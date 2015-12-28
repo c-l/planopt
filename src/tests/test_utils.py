@@ -1,4 +1,6 @@
-from openravepy import *
+# from openravepy import *
+from openravepy import KinBody, Environment, RaveCreateKinBody, TriMesh, \
+GeometryType
 import numpy as np
 
 def create_cylinder(env, body_name, t, dims, color=[0, 1, 1]):
