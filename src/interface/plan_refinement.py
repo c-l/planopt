@@ -10,7 +10,8 @@ from interface.hl_actions.place import Place
 from interface.env_manager import EnvManager
 from hl_param import *
 from utils import *
-from ll_plan import LLPlan
+# from ll_plan import LLPlan
+from ll_prob import LLProb
 
 import random
 
@@ -26,7 +27,7 @@ class PlanRefinement(object):
         self.original_env = self.env.CloneSelf(1) # clones objects in the environment
         self.world = world
         # self.hl_params = {}
-        self.hl_params = world.hl_params
+        self.hl_params = world.name_to_hl_param_map.values()
         self.sampled_params = world.params_to_sample
         self.robot = self.env.GetRobots()[0]
 
@@ -155,25 +156,15 @@ class PlanRefinement(object):
         # TODO: rewrite
         initializations = 20
         index = 0
+
         for param in self.sampled_params:
             param.index = index
             param.resample()
             index += 1
 
-        params = self.hl_params.values()
-
-        # import ipdb; ipdb.set_trace() # BREAKPOINT
         for _ in range(initializations):
-            self.init_actions(self.action_list, params)
-            llplan = LLPlan(params, self.action_list)
-
-            import ipdb; ipdb.set_trace() # BREAKPOINT
-            llplan.solve()
-
-            # otherwise hl actions's may not violate fluents but hl params
-            # disagree on values drastically
-            for param in params:
-                param.initialize_to_consensus()
+            llprob = LLProb(self.action_list)
+            llprob.solve()
 
             violated_fluents = self.find_violated_fluents()
             if violated_fluents is None:
@@ -183,40 +174,9 @@ class PlanRefinement(object):
                 import ipdb; ipdb.set_trace() # BREAKPOINT
                 self.backtracking_resample(violated_fluents, self.sampled_params)
 
-        
+
         import ipdb; ipdb.set_trace() # BREAKPOINT
         return None
-
-    def init_actions(self, action_list, params):
-        init_later_actions = []
-        for action in action_list:
-            action.reset()
-        for param in params:
-            param.reset()
-
-        for action in action_list:
-            if "pick" in action.name:
-                import ipdb; ipdb.set_trace() # BREAKPOINT
-                action.init_opt()
-            elif "place" in action.name:
-                import ipdb; ipdb.set_trace() # BREAKPOINT
-                action.init_opt()
-            else:
-                init_later_actions.append(action)
-
-        for param in params:
-            param.dual_update()
-            param.initialize_to_consensus()
-
-        for hl_action in action_list:
-            hl_action.plot()
-
-        for action in init_later_actions:
-            import ipdb; ipdb.set_trace() # BREAKPOINT
-            action.init_opt()
-
-        for hl_action in action_list:
-            hl_action.plot()
 
     def find_violated_fluents(self):
         violated_fluents = []
@@ -233,95 +193,6 @@ class PlanRefinement(object):
         else:
             return violated_fluents
 
-    def _try_refine_old(self):
-        # TODO: rewrite
-        initializations = 3
-        for param in self.sampled_params:
-            param.resample()
-
-        params = self.hl_params.values()
-
-        # import ipdb; ipdb.set_trace() # BREAKPOINT
-        for _ in range(initializations):
-            init_later_actions = []
-            
-            for action in self.action_list:
-                action.reset()
-            for param in params:
-                param.reset()
-
-            for action in self.action_list:
-                if "pick" in action.name:
-                    import ipdb; ipdb.set_trace() # BREAKPOINT
-                    action.init_opt()
-                elif "place" in action.name:
-                    import ipdb; ipdb.set_trace() # BREAKPOINT
-                    action.init_opt()
-                else:
-                    init_later_actions.append(action)
-
-            # action = self.action_list[3]
-            # for fluent in action.preconditions + action.postconditions:
-            #     if not fluent.satisfied():
-            #         constraints_satisfied = False
-            #         violated_action = action.name
-            #         violated_fluent = fluent.name
-            #         print violated_action, "'s fluent:", violated_fluent, "violates constraints"
-            for param in params:
-                param.dual_update()
-                param.initialize_to_consensus()
-
-            for hl_action in self.action_list:
-                hl_action.plot()
-
-            for action in init_later_actions:
-                import ipdb; ipdb.set_trace() # BREAKPOINT
-                action.init_opt()
-
-            for hl_action in self.action_list:
-                hl_action.plot()
-
-            llplan = LLPlan(params, self.action_list)
-            import ipdb; ipdb.set_trace() # BREAKPOINT
-            llplan.solve()
-
-            constraints_satisfied = True
-            violated_action = None
-            violated_fluent = None
-            for action in self.action_list:
-                for fluent in action.preconditions + action.postconditions:
-                    if not fluent.satisfied():
-                        constraints_satisfied = False
-                        violated_action = action.name
-                        violated_fluent = fluent.name
-                        print violated_action, "'s fluent:", violated_fluent, "violates constraints"
-                        break
-                if not constraints_satisfied:
-                    break
-            else:
-                import ipdb; ipdb.set_trace() # BREAKPOINT
-                yield solution
-
-            import ipdb; ipdb.set_trace() # BREAKPOINT
-            while self.sampled_params is not None:
-                param = random.choice(self.sampled_params)
-                try:
-                    param.resample()
-                    break
-                except StopIteration:
-                    import ipdb; ipdb.set_trace() # BREAKPOINT
-                    self.sampled_params.remove(param)
-
-        
-        import ipdb; ipdb.set_trace() # BREAKPOINT
-        yield None
-        # print "\r\nTrying to find error-free instantiation..."
-        # self.reset_actions(self.action_list[self.resume_from_lineno:])
-        # step_for_ik = self.resume_from_lineno
-
-        # if len(self.saved_env_states) == self.resume_from_lineno:
-        #     self.save_openrave_state(step_for_ik)
-
     def setActionListNames(self, hlplan):
         self.action_list_names = hlplan.actionList
         self.action_effects_dict = hlplan.effectDict
@@ -330,7 +201,7 @@ class PlanRefinement(object):
 
     def add_action(self, lineno, action_fn, *args):
         env = self.original_env.CloneSelf(1) # clones objects in the environment
-        robot = env.GetRobots()[0]
+        robot = env.GetRobots()[0].GetName() # TODO: fix this hack, make it part of pddl
         action = action_fn(*(lineno, self, env, robot) + args)
         # self.add_action(action)
         if action.lineno == len(self.action_list):
@@ -339,4 +210,3 @@ class PlanRefinement(object):
             self.action_list[action.lineno] = action
         else:
             raise Exception("Bad action lineno: {}".format(action.lineno))
-
