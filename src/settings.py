@@ -3,13 +3,13 @@ DOMAIN_PATH = "../domains/"
 errFileName = "robotics_autogen_err1.txt"
 ENVPATH="../environments/"
 
-RECORD = False 
-# RECORD = True 
+RECORD = False
+# RECORD = True
 
 REPLAN_FOR_GRASP = False
 
 def init_settings():
-    import numpy as np 
+    import numpy as np
     global seed
     seed = int(time.time())
     seed = 123456
@@ -25,14 +25,15 @@ FDOPTIMALMODE = False
 FFEXEC = "../planners/FF-v2.3/ff"
 FDEXEC = "../planners/FD/src/plan-ipc seq-sat-fd-autotune-1 "
 FDOPTEXEC = "../planners/FD/src/plan-ipc seq-opt-lmcut "
-# FDOPTEXEC = "../planners/FD/src/plan-ipc seq-opt-fdss-2 " 
+# FDOPTEXEC = "../planners/FD/src/plan-ipc seq-opt-fdss-2 "
 MPEXEC = "../planners/M/Mp"
 
 LOG_DOMAIN = 0
 TWO_DOMAIN = 1
+TWOCAN_DOMAIN = 2
 
 def set_domain(dom):
-    global DOMAIN, pddlDomainFile, pddlDomainFileNoGeomEff, initialProblemFile, pddlToOpt, PLANNER_TO_USE 
+    global DOMAIN, pddlDomainFile, pddlDomainFileNoGeomEff, initialProblemFile, pddlToOpt, PLANNER_TO_USE
     DOMAIN = dom
     if dom == LOG_DOMAIN:
         pddlDomainFile = DOMAIN_PATH + "log_dom.pddl"
@@ -56,6 +57,16 @@ def set_domain(dom):
         pddlToOpt = TwoBoxOpt
         PLANNER_TO_USE = FD
 
+    elif dom == TWOCAN_DOMAIN:
+        pddlDomainFile = DOMAIN_PATH + "twocan_dom.pddl"
+        pddlDomainFileNoGeomEff = pddlDomainFile
+        initialProblemFile = DOMAIN_PATH + "twocan_prob.pddl"
+
+        import sys
+        sys.path.insert(0, DOMAIN_PATH)
+        from twocan_opt import TwoCanOpt
+        pddlToOpt = TwoCanOpt
+        PLANNER_TO_USE = FD
 envFile = ENVPATH+"created_info.dae"
 
 # DISABLE_BASE = True
@@ -80,4 +91,3 @@ if run_test_mode[0]:
             seed = int(f.read())
     except (IOError, ValueError):
         print("Could not read seed that generation script used!")
-

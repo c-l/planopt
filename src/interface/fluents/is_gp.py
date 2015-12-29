@@ -35,8 +35,8 @@ class IsGP(AndFluent):
         K = self.hl_action.K
         T = self.hl_action.T
 
-        # h = lambda x: self.distance_from_obj(x, 0.06, (K,T)) # function inequality constraint g(x) <= 0
-        h = lambda x: self.distance_from_obj(x, 0.0, (K,T)) # function inequality constraint g(x) <= 0
+        h = lambda x: self.distance_from_obj(x, 0.06, (K,T)) # function inequality constraint g(x) <= 0
+        # h = lambda x: self.distance_from_obj(x, 0.0, (K,T)) # function inequality constraint g(x) <= 0
         h_func = CollisionFn([self.traj], h)
 
         fneq_fluent = FnEQFluent('fneq_' + self.name, self.priority)

@@ -59,7 +59,7 @@ class World(object):
 
         dims = [dim_x, dim_y, 1]
 
-        wall = self.create_box(env, name, transform, dims, color=[.1,.1,.1]) 
+        wall = self.create_box(env, name, transform, dims, color=[.1,.1,.1])
         env.AddKinBody(wall)
 
     def create_y_wall(self, env, name, length, start):
@@ -72,9 +72,9 @@ class World(object):
 
         dims = [dim_x, dim_y, 1]
 
-        wall = self.create_box(env, name, transform, dims, color=[.1,.1,.1]) 
+        wall = self.create_box(env, name, transform, dims, color=[.1,.1,.1])
         env.AddKinBody(wall)
-        
+
     def create_walls(self, env, points):
         i = 0
         for start, end in zip(points[0:-1], points[1:]):
@@ -96,7 +96,7 @@ class World(object):
             else:
                 transform[1,3] = end[1] + length/2
 
-            
+
             dim_x = thickness
             dim_y = length/2 + thickness
 
@@ -109,7 +109,7 @@ class World(object):
             else:
                 transform[0,3] = end[0] + length/2
             transform[1,3] = start[1]
-            
+
             dim_x = length/2 + thickness
             dim_y = thickness
         else:
@@ -117,7 +117,7 @@ class World(object):
             print "creating non-axis-aligned wall"
             raise
         dims = [dim_x, dim_y, 1]
-        wall = self.create_box(env, name, transform, dims, color=[.1,.1,.1]) 
+        wall = self.create_box(env, name, transform, dims, color=[.1,.1,.1])
         env.AddKinBody(wall)
 
     def create_box_around(self, env, name, radius, transform):
@@ -150,7 +150,7 @@ class World(object):
         # obj = self.create_box(env, 'obj', np.eye(4), [.35, .35, 1])
         obj = self.create_box(env, 'obj', np.eye(4), [.34, .34, 1])
         obj.SetTransform(transform)
-        env.AddKinBody(obj) 
+        env.AddKinBody(obj)
 
         target_transform = np.eye(4)
         target_transform[0,3] = 2
@@ -181,7 +181,7 @@ class World(object):
         # obj = self.create_box(env, 'obj', np.eye(4), [.35, .35, 1])
         obj = self.create_box(self.env, 'obj', np.eye(4), [.34, .34, 1])
         obj.SetTransform(transform)
-        self.env.AddKinBody(obj) 
+        self.env.AddKinBody(obj)
 
         self.make_transparent(obj)
 
@@ -215,7 +215,7 @@ class World(object):
         self.make_transparent(box2)
 
         return env
-        
+
     def generate_twocans_env(self):
         env = self.env
         robot = self.create_robot()
@@ -226,8 +226,8 @@ class World(object):
         dims = [0.35, 2.0]
         can1t= base_pose_to_mat(np.array([[1],[1.5],[0]]))
         can2t= base_pose_to_mat(np.array([[6],[1.5],[0]]))
-        can1 = self.create_cylinder(env, "box1", can1t, dims)
-        can2 = self.create_cylinder(env, "box2", can2t, dims)
+        can1 = self.create_cylinder(env, "can1", can1t, dims)
+        can2 = self.create_cylinder(env, "can2", can2t, dims)
         env.AddKinBody(can1)
         env.AddKinBody(can2)
         self.make_transparent(can1)
@@ -260,7 +260,7 @@ class World(object):
             # obj = self.create_box(env, 'obj', np.eye(4), [.35, .35, 1])
             obj = self.create_box(self.env, 'obj'+str(i), transform, [.34, .34, 1])
             obj.SetTransform(transform)
-            self.env.AddKinBody(obj) 
+            self.env.AddKinBody(obj)
 
         self.make_transparent(obj)
 
@@ -288,7 +288,7 @@ class World(object):
         transform[1,3] = 0
         obj = self.create_cylinder(env, 'obj', np.eye(4), [.35, 2])
         obj.SetTransform(transform)
-        env.AddKinBody(obj) 
+        env.AddKinBody(obj)
 
         target_transform = np.eye(4)
         target_transform[0,3] = 2
@@ -329,14 +329,14 @@ class World(object):
         for link in body.GetLinks():
             for geom in link.GetGeometries():
                 geom.SetDiffuseColor((.9,.9,.9))
-        env.AddKinBody(body) 
+        env.AddKinBody(body)
 
         # create cylindrical object
         transform = np.eye(4)
         transform[0,3] = -2
         obj = self.create_cylinder(env, 'obj', np.eye(4), [.35, 2])
         obj.SetTransform(transform)
-        env.AddKinBody(obj) 
+        env.AddKinBody(obj)
 
 
 
@@ -361,6 +361,5 @@ if __name__ == "__main__":
     env.SetViewer('qtcoin') # attach viewer (optional)
     # env, target_locations = world.generate_boxes_env(1)
     # env.Save("../envs/one_box_world.dae", Environment.SelectionOptions.Everything)
-    env.Save("../envs/twobox_world.dae", Environment.SelectionOptions.Everything)
+    env.Save("../envs/twocan_world.dae", Environment.SelectionOptions.Everything)
     import ipdb; ipdb.set_trace() # BREAKPOINT
-
