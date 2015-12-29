@@ -94,7 +94,9 @@ class NotObstructs(FnLEFluent):
         jac = np.zeros((val.size, x.size))
 
         cc = self.cc
-        cc.SetContactDistance(dsafe)
+        # collisions outside of dsafe aren't detected
+        # cc.SetContactDistance(dsafe)
+        cc.SetContactDistance(dsafe + .1)
 
         handles = []
         timesteps = []
@@ -161,6 +163,10 @@ class NotObstructs(FnLEFluent):
                     # import ipdb; ipdb.set_trace() # BREAKPOINT
                     # normal = np.matrix(c.GetNormal())
                     normal = c.GetNormal()
+                    # print 'distance: ', distance
+                    # print 'normal: ', normal
+                    # print 'linkA: ', linkA
+                    # print 'linkB: ', linkB
 
                     # normalObsToRobot2 = -1 * np.sign(c.GetDistance())*normalize(ptB-ptA)
 
