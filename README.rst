@@ -9,7 +9,7 @@ python2.7, gurobipy, numpy, eddie-col branch of trajopt
 
 Setup Instructions
 ==================
-'''
+```
 $ git clone https://github.com/c-l/planopt.git
 '''
 
@@ -17,12 +17,12 @@ Example
 =======
 
 Generate World
-'''
+```
 $ cd src
 $ python ../envs/world.py
-'''
+```
 
 Run Planner
-'''
+```
 $ python hybridPlanner.py -v -d tc -e ../envs/twocan_world.dae
-'''
+```
