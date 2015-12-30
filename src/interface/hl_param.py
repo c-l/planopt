@@ -43,10 +43,10 @@ class HLParam(object):
 class GP(HLParam):
 
     def generator(self):
-        yield np.array([[0], [0.55], [0]], dtype=np.float)
-        yield np.array([[0], [-0.55], [0]], dtype=np.float)
-        yield np.array([[0.55], [0], [0]], dtype=np.float)
-        yield np.array([[-0.55], [0], [0]], dtype=np.float)
+        yield np.array([[0], [0.6], [0]], dtype=np.float)
+        yield np.array([[0], [-0.6], [0]], dtype=np.float)
+        yield np.array([[0.6], [0], [0]], dtype=np.float)
+        yield np.array([[-0.6], [0], [0]], dtype=np.float)
 
 
 class RP(HLParam):
@@ -114,12 +114,6 @@ class Traj(HLParam):
     def __init__(self, hl_action, name, rows, cols, is_var=True, value=None, index=None):
         super(Traj, self).__init__(name, rows, cols, is_var, value, index)
         self.hl_action = hl_action
-
-    def get_value(self):
-        return self.value
-
-    def set(self, value):
-        self.value = value
 
     # TODO: make this less hacky
     def resample(self):
