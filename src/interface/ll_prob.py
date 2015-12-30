@@ -102,6 +102,8 @@ class LLProb(object):
                 prob.inc_obj(hla.cost)
 
         solver = Solver()
+        if fix_sampled_params:
+            solver.initial_trust_box_size = 1e5
         solver.penalty_sqp(prob)
 
         for param, var in param_to_var.items():

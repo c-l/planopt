@@ -2,6 +2,7 @@ import numpy as np
 
 
 class Fluent(object):
+    tol = 1e-4
 
     def __init__(self, name, priority):
         self.name = name
@@ -67,10 +68,10 @@ class FnFluent(Fluent):
 class FnEQFluent(FnFluent):
 
     def satisfied(self):
-        return np.isclose(self.fn.val(), 0.0)
+        return np.isclose(self.fn.val(), 0.0, atol=Fluent.tol)
 
 
 class FnLEFluent(FnFluent):
 
     def satisfied(self):
-        return self.fn.val() <= 0
+        return self.fn.val() <= Fluent.tol

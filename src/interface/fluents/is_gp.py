@@ -97,16 +97,21 @@ class IsGP(AndFluent):
             gradd = np.zeros((1,K))
             normal = np.matrix(c.GetNormal())
 
+            # print 'distance: ', distance
+            # print 'normal: ', normal
+            # print 'linkA: ', linkA
+            # print 'linkB: ', linkB
+
             # normalObsToRobot2 = -1 * np.sign(c.GetDistance())*normalize(ptB-ptA)
 
             ptB = np.matrix(ptB)[:, 0:2]
             # why is there a negative one?
 
-            val[t] = 3*(target_dist - c.GetDistance())
+            val[t] = 1*(target_dist - c.GetDistance())
 
             # gradd = -1 * np.sign(val[t]) * normal[:,0:2] * self.calcJacobian(np.transpose(ptB), xt)
             # gradd = np.sign(val[t]) * normal[:,0:2] * self.calcJacobian(np.transpose(ptB), xt)
-            gradd =  -3*normal[:,0:2] * self.calcJacobian(np.transpose(ptB), xt)
+            gradd =  -1*normal[:,0:2] * self.calcJacobian(np.transpose(ptB), xt)
             jac[t, K*t:K*(t+1)] = gradd
             # print "normal: ", normal[:, 0:2]
             # print "val: ", val[t]
@@ -120,6 +125,8 @@ class IsGP(AndFluent):
 
         self.plotting_env.UpdatePublishedBodies()
         handles = []
+        # print 'val: ', val
+        # print 'jac: ', jac
         return (val, jac)
 
     def calcJacobian(self, pt, x0):

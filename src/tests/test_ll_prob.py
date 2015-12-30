@@ -46,18 +46,24 @@ def test_pick():
 
     robot = Robot(env.GetRobots()[0].GetName())
     rp = HLParam("rp", 3, 1)
-    gp = GP("gp", 3, 1, is_resampled=True)
+
+    # collision checking returns -1 * normal when objects are touching
+    gp_val =  np.array([[0], [0.56], [0]], dtype=np.float)
+    # gp_val =  np.array([[0], [0.55], [0]], dtype=np.float)
+    # gp_val =  np.array([[0], [0.54], [0]], dtype=np.float)
+    # gp_val =  np.array([[0], [0.552], [0]], dtype=np.float)
+    gp = GP("gp", 3, 1, value=gp_val, is_resampled=True)
     obj = Obj("obj")
     obj_loc = HLParam("obj_loc", 3, 1, is_var=False, value=obj.get_pose(env))
 
-    gp.resample()
+    # gp.resample()
 
     pick = Pick(0, hl_plan, pick_env, robot, rp, obj, obj_loc, gp)
     hlas = [pick]
 
     ll_prob = LLProb(hlas)
     ll_prob.solve()
-    assert np.allclose(pick.pos.value, np.array([[-1.41840404],[-0.18333333],[ 0.]]))
+    assert np.allclose(pick.pos.value, np.array([[-2.0],[-0.61],[ 0.]]))
 
 
 def test_pick_and_move():
