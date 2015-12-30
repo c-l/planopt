@@ -133,24 +133,22 @@ class PlanRefinement(object):
         if error is not None:
             raise error
 
-    def backtracking_resample(violated_fluents, sampled_params):
-        hl_params = []
-        for fluent in violated_fluents:
-            hl_params += fluent.hl_params()
+    def backtracking_resample(self, sampled_params):
+        hl_params = sampled_params
         hl_params.sort(key=lambda f: -f.index)
 
         for param in hl_params:
             try:
                 param.resample()
-                index = param.index
-                for param in sampled_params[index+1:]:
-                    param.reset_gen()
-                    param.resample()
+                break
             except StopIteration:
+                param.reset_gen()
+                param.resample()
                 continue
-        ipdb.set_trace()
-        # TODO: raise an error
-        print 'Need to raise an error'
+        else:
+            ipdb.set_trace()
+            # TODO: raise an error
+            print 'Need to raise an error'
 
     def _try_refine(self):
         # TODO: rewrite
@@ -172,7 +170,7 @@ class PlanRefinement(object):
                 return None
             else:
                 import ipdb; ipdb.set_trace() # BREAKPOINT
-                self.backtracking_resample(violated_fluents, self.sampled_params)
+                self.backtracking_resample(self.sampled_params)
 
 
         import ipdb; ipdb.set_trace() # BREAKPOINT
@@ -183,7 +181,8 @@ class PlanRefinement(object):
 
         for action in self.action_list:
             for fluent in action.preconditions + action.postconditions:
-                if not fluent.satisfied():
+                # if not fluent.satisfied():
+                if not np.all(fluent.satisfied()):
                     violated_action = action.name
                     violated_fluents.append(fluent)
                     print violated_action, "'s fluent:", fluent, "violates constraints"

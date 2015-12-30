@@ -91,21 +91,28 @@ class Constraints(object):
     def add_nonlinear_eq_constraint(self, h):
         self.hs.append(h)
 
+    def hinge_val(self, g):
+        gval = g.val()
+        return np.sum(np.maximum(np.zeros(gval.shape), gval))
+
+    def abs_val(self, h):
+        return np.sum(np.absolute(h.val()))
+
     def satisfied(self, tolerance):
         for g in self.gs:
-            if g.val() > tolerance:
+            if self.hinge_val(g) > tolerance:
                 return False
         for h in self.hs:
-            if np.absolute(h.val()) > tolerance:
+            if self.abs_val(h) > tolerance:
                 return False
         return True
 
     def val(self):
         val = 0
         for g in self.gs:
-            val += max(g.val(), 0)
+            val += self.hinge_val(g)
         for h in self.hs:
-            val += np.absolute(h.val())
+            val += self.abs_val(h)
         return val
 
     def convexify(self, model, penalty_coeff):

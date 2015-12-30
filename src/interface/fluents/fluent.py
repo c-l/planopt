@@ -2,13 +2,13 @@ import numpy as np
 
 
 class Fluent(object):
-    tol = 1e-4
+    tol = 3e-3
 
     def __init__(self, name, priority):
         self.name = name
         self.priority = priority
 
-    def satisfied(self, tolerance=None):
+    def satisfied(self):
         raise NotImplementedError
 
 
@@ -20,7 +20,7 @@ class AndFluent(Fluent):
 
     def satisfied(self):
         for fluent in self.fluents:
-            if fluent.satisfied() is False:
+            if not np.all(fluent.satisfied()):
                 return False
         return True
 
@@ -67,11 +67,11 @@ class FnFluent(Fluent):
 
 class FnEQFluent(FnFluent):
 
-    def satisfied(self):
-        return np.isclose(self.fn.val(), 0.0, atol=Fluent.tol)
+    def satisfied(self, tol=Fluent.tol):
+        return np.isclose(self.fn.val(), 0.0, atol=tol)
 
 
 class FnLEFluent(FnFluent):
 
-    def satisfied(self):
-        return self.fn.val() <= Fluent.tol
+    def satisfied(self, tol=Fluent.tol):
+        return np.all(self.fn.val() <= tol)

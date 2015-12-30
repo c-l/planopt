@@ -199,7 +199,7 @@ class CollisionFn(Function):
     def val(self):
         x = self.get_values()
         val, grad = self.f(x)
-        return np.sum(val)
+        return val
 
     def grad(self):
         x = self.get_values()
