@@ -15,9 +15,8 @@ from utils import *
 from ll_plan import LLPlan
 
 class HLPlan(object):
-    def __init__(self, env, robot):
+    def __init__(self, env):
         self.env = env
-        self.robot = robot
 
 class HLPlan2(object):
     def __init__(self):

@@ -435,6 +435,7 @@ class Solver(object):
                 prob.clear_plots()
                 prob.optimize()
                 prob.plot()
+                import ipdb; ipdb.set_trace()
 
                 model_merit = prob.model.objVal
                 # prob.convexify(penalty_coeff, trust_box_size)
@@ -445,7 +446,6 @@ class Solver(object):
                 merit_improve_ratio = exact_merit_improve / approx_merit_improve
 
                 print("      approx_merit_improve: {0}. exact_merit_improve: {1}. merit_improve_ratio: {2}".format(approx_merit_improve, exact_merit_improve, merit_improve_ratio))
-                import ipdb; ipdb.set_trace()
 
                 if approx_merit_improve < -1e-5:
                     print("Approximate merit function got worse ({0})".format(approx_merit_improve))
