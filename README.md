@@ -11,7 +11,7 @@ Setup Instructions
 ==================
 ```
 $ git clone https://github.com/c-l/planopt.git
-'''
+```
 
 Example
 =======
