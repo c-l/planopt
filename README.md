@@ -13,6 +13,8 @@ Setup Instructions
 $ git clone https://github.com/c-l/planopt.git
 ```
 
+To set up the task planner follow the instructions in the readme in the planners/myFDFiles folder.
+
 Example
 =======
 
