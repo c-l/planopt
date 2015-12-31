@@ -10,7 +10,7 @@ python2.7, gurobipy, numpy, eddie-col branch of trajopt
 Setup Instructions
 ==================
 Install the eddie-col branch of trajopt
-Trajopt installation instructions: http://rll.berkeley.edu/trajopt/doc/sphinx_build/html/install.html
+http://rll.berkeley.edu/trajopt/doc/sphinx_build/html/install.html
 
 Clone PlanOpt
 ```
