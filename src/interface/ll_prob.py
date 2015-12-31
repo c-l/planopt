@@ -61,7 +61,6 @@ class LLProb(object):
 
     def solve(self):
         self.solve_at_priority(0, fix_sampled_params=True)
-        import ipdb; ipdb.set_trace()
         self.solve_at_priority(1)
 
     def solve_at_priority(self, priority, fix_sampled_params=False):
@@ -104,6 +103,7 @@ class LLProb(object):
         solver = Solver()
         if fix_sampled_params:
             solver.initial_trust_box_size = 1e5
+            solver.max_merit_coeff_increases = 1
         solver.penalty_sqp(prob)
 
         for param, var in param_to_var.items():

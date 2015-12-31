@@ -435,7 +435,6 @@ class Solver(object):
                 prob.clear_plots()
                 prob.optimize()
                 prob.plot()
-                import ipdb; ipdb.set_trace()
 
                 model_merit = prob.model.objVal
                 # prob.convexify(penalty_coeff, trust_box_size)
