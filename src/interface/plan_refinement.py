@@ -7,7 +7,6 @@ from interface.hl_actions.pick import Pick
 from interface.hl_actions.place import Place
 # from hl_actions import hl_action # not sure why this is needed, but otherwise hl_action.ActionError is not found
 # from rapprentice.PR2 import PR2, Arm, mirror_arm_joints
-from interface.env_manager import EnvManager
 from hl_param import *
 from utils import *
 # from ll_plan import LLPlan
@@ -82,48 +81,12 @@ class PlanRefinement(object):
         self.action_list = self.action_list[:self.resume_from_lineno]
         self.instantiation_generator = None
 
-    def save_openrave_state(self, n):
-        if n < len(self.saved_env_states):
-            self.saved_env_states[n] = EnvManager.save_openrave_state(self.env)
-        elif n == len(self.saved_env_states):
-            self.saved_env_states.append(EnvManager.save_openrave_state(self.env))
-        else:
-            raise Exception("Trying to save state with index {}, but \
-              saved_env_states is only {} long!".format(n, len(self.saved_env_states)))
-
-    def restore_openrave_state(self, n):
-        # print 'RESETTING ENV TO STATE: {}'.format(n)
-        with self.env:
-            EnvManager.restore_openrave_state(self.env, self.saved_env_states[n])
-
     def reset_all_actions(self):
         self.reset_actions(self.action_list)
 
     def reset_actions(self, actions):
         for action in actions:
             action.reset()
-
-    def replan_with_margins(self, starting_state):
-        # import trajoptpy
-        # self.viewer = trajoptpy.GetViewer(self.env)
-        # trajoptpy.SetInteractive(True)
-        EnvManager.restore_openrave_state(self.env, starting_state)
-        for action in self.action_list:
-            action.replan_with_margins(settings.INCREASE_MARGINS)
-            action.execute_trajevents()
-
-    def execute_all(self, starting_state):
-        if settings.INCREASE_MARGINS:
-            for action in self.action_list:
-                action.replan_with_margins(True)
-        while True:
-            EnvManager.restore_openrave_state(self.env, starting_state)
-            raw_input("Run in sim!")
-            for action in self.action_list:
-                action.execute_trajevents(sim_only=False)
-            again = raw_input("Again? ([y]/n)")
-            if again == 'n':
-                break
 
     def get_next_instantiation(self):
         if self.instantiation_generator is None:

@@ -4,7 +4,6 @@ import networkx as nx
 import pylab
 import pprint
 
-from interface.env_manager import EnvManager
 # from hl_actions.hl_action import ActionError, InstantiationExhaustedException
 from pr_creator import PRCreator
 
@@ -20,7 +19,6 @@ class PRGraph(object):
         self.saved_random_states = {}
         self.pr_creator = PRCreator(self.env)
         self.graph = nx.DiGraph()
-        self.starting_state = EnvManager.save_openrave_state(self.env)
 
 
     def resume(self, plan_key):
