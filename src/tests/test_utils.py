@@ -2,6 +2,7 @@
 from openravepy import KinBody, Environment, RaveCreateKinBody, TriMesh, \
 GeometryType
 import numpy as np
+from utils import base_pose_to_mat
 
 def create_cylinder(env, body_name, t, dims, color=[0, 1, 1]):
     infocylinder = KinBody.GeometryInfo()
@@ -56,6 +57,57 @@ def add_obstacle(env):
     env.AddKinBody(body)
     make_transparent(body)
 
+def add_obstacle2(env):
+    obstacles = np.matrix('-0.576036866359447, 0.918128654970760, 1;\
+                    -0.806451612903226,-1.07017543859649, 1;\
+                    1.01843317972350,-0.988304093567252, 1;\
+                    0.640552995391705,0.906432748538011, 1;\
+                    -0.576036866359447, 0.918128654970760, -1;\
+                    -0.806451612903226,-1.07017543859649, -1;\
+                    1.01843317972350,-0.988304093567252, -1;\
+                    0.640552995391705,0.906432748538011, -1')
+
+    body = RaveCreateKinBody(env, '')
+    vertices = np.array(obstacles)
+    indices = np.array([[0, 1, 2], [2, 3, 0], [4, 5, 6], [6, 7, 4], [0, 4, 5],
+                        [0, 1, 5], [1, 2, 5], [5, 6, 2], [2, 3, 6], [6, 7, 3],
+                        [0, 3, 7], [0, 4, 7]])
+    body.InitFromTrimesh(trimesh=TriMesh(vertices, indices), draw=True)
+    body.SetName('obstacle2')
+    for link in body.GetLinks():
+        for geom in link.GetGeometries():
+            geom.SetDiffuseColor((.9, .9, .9))
+    env.AddKinBody(body)
+    pose = np.array([[.1], [0.], [0.]])
+    body.SetTransform(base_pose_to_mat(pose))
+    make_transparent(body)
+
+def add_obstacle3(env):
+    obstacles = np.matrix('-0.576036866359447, 0.918128654970760, 1;\
+                    -0.806451612903226,-1.07017543859649, 1;\
+                    1.01843317972350,-0.988304093567252, 1;\
+                    0.640552995391705,0.906432748538011, 1;\
+                    -0.576036866359447, 0.918128654970760, -1;\
+                    -0.806451612903226,-1.07017543859649, -1;\
+                    1.01843317972350,-0.988304093567252, -1;\
+                    0.640552995391705,0.906432748538011, -1')
+
+    body = RaveCreateKinBody(env, '')
+    vertices = np.array(obstacles)
+    indices = np.array([[0, 1, 2], [2, 3, 0], [4, 5, 6], [6, 7, 4], [0, 4, 5],
+                        [0, 1, 5], [1, 2, 5], [5, 6, 2], [2, 3, 6], [6, 7, 3],
+                        [0, 3, 7], [0, 4, 7]])
+    body.InitFromTrimesh(trimesh=TriMesh(vertices, indices), draw=True)
+    body.SetName('obstacle3')
+    for link in body.GetLinks():
+        for geom in link.GetGeometries():
+            geom.SetDiffuseColor((.9, .9, .9))
+    env.AddKinBody(body)
+    pose = np.array([[.0], [.2], [0.]])
+    body.SetTransform(base_pose_to_mat(pose))
+    import ipdb; ipdb.set_trace()
+
+    make_transparent(body)
 def add_object(env):
     # create cylindrical object
     transform = np.eye(4)
@@ -71,6 +123,8 @@ def move_test_env():
 
     add_cyl_robot(env)
     add_obstacle(env)
+    add_obstacle2(env)
+    add_obstacle3(env)
     raw_input('continue past warnings')
 
     return env

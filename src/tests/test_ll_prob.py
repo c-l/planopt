@@ -21,10 +21,31 @@ class HLPlan(object):
     def __init__(self, env):
         self.env = env
 
+class TestDomain(object):
+    def __init__(self, env):
+        self.env = env
+        self.param_map = {}
+        self.add_body_params(env, self.param_map)
+        self.body_params = self.param_map.copy()
+
+    def add_body_params(self, env, param_map):
+        for body in env.GetBodies():
+            name = body.GetName()
+            if not body.IsRobot():
+                param_map[name] = Obj(name)
+            else:
+                param_map[name] = Robot(name)
+
+    def get_all_but_params(self, params_to_delete):
+        params = self.body_params.copy()
+        for param in params_to_delete:
+            del params[param.name]
+        return params.values()
+
 def test_move():
     env = move_test_env()
 
-    hl_plan = HLPlan(env)
+    hl_plan = TestDomain(env)
     move_env = env.CloneSelf(1) # clones objects in the environment
 
     robot = Robot(env.GetRobots()[0].GetName())
@@ -36,12 +57,13 @@ def test_move():
     hlas = [move]
     ll_prob = LLProb(hlas)
     ll_prob.solve()
+    import ipdb; ipdb.set_trace()
 
 
 def test_pick():
     env = pick_test_env()
 
-    hl_plan = HLPlan(env)
+    hl_plan = TestDomain(env)
     pick_env = env.CloneSelf(1) # clones objects in the environment
 
     robot = Robot(env.GetRobots()[0].GetName())
@@ -72,7 +94,7 @@ def test_pick_and_move():
     # start = HLParam("start", 3, 1, is_var=False, value=np.array([[-2], [0], [0]]))
     # end = HLParam("end", 3, 1, is_var=False, value=np.array([[2], [0], [0]]))
 
-    hl_plan = HLPlan(env)
+    hl_plan = TestDomain(env)
     pick_env = env.CloneSelf(1) # clones objects in the environment
     move_env = env.CloneSelf(1) # clones objects in the environment
 
@@ -99,7 +121,7 @@ def test_pick_move_and_place():
     env = pick_test_env()
     robot = Robot(env.GetRobots()[0].GetName())
 
-    hl_plan = HLPlan(env)
+    hl_plan = TestDomain(env)
     place_env = env.CloneSelf(1) # clones objects in the environment
     pick_env = env.CloneSelf(1) # clones objects in the environment
     move_env = env.CloneSelf(1) # clones objects in the environment

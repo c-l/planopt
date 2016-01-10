@@ -8,7 +8,8 @@ from interface.hl_param import Traj
 # from interface.fluents.is_mp import IsMP
 # from interface.fluents.in_manip import InManip
 from interface.fluents.robot_at import RobotAt
-from interface.fluents.not_obstructs import NotObstructs
+# from interface.fluents.not_obstructs import NotObstructs
+from interface.fluents.for_all_not_obstructs import ForAllNotObstructs
 from interface.fluents.is_mp import IsMP
 from interface.fluents.in_manip import InManip
 from utils import *
@@ -38,11 +39,15 @@ class Move(HLAction):
         self.preconditions += [IsMP(self, 0, start, end, self.traj)]
 
         if obj is None:
-            self.preconditions += [NotObstructs(env, self, robot, 1, self.traj)]
+            objs = hl_plan.get_all_but_params([self.robot])
+            self.preconditions += [ForAllNotObstructs(env, self, robot, 1, self.traj, objs)]
         else:
             assert gp is not None
+            objs = hl_plan.get_all_but_params([self.robot, self.obj])
+            self.preconditions += [ForAllNotObstructs(env, self, robot, 1, self.traj, objs)]
+            
             self.obj_traj = Traj(self, self.name + "_objtraj", 3, 40, is_var=True)
-            self.preconditions += [NotObstructs(env, self, robot, 1, self.traj, obj, self.obj_traj)]
+            self.preconditions += [ForAllNotObstructs(env, self, self.obj, 1, self.obj_traj, objs)]
             self.preconditions += [InManip(self, 0, obj, gp, self.traj, self.obj_traj)]
             self.params += [gp, self.obj_traj]
         # self.create_robot_clones()
