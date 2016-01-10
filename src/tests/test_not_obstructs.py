@@ -9,7 +9,7 @@ from interface.hl_param import HLParam, Traj, Robot, Obj
 from interface.fluents.not_obstructs import NotObstructs
 
 class TestAction(HLAction):
-    def __init__(self, hl_plan, env, robot, pos):
+    def __init__(self, hl_plan, env, robot, pos, obj):
         super(TestAction, self).__init__(0, hl_plan, env, robot)
 
         self.name = "Test" + str(0)
@@ -18,7 +18,7 @@ class TestAction(HLAction):
         self.K = 3
         self.T = 1
 
-        self.precondition = NotObstructs(env, self, robot, 1, self.pos)
+        self.precondition = NotObstructs(env, self, robot, 1, self.pos, obj)
 
 
 def not_obstructs_test_env():
@@ -43,7 +43,8 @@ def test_not_obstructs_btn_two_cylinders():
     obj.set_pose(env, pose)
 
     pos = HLParam("pos", 3, 1, is_var=False, value=robot.get_pose(env))
-    action = TestAction(hl_plan, env, robot, pos)
+    obj_pos = HLParam("obj_pos", 3, 1, is_var=False, value=obj.get_pose(env))
+    action = TestAction(hl_plan, env, robot, pos, obj)
     fluent = action.precondition
     fluent.pre()
     raw_input('')
@@ -57,7 +58,7 @@ def test_not_obstructs_btn_two_cylinders():
             np.array([[-1.0 ,0., 0.]]), \
             np.array([[-1.0 ,0., 0.]])]
     for i in range(len(poses)):
-        val, grad = fluent.collisions(poses[i], 0.05, (3,1))
+        val, grad = fluent.collisions(poses[i])
         print 'val: ', val
         print 'grad: ', grad
         assert np.allclose(values[i], val, atol=2e-2)
