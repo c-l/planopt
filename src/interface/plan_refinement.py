@@ -26,7 +26,7 @@ class PlanRefinement(object):
         self.original_env = self.env.CloneSelf(1) # clones objects in the environment
         self.world = world
         # self.hl_params = {}
-        self.hl_params = world.name_to_hl_param_map.values()
+        self.hl_params = world.param_map.values()
         self.sampled_params = world.params_to_sample
         self.robot = self.env.GetRobots()[0]
 
@@ -87,6 +87,9 @@ class PlanRefinement(object):
     def reset_actions(self, actions):
         for action in actions:
             action.reset()
+
+    def get_all_but_params(self, params_to_delete):
+        return self.world.get_all_but_params(params_to_delete)
 
     def get_next_instantiation(self):
         if self.instantiation_generator is None:
