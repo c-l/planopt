@@ -115,6 +115,7 @@ class Constraints(object):
             val += self.abs_val(h)
         return val
 
+    # @profile
     def convexify(self, model, penalty_coeff):
         penalty_obj = grb.LinExpr()
         for g in self.gs:  # non-linear inequality constraints
@@ -130,11 +131,25 @@ class Constraints(object):
 
         return penalty_obj
 
+    # @profile
     def add_hinges(self, model, affexprlist):
-        exprlist = [self.add_hinge(model, affexpr, temp=self.temp)
-                    for affexpr in affexprlist]
-        return exprlist
+        hinges = []
+        for affexpr in affexprlist:
+            hinges.append(model.addVar(lb=0, ub=GRB.INFINITY, name='hinge'))
+        model.update()
 
+        exprlist = []
+        for affexpr, hinge in zip(affexprlist, hinges):
+            cntr = model.addConstr(affexpr <= hinge)
+            exprlist.append(grb.LinExpr(hinge))
+            if self.temp is not None:
+                self.temp.extend([hinge, cntr])
+        return exprlist
+        # exprlist = [self.add_hinge(model, affexpr, temp=self.temp)
+        #             for affexpr in affexprlist]
+        # return exprlist
+
+    # @profile
     def add_hinge(self, model, affexpr, temp=None):
         hinge = model.addVar(lb=0, ub=GRB.INFINITY, name='hinge')
         model.update()  # this may be really slow, need to change this

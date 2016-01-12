@@ -142,6 +142,7 @@ class OptProb(object):
                 return False
         return True
 
+    # @profile
     def convexify(self, penalty_coeff):
         for constraint in self.constraints:
             constraint.clean()
