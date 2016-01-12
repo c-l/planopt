@@ -61,28 +61,30 @@ class NotObstructs(FnLEFluent):
 
         return (val, jac)
 
+    # @profile
     def calc_grad_and_val(self, xt, collisions):
         val = float("inf")
         grad = None
         for c in collisions:
             linkA = c.GetLinkAParentName()
             linkB = c.GetLinkBParentName()
+
+            if linkA == self.robot.name and linkB == self.obj.name:
+                ptRobot = c.GetPtA()
+                ptObj = c.GetPtB()
+            elif linkB == self.robot.name and linkA == self.obj.name:
+                ptRobot = c.GetPtB()
+                ptObj = c.GetPtA()
+            else:
+                continue
+
+            ptRobot[2] = 1.01
+            ptObj[2] = 1.01
+
             distance = c.GetDistance()
             normal = c.GetNormal()
 
-            ptA = c.GetPtA()
-            ptA[2] = 1.01
-            ptB = c.GetPtB()
-            ptB[2] = 1.01
 
-            if linkA == self.robot.name and linkB == self.obj.name:
-                ptRobot = ptA
-                ptObj = ptB
-            elif linkB == self.robot.name and linkA == self.obj.name:
-                ptRobot = ptB
-                ptObj = ptA
-            else:
-                continue
 
             # assert linkA == self.robot.name
             # if linkB != self.obj.name:
