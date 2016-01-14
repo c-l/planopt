@@ -168,10 +168,9 @@ class OptProb(object):
 
     # @profile
     def add_trust_region_cnt(self, x, xp, trust_box_size):
-        # expr = grb.LinExpr()
         if self.init_trust_region:
             rows = len(x)
-            # expr = grb.quicksum(addAbs(grb.LinExpr(x[i]-xp[i])))
+
             pos = []
             neg = []
             expr = []
@@ -181,14 +180,7 @@ class OptProb(object):
                     self.model.addVar(lb=0, ub=GRB.INFINITY, name='pos' + str(i)))
                 neg.append(
                     self.model.addVar(lb=0, ub=GRB.INFINITY, name='neg' + str(i)))
-                # expr.append(pos-neg)
-            # import ipdb; ipdb.set_trace() # BREAKPOINT
-            coeffs = [1] * (2 * rows)
-            expr = grb.LinExpr(coeffs, pos + neg)
-            # expr = grb.quicksum(pos+neg)
-            self.trust_temp.extend(pos + neg)
 
-            # self.trust_cnts = []
             self.model.update()
             for i in range(rows):
                 diff = grb.LinExpr(-1 * x[i])
@@ -197,14 +189,9 @@ class OptProb(object):
                 # self.trust_temp.append(self.model.addConstr(diff == pos[i] - neg[i]))
                 self.trust_temp.append(
                     self.model.addConstr(diff, GRB.EQUAL, abs))
+                self.trust_temp.append(self.model.addConstr(abs <= trust_box_size))
                 self.diffs.append(abs)
-            # self.model.update()
-
-            # import ipdb; ipdb.set_trace() # BREAKPOINT
-            # for i in range(rows):
-            #     expr += abs(self.model, grb.LinExpr(x[i]-xp[i]), temp=self.trust_temp)
-            # self.init_trust_region = False
-            return self.model.addConstr(expr <= trust_box_size)
+        # not being used currently
         else:
             rows = len(x)
             for i in range(rows):

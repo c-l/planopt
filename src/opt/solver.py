@@ -29,9 +29,10 @@ class Solver(object):
         self.cnt_tolerance = 1e-2
         self.max_merit_coeff_increases = 5
         self.merit_coeff_increase_ratio = 10
+        self.initial_trust_box_size = .1
         # self.initial_trust_box_size = 1
         # self.initial_trust_box_size = 2
-        self.initial_trust_box_size = 3
+        # self.initial_trust_box_size = 3
         # self.initial_trust_box_size = 10
         self.initial_penalty_coeff = 1.
         # self.initial_penalty_coeff = 10
@@ -432,6 +433,7 @@ class Solver(object):
                 print("    trust region size: {0}".format(trust_box_size))
 
                 prob.add_trust_region(trust_box_size)
+                # import ipdb; ipdb.set_trace()
                 prob.clear_plots()
                 prob.optimize()
                 prob.plot()
