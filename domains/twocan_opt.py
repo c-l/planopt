@@ -36,10 +36,10 @@ class TwoCanOpt(object):
                 "pick_can2":RP("pick_can2", rows, cols),\
                 "place_can2": RP("place_can2", rows, cols),\
                 "gp1":GP("gp1", rows, cols, is_resampled=True),\
-                "gp2":GP("gp2", rows, cols)})
+                "gp2":GP("gp2", rows, cols, is_resampled=True)})
 
         self.params_to_sample = []
-        for name in ['gp1']:
+        for name in ['gp1','gp2']:
             self.params_to_sample.append(self.param_map[name])
         self.name = "twocan_world"
 
