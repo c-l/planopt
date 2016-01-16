@@ -42,6 +42,8 @@ class TwoCanOpt(object):
         for name in ['gp1','gp2']:
             self.params_to_sample.append(self.param_map[name])
         self.name = "twocan_world"
+        self.world_state = {self.param_map["can1"]: self.param_map["can1_init_loc"], \
+                            self.param_map["can2"]: self.param_map["can2_init_loc"]}
 
     def get_all_but_params(self, params_to_delete):
         params = self.body_params.copy()
@@ -74,6 +76,7 @@ class TwoCanOpt(object):
         obj = d[obj_str]
         obj_loc = d[loc_str]
         gp = d[gp_str]
+        self.world_state[obj] = obj_loc
         action = Place(lineno, pr, env, robot, pos, obj, obj_loc, gp)
         # action = Place(lineno, pr, env, robot, pos, obj, obj_loc, gp, name="place"+str(lineno), place_obj_params=self.place_objs[:], place_loc_params=self.place_locs[:])
         # self.place_objs.append(obj)
@@ -86,7 +89,7 @@ class TwoCanOpt(object):
         start = d[start_str]
         end = d[end_str]
         # action = Move(lineno, pr, env, robot, start_param=start, end_param=end, name="move"+str(lineno), place_obj_params=self.place_objs[:], place_loc_params=self.place_locs[:])
-        action = Move(lineno, pr, env, robot, start, end)
+        action = Move(lineno, pr, env, self.world_state, robot, start, end)
         return action
 
     def move_w_obj(self, lineno, pr, env, robot_str, start_str, end_str, obj_str, obj_start_str, obj_end_str, gp_str):
@@ -98,8 +101,9 @@ class TwoCanOpt(object):
         obj_start = d[obj_start_str]
         obj_end = d[obj_end_str]
         gp = d[gp_str]
+        world_state = self.world_state.copy()
         # self.place_objs.append(d['can1'])
         # self.place_locs.append(d['goal1'])
         # action = Move(lineno, pr, env, robot, start_param=start, end_param=end, obj_param=obj, obj_start_param=obj_start, obj_end_param=obj_end, gp_param=gp, name="move"+str(lineno), place_obj_params=self.place_objs[:], place_loc_params=self.place_locs[:])
-        action = Move(lineno, pr, env, robot, start, end, obj, gp)
+        action = Move(lineno, pr, env, self.world_state, robot, start, end, obj, gp)
         return action

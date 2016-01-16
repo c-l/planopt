@@ -9,12 +9,13 @@ import time
 
 class NotObstructs(FnLEFluent):
     # def __init__(self, env, hl_action, robot, priority, traj, obj, obj_loc, dsafe=0.05):
-    def __init__(self, env, hl_action, robot, priority, traj, obj, dsafe=0.05):
+    def __init__(self, env, hl_action, robot, priority, traj, obj, obj_loc=None, dsafe=0.05):
         self.env = env
         self.plotting_env = hl_action.hl_plan.env
         self.hl_action = hl_action
         self.traj = traj
         self.obj = obj
+        self.obj_loc = obj_loc
         # self.obj_loc = obj_loc
         self.robot = robot
         self.priority = priority
@@ -30,31 +31,47 @@ class NotObstructs(FnLEFluent):
         traj = self.traj
 
         g = lambda x: self.collisions(x) # function inequality constraint g(x) <= 0
-        self.fn = CollisionFn([self.traj], g)
+        obj_loc_list = []
+        if self.obj_loc is not None:
+            obj_loc_list = [self.obj_loc for i in range(self.T)]
+        self.fn = CollisionFn([self.traj] + obj_loc_list, g)
 
     # TODO: compute collisions properly
     # @profile
     def collisions(self, traj):
         env = self.env
+        T = self.T
+        K = self.K
 
         # ensure that there's gradient information outside dsafe
         self.cc.SetContactDistance(self.dsafe + .1)
 
         handles = []
 
-        val = np.zeros((self.T, 1))
-        jac = np.zeros((self.T, traj.size))
+        if self.obj_loc is not None:
+            val = np.zeros((2*self.T, 1))
+            jac = np.zeros((2*self.T, traj.size))
+        else:
+            val = np.zeros((self.T, 1))
+            jac = np.zeros((self.T, traj.size))
         # self.obj.set_pose(env, self.obj_loc.value)
 
         for t in range(self.T):
             # xt = self.traj.value[K*t:K*(t+1)]
-            xt = traj[:,t:t+1]
+            # xt = traj[:,t:t+1]
+            xt = traj[K*t:K*(t+1)]
             self.robot.set_pose(env, xt)
+            ot = None
+            if self.obj_loc is not None:
+                ot = traj[K*(t+T):K*(t+1+T)]
+                self.obj.set_pose(env, ot)
             collisions = self.cc.BodyVsAll(self.robot.get_env_body(env))
 
-            col_val, col_jac = self.calc_grad_and_val(xt, collisions)
-            if col_jac is not None:
-                val[t], jac[t, self.K*t:self.K*(t+1)] = col_val, col_jac
+            col_val, robot_jac, obj_jac = self.calc_grad_and_val(xt, ot, collisions)
+            if robot_jac is not None:
+                val[t], jac[t, K*t:K*(t+1)] = col_val, robot_jac
+                if self.obj_loc is not None:
+                    val[t+T], jac[t+T, K*(t+T):K*(t+1+T)] = col_val, obj_jac
 
         self.plotting_env.UpdatePublishedBodies()
         handles = []
@@ -62,9 +79,10 @@ class NotObstructs(FnLEFluent):
         return (val, jac)
 
     # @profile
-    def calc_grad_and_val(self, xt, collisions):
+    def calc_grad_and_val(self, xt, ot, collisions):
         val = float("inf")
-        grad = None
+        robot_grad = None
+        obj_grad = None
         for c in collisions:
             linkA = c.GetLinkAParentName()
             linkB = c.GetLinkBParentName()
@@ -84,12 +102,6 @@ class NotObstructs(FnLEFluent):
             distance = c.GetDistance()
             normal = c.GetNormal()
 
-
-
-            # assert linkA == self.robot.name
-            # if linkB != self.obj.name:
-            #     continue
-
             # plotting
             self.plot_collision(ptRobot, ptObj, distance)
 
@@ -97,9 +109,11 @@ class NotObstructs(FnLEFluent):
             if self.dsafe - distance < val:
                 val = self.dsafe - distance
 
-                grad = np.dot(-1 * normal[0:2], self.calc_jacobian(np.transpose(ptObj), xt))
+                robot_grad = np.dot(-1 * normal[0:2], self.calc_jacobian(np.transpose(ptObj), xt))
+                if ot is not None:
+                    obj_grad = np.dot(normal[0:2], self.calc_jacobian(np.transpose(ptRobot), ot))
 
-        return val, grad
+        return val, robot_grad, obj_grad
 
     def plot_collision(self, ptA, ptB, distance):
         handles = []
