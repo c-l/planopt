@@ -75,7 +75,7 @@ class OptProb(object):
     def clean(self, temp):
         for item in temp:
             self.model.remove(item)
-        temp = []
+        # temp = []
 
     def inc_obj(self, quad_fn):
         self.obj_fns += [quad_fn]
@@ -158,13 +158,14 @@ class OptProb(object):
         if self.trust_region_cnt is not None:
             self.model.remove(self.trust_region_cnt)
         self.clean(self.trust_temp)
+        self.trust_temp = []
 
         var_list = [
             grb_var for var in self.vars for grb_var in var.grb_vars.flatten()]
         val_list = [val for var in self.vars for val in var.value.flatten()]
 
-        self.trust_region_cnt = self.add_trust_region_cnt(
-            var_list, val_list, trust_region_size)
+        # self.trust_region_cnt = self.add_trust_region_cnt(
+        self.add_trust_region_cnt(var_list, val_list, trust_region_size)
 
     # @profile
     def add_trust_region_cnt(self, x, xp, trust_box_size):
@@ -183,16 +184,21 @@ class OptProb(object):
 
             self.model.update()
             for i in range(rows):
-                diff = grb.LinExpr(-1 * x[i])
-                diff.addConstant(xp[i])
-                abs = grb.LinExpr([1, -1], [pos[i], neg[i]])
+                # diff = grb.LinExpr(-1 * x[i])
+                # diff.addConstant(xp[i])
+                diff = grb.LinExpr(x[i])
+                diff.addConstant(-1*xp[i])
+                abs_diff = grb.LinExpr([1, -1], [pos[i], neg[i]])
                 # self.trust_temp.append(self.model.addConstr(diff == pos[i] - neg[i]))
                 self.trust_temp.append(
-                    self.model.addConstr(diff, GRB.EQUAL, abs))
-                self.trust_temp.append(self.model.addConstr(abs <= trust_box_size))
+                    self.model.addConstr(diff, GRB.EQUAL, abs_diff))
+                abs_val = grb.LinExpr(pos[i] + neg[i])
+                self.trust_temp.append(self.model.addConstr(abs_val <= trust_box_size))
                 self.diffs.append(abs)
         # not being used currently
         else:
+            print "Is this being used?"
+            import ipdb; ipdb.set_trace()
             rows = len(x)
             for i in range(rows):
                 diff = grb.LinExpr(-1 * x[i])
