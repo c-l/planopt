@@ -29,6 +29,9 @@ class Solver(object):
         self.cnt_tolerance = 1e-2
         self.max_merit_coeff_increases = 5
         self.merit_coeff_increase_ratio = 10
+        # self.initial_trust_box_size = 1e-4
+        # self.initial_trust_box_size = .01
+        # self.initial_trust_box_size = .03
         self.initial_trust_box_size = .1
         # self.initial_trust_box_size = 1
         # self.initial_trust_box_size = 2
@@ -137,90 +140,10 @@ class Solver(object):
         return success
 
     # @profile
-    def sqp_admm(self, opt_probs, params):
-        start = time.time()
-        # epsilon = self.epsilon*len(params)
-
-        # trust_box_size = self.initial_trust_box_size
-        # penalty_coeff = self.initial_penalty_coeff
-        trust_box_size = cvx.Parameter(sign="positive", value = self.initial_trust_box_size)
-        penalty_coeff = cvx.Parameter(sign="positive", value = self.initial_penalty_coeff)
-
-        dual_updates = 0
-        for opt_prob in opt_probs:
-            success = self.find_closest_feasible_point(opt_prob)
-            if not success:
-                import ipdb; ipdb.set_trace() # BREAKPOINT
-                return success
-
-        penalty_increases = 0
-        for i in range(self.max_merit_coeff_increases+1):
-            num_probs = len(opt_probs)
-            trust_box_sizes = []
-            for i in range(num_probs):
-                trust_box_sizes.append(self.initial_trust_box_size/10.0)
-
-            while True:
-                for opt_prob, i in zip(opt_probs, range(num_probs)):
-                    print "solving ", opt_prob.hl_action.name, "'s prob"
-                    # trust_box_size.value = np.minimum(trust_box_sizes[i] * 10, 3)
-                    trust_box_size.value = 3
-                    trust_box_size, success = self.minimize_merit_function(opt_prob, penalty_coeff, trust_box_size)
-                    opt_prob.callback()
-                    # need to grow trust region so that you don't get stuck out a trust region size where all improvements are less than min approx improve
-                    trust_box_sizes[i] = trust_box_size.value
-                    # trust_box_size.value = self.initial_trust_box_size/10.0
-                    trust_box_size.value = self.initial_trust_box_size
-                    print '\n'
-
-                diff = 0
-                converged = True
-                for param in params:
-                    diff = param.dual_update()
-                    if diff > self.epsilon:
-                        converged = False
-                    print param.name, " disagree by ", diff
-                dual_updates += 1
-                # trust_box_size.value = self.initial_trust_box_size/10.0
-                trust_box_size.value = self.initial_trust_box_size
-
-                # print "diff: ", diff
-                if converged:
-                    break
-
-            for opt_prob in opt_probs:
-                if not opt_prob.constraints_satisfied(self.cnt_tolerance):
-                    penalty_coeff.value = penalty_coeff.value*self.merit_coeff_increase_ratio
-                    trust_box_size.value = self.initial_trust_box_size
-                    break
-            else:
-                end = time.time()
-                print "sqp_admm time: ", end-start
-                print "sqp_iters: ", self.sqp_iters
-                return True
-                # return success
-            # # set dual variables to zero
-            # for param in params:
-            #     param.reset()
-            # import ipdb; ipdb.set_trace() # BREAKPOINT
-            penalty_increases += 1
-            print penalty_increases, " penalty increase to ", penalty_coeff.value
-        end = time.time()
-        print "sqp_admm time: ", end-start
-        print "sqp_iters: ", self.sqp_iters
-        print "dual updates: ", dual_updates
-        print "penalty increases: ", penalty_increases
-        return False
-
-    # @profile
     def penalty_sqp(self, prob):
-        # prob.init_sqp_model()
-        # prob.optimize()
-
+        start = time.time()
         trust_box_size = self.initial_trust_box_size
         penalty_coeff = self.initial_penalty_coeff
-        # trust_box_size = cvx.Parameter(sign="positive", value = self.initial_trust_box_size)
-        # penalty_coeff = cvx.Parameter(sign="positive", value = self.initial_penalty_coeff)
 
         prob.find_closest_feasible_point()
         # x, success = SQP.find_closest_feasible_point(x, x0, constraints)
@@ -237,97 +160,12 @@ class Solver(object):
                 penalty_coeff = penalty_coeff*self.merit_coeff_increase_ratio
                 trust_box_size = self.initial_trust_box_size
             else:
+                end = time.time()
+                print "sqp time: ", end-start
                 return success
+        end = time.time()
+        print "sqp time: ", end-start
         return False
-
-    # def penalty_sqp(self, opt_prob):
-    #     # trust_box_size = self.initial_trust_box_size
-    #     # penalty_coeff = self.initial_penalty_coeff
-    #     trust_box_size = cvx.Parameter(sign="positive", value = self.initial_trust_box_size)
-    #     penalty_coeff = cvx.Parameter(sign="positive", value = self.initial_penalty_coeff)
-
-    #     success = self.find_closest_feasible_point(opt_prob)
-    #     if not success:
-    #         return success
-
-    #     for i in range(self.max_merit_coeff_increases):
-    #         trust_box_size, success = self.minimize_merit_function(opt_prob, penalty_coeff, trust_box_size)
-    #         print '\n'
-
-    #         if not opt_prob.constraints_satisfied(self.cnt_tolerance):
-    #             penalty_coeff.value = penalty_coeff.value*self.merit_coeff_increase_ratio
-    #             trust_box_size.value = self.initial_trust_box_size
-    #         else:
-    #             return success
-    #     return False
-
-    def find_closest_feasible_point(self, opt_prob):
-        success = True
-        for x in opt_prob.xs:
-            x.value = x.value
-
-        feasible = opt_prob.constraints.linear_constraints_satisfied()
-
-        if feasible:
-            return success
-        else:
-            obj = 0
-            constraints = opt_prob.constraints.linear_constraints
-            for x in opt_prob.xs:
-                obj += cvx.norm(x - x.value,2)
-
-            # gp = opt_prob.hl_action.hl_plan.hl_actions[0].gp.value
-
-            self.solve_opt_prob(obj, constraints)
-            # prob = cvx.Problem(cvx.Minimize(obj), constraints)
-            # try:
-            #     # wtf... why does changing it GUROBI give a strange trajectory later on?!?!
-            #     # prob.solve(verbose=False, solver='GUROBI')
-            #     prob.solve(verbose=False, solver='ECOS')
-            # except:
-            #     # prob.solve(verbose=False, solver='GUROBI')
-            #     import ipdb; ipdb.set_trace() # BREAKPOINT
-            #     print ("solver error")
-
-            # if prob.status != "optimal":
-            #     import ipdb; ipdb.set_trace() # BREAKPOINT
-            #     success = False
-            #     print("Couldn't find a point satisfying linear constraints")
-            # else:
-            #     for x in opt_prob.xs:
-            #         x.cur_value = x.value
-            return success
-
-    def solve_opt_prob(self, objective, constraints):
-        prob = cvx.Problem(cvx.Minimize(objective), constraints)
-        try:
-            # prob.solve(verbose=False, solver='GUROBI')
-            prob.solve(verbose=False, solver='ECOS')
-            # prob.solve(verbose=True, solver='ECOS')
-        except:
-            import ipdb; ipdb.set_trace() # BREAKPOINT
-            try:
-                # prob.solve(verbose=True, solver='ECOS')
-                prob.solve(verbose=True, solver='GUROBI')
-                print ("solver error")
-            except:
-                print ("both solvers failed")
-                return prob
-            # prob.solve(verbose=True, solver='ECOS')
-
-        if prob.status != 'optimal':
-            print 'ECOS problem status: ', prob.status
-            import ipdb; ipdb.set_trace() # BREAKPOINT
-            try:
-                prob.solve(verbose=True, solver='GUROBI')
-            except:
-                print 'Gurobi problem status: ', prob.status
-                print('Failed to solve QP subproblem.')
-                success = False
-                # import ipdb; ipdb.set_trace() # BREAKPOINT
-                return prob
-                # return (trust_box_size, success)
-        return prob
 
     # @profile
     def min_merit_fn_admm(self, opt_probs, params, penalty_coeff, trust_box_sizes):
@@ -423,7 +261,6 @@ class Solver(object):
 
         while True:
             print("  sqp_iter: {0}".format(sqp_iter))
-            # fval, fgrad, fhess, gval, gjac, hval, hjac = self.convexify_fgh(x, f, g, h)
 
             prob.convexify(penalty_coeff)
             merit = prob.val(penalty_coeff)
@@ -439,7 +276,6 @@ class Solver(object):
                 prob.plot()
 
                 model_merit = prob.model.objVal
-                # prob.convexify(penalty_coeff, trust_box_size)
                 new_merit = prob.val(penalty_coeff)
 
                 approx_merit_improve = merit - model_merit
@@ -456,8 +292,6 @@ class Solver(object):
                     return (trust_box_size, success)
                 elif approx_merit_improve < self.min_approx_improve:
                     print("Converged: y tolerance")
-                    #some sort of callback
-                    # print "x: ", xp.value
                     # why do we restore if there is some improvement?
                     prob.restore()
                     return (trust_box_size, success)
@@ -466,11 +300,10 @@ class Solver(object):
                     prob.restore()
 
                     print("Shrinking trust region")
-                    trust_box_size= trust_box_size* self.trust_shrink_ratio
+                    trust_box_size= trust_box_size * self.trust_shrink_ratio
                 else:
                     print("Growing trust region")
-                    trust_box_size = trust_box_size* self.trust_expand_ratio
-                    # print "x: ", xp.value
+                    trust_box_size = trust_box_size * self.trust_expand_ratio
                     break #from trust region loop
 
                 if trust_box_size < self.min_trust_box_size:
