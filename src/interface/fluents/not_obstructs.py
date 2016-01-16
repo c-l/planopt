@@ -54,7 +54,8 @@ class NotObstructs(FnLEFluent):
         else:
             val = np.zeros((self.T, 1))
             jac = np.zeros((self.T, traj.size))
-        # self.obj.set_pose(env, self.obj_loc.value)
+        # if self.obj_loc is not None:
+        #     self.obj.set_pose(env, self.obj_loc.value)
 
         for t in range(self.T):
             # xt = self.traj.value[K*t:K*(t+1)]
@@ -72,6 +73,9 @@ class NotObstructs(FnLEFluent):
                 val[t], jac[t, K*t:K*(t+1)] = col_val, robot_jac
                 if self.obj_loc is not None:
                     val[t+T], jac[t+T, K*(t+T):K*(t+1+T)] = col_val, obj_jac
+                    # cross terms
+                    jac[t, K*(t+T):K*(t+1+T)] = obj_jac
+                    jac[t+T, K*t:K*(t+1)] = robot_jac
 
         self.plotting_env.UpdatePublishedBodies()
         handles = []
