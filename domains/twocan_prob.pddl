@@ -1,4 +1,4 @@
-(define (problem logProb) (:domain robotics)
+(define (problem twocanProb) (:domain robotics)
     (:objects
         can1 - movable
         can2 - movable
@@ -40,5 +40,4 @@
         (and (ObjAt can1 goal1) (ObjAt can2 goal2))
         ;(ObjAt can2 goal2)
     )
-    (:metric minimize (total-cost))
 )

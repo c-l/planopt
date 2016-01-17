@@ -66,7 +66,7 @@ def set_domain(dom):
         sys.path.insert(0, DOMAIN_PATH)
         from twocan_opt import TwoCanOpt
         pddlToOpt = TwoCanOpt
-        PLANNER_TO_USE = FD
+        PLANNER_TO_USE = FF
 envFile = ENVPATH+"created_info.dae"
 
 # DISABLE_BASE = True
