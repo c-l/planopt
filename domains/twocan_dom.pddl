@@ -8,9 +8,10 @@
         (ObjAt ?obj - movable ?loc - location)
         (IsMP ?l1 - pose ?l2 - pose)
 
-        (Obstructs ?obj - movable ?p1 - pose ?p2 - pose)
+        (Obstructs ?obj - movable ?loc - location ?p2 - pose)
         (IsGP ?p - pose ?obj ?gp)
         (IsPDP ?p - pose ?obj ?gp)
+        (IsAccessPointFor ?p - pose ?obj - movable ?loc - location)
         ;(IsPickPose ?lrobot - pose)
         ;(IsPlacePose ?lrobot - pose)
 	)
@@ -21,7 +22,12 @@
                     (RobotAt ?l1)
                     (InManip none none_gp)
                     ;(IsMP ?l1 ?l2)
-                    (forall (?o - movable) (and (not (Obstructs ?o ?l1 ?l2)) (not (Obstructs ?o ?l2 ?l1))))
+                    ;(forall (?o - movable) (not (Obstructs ?o ?l2)) )
+										(forall (?o -movable)
+												(forall (?loc - location)
+														(or (not (ObjAt ?o ?loc)) (not (Obstructs ?o ?loc ?l2)))
+												)
+										)
         )
 		:effect (and
                     (RobotAt ?l2)
@@ -30,19 +36,21 @@
 	)
 
 	(:action move_w_obj
-		:parameters (?l1 - pose ?l2 - pose ?obj - movable ?loc1 - location ?loc2 - location ?gp - grasp)
+		:parameters (?l1 - pose ?l2 - pose ?obj - movable ?gp - grasp)
 		:precondition (and
                     (RobotAt ?l1)
                     (InManip ?obj ?gp)
-                    ;(ObjAt ?obj ?loc1)
                     ;(IsMP ?l1 ?l2)
-                    (forall (?o - movable) (and (not (Obstructs ?o ?l1 ?l2)) (not (Obstructs ?o ?l2 ?l1))))
+                    ;(forall (?o - movable) (not (Obstructs ?o ?l2)) )
+										(forall (?o -movable)
+												(forall (?loc - location)
+														(or (not (ObjAt ?o ?loc)) (not (Obstructs ?o ?loc ?l2)))
+												)
+										)
         )
 		:effect (and
                     (RobotAt ?l2)
 					(not (RobotAt ?l1))
-					;(not (ObjAt ?obj ?loc1))
-                    ;(ObjAt ?obj ?loc2)
         )
 	)
 
@@ -59,13 +67,15 @@
                     (not (InManip none none_gp))
                     (InManip ?obj ?gp)
 					(not (ObjAt ?obj ?loc))
+                    ;(forall (?p - pose) (not (Obstructs ?obj ?p)))
         )
 	)
 
     (:action place
 		:parameters (?lrobot - pose ?obj - movable ?loc - location ?gp - grasp)
 		:precondition (and
-                    (IsPDP ?lrobot ?obj ?gp)
+                    ;(IsPDP ?lrobot ?obj ?gp)
+                    (IsAccessPointFor ?lrobot ?obj ?loc)
                     ;(IsPlacePose ?lrobot)
                     (InManip ?obj ?gp)
 					(RobotAt ?lrobot)

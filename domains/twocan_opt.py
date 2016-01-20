@@ -31,16 +31,21 @@ class TwoCanOpt(object):
                 "goal2":ObjLoc("goal1", rows, cols, is_var=False, value=np.array([[3.5], [4.5], [0]])),\
 
                 # "goal2":ObjLoc("goal2", rows, cols, is_var=True, value=None, region=goal),\
-                "pick_can1":RP("pick_can1", rows, cols),\
-                "place_can1": RP("place_can1", rows, cols),\
-                "pick_can2":RP("pick_can2", rows, cols),\
-                "place_can2": RP("place_can2", rows, cols),\
-                "gp1":GP("gp1", rows, cols, is_resampled=True),\
-                "gp2":GP("gp2", rows, cols, is_resampled=True)})
+                "pdp_can1_can1_init_loc": RP("pdp_can1_can1_init_loc", rows, cols),\
+                "pdp_can1_goal1": RP("pdp_can1_goal1", rows, cols),\
+                "pdp_can2_can2_init_loc": RP("pdp_can2_can2_init_loc", rows, cols),\
+                "pdp_can2_goal2": RP("pdp_can2_goal2", rows, cols),\
+                "gp_can1":RP("pick_can1", rows, cols),\
+                "gp_can2":RP("pick_can2", rows, cols),\
+                "g1":GP("pick_can1", rows, cols, is_resampled=True),\
+                "g2":GP("pick_can2", rows, cols, is_resampled=True)})
 
         self.params_to_sample = []
-        for name in ['gp1','gp2']:
-            self.params_to_sample.append(self.param_map[name])
+        for param in self.param_map.values():
+            if param.is_resampled:
+                self.params_to_sample.append(param)
+        # for name in ['gp1','gp2']:
+        #     self.params_to_sample.append(self.param_map[name])
         self.name = "twocan_world"
         self.world_state = {self.param_map["can1"]: self.param_map["can1_init_loc"], \
                             self.param_map["can2"]: self.param_map["can2_init_loc"]}
@@ -92,14 +97,12 @@ class TwoCanOpt(object):
         action = Move(lineno, pr, env, self.world_state, robot, start, end)
         return action
 
-    def move_w_obj(self, lineno, pr, env, robot_str, start_str, end_str, obj_str, obj_start_str, obj_end_str, gp_str):
+    def move_w_obj(self, lineno, pr, env, robot_str, start_str, end_str, obj_str, gp_str):
         d = self.param_map
         robot = d[robot_str]
         start = d[start_str]
         end = d[end_str]
         obj = d[obj_str]
-        obj_start = d[obj_start_str]
-        obj_end = d[obj_end_str]
         gp = d[gp_str]
         world_state = self.world_state.copy()
         # self.place_objs.append(d['can1'])
