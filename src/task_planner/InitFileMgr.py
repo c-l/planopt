@@ -10,7 +10,7 @@ class InitFileMgr:
         self.pddlFName = fname
         self.initState = self.getInitStateFromString() # the state to be maintained
         self.initState.setObjDict(self.construct_objects_dict())
-        self.patchSequence = [] # history of applied patches 
+        self.patchSequence = [] # history of applied patches
         self.patchedStateSequence = [] # history of init states
 
     def getPDDLStr(self):
@@ -19,18 +19,18 @@ class InitFileMgr:
 
     def writeFile(self, ofname, txt):
         tryIO(ofname, "write", txt)
-            
+
     def pushCurrentInitToHistory(self):
         s=State()
         s.patch(self.initState)
         self.patchedStateSequence.append(s)
-        
+
     def replaceInitState(self, newState):
         self.pushCurrentInitToHistory()
         self.patchSequence.append('replaced state')
         self.initState = State()
         self.initState.patch(newState)
-     
+
     def getCurrentState(self):
         return self.initState
 
@@ -44,9 +44,9 @@ class InitFileMgr:
                 initSection = section.replace("init", "", 1)
                 break
         return initSection
-    
+
     def getInitStateFromString(self):
-        op = OutputParser("")        
+        op = OutputParser("")
         return op.getStateFromStr(self.extractInitSection())
 
     def patchInitState(self, newState):
@@ -56,7 +56,7 @@ class InitFileMgr:
 
         self.initState.patch(newState)
         self.patchSequence.append(newState)
-    
+
     def printInitState(self):
         print "Patch generation " + repr(len(self.patchSequence))
         self.initState.printState()
@@ -79,15 +79,15 @@ class InitFileMgr:
                 objectstr = objectstr[type_match.end():].lstrip()
                 rest = re.search("\s", objectstr)
                 obj_type = objectstr[:rest.start()] if rest else objectstr
-                
+
                 object_names = re.split("\s", object_names) # strip out space characters
                 object_names = list(filter(lambda x: x != "" and not x.startswith(";"), object_names))
-                
+
                 if obj_type in objectsdict.keys():
                     objectsdict[obj_type].extend(object_names)
                 else:
                     objectsdict[obj_type] = object_names
-                    
+
                 objectstr = objectstr[rest.end():] if rest else ""
                 type_match = re.search("-", objectstr)
         else:
@@ -95,7 +95,7 @@ class InitFileMgr:
             object_names = re.split("\s", object_names) # strip out space characters
             object_names = list(filter(lambda x: x != "" and not x.startswith(";"), object_names))
             objectsdict[None] = object_names
-            
+
         return objectsdict
 
     def writeCurrentPDDL(self, ofname):
@@ -104,9 +104,9 @@ class InitFileMgr:
         pddlOutStr = ""
         propList = list(self.initState.getTrueProps())
         propList.sort()
-        
+
         pddlPart1 = pddlStr.split("(:init")[0]
-        pddlPart2 = pddlStr.split("(:init")[1].strip().split("\n(:goal")[1]
+        pddlPart2 = pddlStr.split("(:init")[1].strip().split("(:goal")[1]
         pddlOutStr = pddlPart1 + "\n\n(:init \n" + "\n".join(propList) + ")" +\
             "\n(:goal" + pddlPart2
 
@@ -131,11 +131,11 @@ class InitFileMgr:
         #In order to log the change, create a state
         # with facts that match symbol
         # remove from both true set and false set
-        s = State()        
+        s = State()
         s.patch(self.initState)
         self.patchSequence.append("Purge symbol: "+symbol)
         self.patchedStateSequence.append(s)
-        
+
         for prop in s.getTrueProps():
             if symbol in prop:
                 self.initState.removeTrueProp(prop)
