@@ -39,22 +39,22 @@ class LinFluent(Fluent):
 
 class LinEqFluent(LinFluent):
 
-    def satisfied(self):
+    def satisfied(self, tol=Fluent.tol):
         if self.rhs is None or self.lhs is None:
             return False
         if self.rhs.value() is None or self.lhs.value() is None:
             return False
-        return np.allclose(self.lhs.value(), self.rhs.value())
+        return np.allclose(self.lhs.value(), self.rhs.value(), atol=tol)
 
 
 class LinLEFluent(LinFluent):
 
-    def satisfied(self):
+    def satisfied(self, tol=Fluent.tol):
         if self.rhs is None or self.lhs is None:
             return False
         if self.rhs.value() is None or self.lhs.value() is None:
             return False
-        return np.all(self.lhs.value() <= self.rhs.value())
+        return np.all(self.lhs.value() <= self.rhs.value() + tol)
 
 
 class FnFluent(Fluent):
