@@ -1,12 +1,14 @@
 import numpy as np
 
 
-class Fluent(object):
+# TODO: should the fluent class be an exception?
+class Fluent(Exception):
     tol = 3e-3
 
-    def __init__(self, name, priority):
+    def __init__(self, name, priority, hl_action):
         self.name = name
         self.priority = priority
+        self.hl_action = hl_action
 
     def satisfied(self):
         raise NotImplementedError
@@ -14,8 +16,8 @@ class Fluent(object):
 
 class AndFluent(Fluent):
 
-    def __init__(self, name, priority):
-        super(AndFluent, self).__init__(name, prioriy)
+    def __init__(self, name, priority, hl_action):
+        super(AndFluent, self).__init__(name, priority, hl_action)
         self.fluents = None
 
     def satisfied(self):
@@ -26,8 +28,8 @@ class AndFluent(Fluent):
 
 
 class LinFluent(Fluent):
-    def __init__(self, name, priority, lhs, rhs):
-        super(LinFluent, self).__init__(name, priority)
+    def __init__(self, name, priority, hl_action, lhs, rhs):
+        super(LinFluent, self).__init__(name, priority, hl_action)
         self.lhs = lhs
         self.rhs = rhs
 
@@ -57,8 +59,8 @@ class LinLEFluent(LinFluent):
 
 class FnFluent(Fluent):
 
-    def __init__(self, name, priority, fn = None):
-        super(FnFluent, self).__init__(name, priority)
+    def __init__(self, name, priority, hl_action, fn = None):
+        super(FnFluent, self).__init__(name, priority, hl_action)
         self.fn = None
 
     def satisfied(self):

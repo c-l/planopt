@@ -39,14 +39,14 @@ class IsGP(AndFluent):
         # h = lambda x: self.distance_from_obj(x, 0.0, (K,T)) # function inequality constraint g(x) <= 0
         h_func = CollisionFn([self.traj], h)
 
-        fneq_fluent = FnEQFluent('fneq_' + self.name, self.priority)
+        fneq_fluent = FnEQFluent('fneq_' + self.name, self.priority, self.hl_action)
         fneq_fluent.fn = h_func
 
         coeff = np.zeros((T, 1), dtype=np.float)
         coeff[0, 0] = 1.0
         lhs = AffExpr({self.obj_traj: coeff})
         rhs = AffExpr({self.traj: coeff, self.gp: 1.0})
-        lineq_fluent = LinEqFluent('lineq_' + self.name, self.priority, lhs, rhs)
+        lineq_fluent = LinEqFluent('lineq_' + self.name, self.priority, self.hl_action, lhs, rhs)
         self.fluents = [fneq_fluent, lineq_fluent]
 
     def distance_from_obj(self, x, target_dist, traj_shape):
