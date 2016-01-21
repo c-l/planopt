@@ -10,12 +10,13 @@ sys.path.insert(0, "../")
 from envs.world import World
 from interface.hl_param import *
 
+import re
+
 class TwoCanOpt(object):
     def __init__(self, env):
-        goal = np.array([[3,4],[3,5],[0,0]])
-        # goal = np.array([[3,3,0],[4,5,0]])
-        rows = 3
-        cols = 1
+        self.rows = 3
+        self.cols = 1
+
         self.movable_objects = {"can1", "can2"}
         self.param_map = {}
         self.add_body_params(env, self.param_map)
@@ -24,31 +25,22 @@ class TwoCanOpt(object):
         can1 = self.param_map['can1']
         can2 = self.param_map['can2']
         self.param_map.update({\
-                "robot_init_loc":RP("robot_init_loc", rows, cols, is_var=False, value=robot.get_pose(env)),\
-                "can1_init_loc":ObjLoc("can1_init_loc", rows, cols, is_var=False, value=can1.get_pose(env)),\
-                "can2_init_loc":ObjLoc("can2_init_loc", rows, cols, is_var=False, value=can2.get_pose(env)), \
-                "goal1":ObjLoc("goal1", rows, cols, is_var=False, value=np.array([[3.5], [3.5], [0]])),\
-                "goal2":ObjLoc("goal1", rows, cols, is_var=False, value=np.array([[3.5], [4.5], [0]])),\
+                "robot_init_loc":RP("robot_init_loc", self.rows, self.cols, is_var=False, value=robot.get_pose(env)),\
+                "can1_init_loc":ObjLoc("can1_init_loc", self.rows, self.cols, is_var=False, value=can1.get_pose(env)),\
+                "can2_init_loc":ObjLoc("can2_init_loc", self.rows, self.cols, is_var=False, value=can2.get_pose(env)), \
+                "goal1":ObjLoc("goal1", self.rows, self.cols, is_var=False, value=np.array([[3.5], [3.5], [0]])),\
+                "goal2":ObjLoc("goal1", self.rows, self.cols, is_var=False, value=np.array([[3.5], [4.5], [0]]))})
 
-                # "goal2":ObjLoc("goal2", rows, cols, is_var=True, value=None, region=goal),\
-                "pdp_can1_can1_init_loc": RP("pdp_can1_can1_init_loc", rows, cols),\
-                "pdp_can1_goal1": RP("pdp_can1_goal1", rows, cols),\
-                "pdp_can2_can2_init_loc": RP("pdp_can2_can2_init_loc", rows, cols),\
-                "pdp_can2_goal2": RP("pdp_can2_goal2", rows, cols),\
-                "gp_can1":RP("pick_can1", rows, cols),\
-                "gp_can2":RP("pick_can2", rows, cols),\
-                "g1":GP("pick_can1", rows, cols, is_resampled=True),\
-                "g2":GP("pick_can2", rows, cols, is_resampled=True)})
-
-        self.params_to_sample = []
-        for param in self.param_map.values():
-            if param.is_resampled:
-                self.params_to_sample.append(param)
-        # for name in ['gp1','gp2']:
-        #     self.params_to_sample.append(self.param_map[name])
         self.name = "twocan_world"
         self.world_state = {self.param_map["can1"]: self.param_map["can1_init_loc"], \
                             self.param_map["can2"]: self.param_map["can2_init_loc"]}
+
+    def get_sampled_params(self):
+        params_to_sample = []
+        for param in self.param_map.values():
+            if param.is_resampled:
+                params_to_sample.append(param)
+        return params_to_sample
 
     def get_all_but_params(self, params_to_delete):
         params = self.body_params.copy()
@@ -64,23 +56,39 @@ class TwoCanOpt(object):
             else:
                 param_map[name] = Robot(name)
 
-    def pick(self, lineno, pr, env, robot_str, pos_str, obj_str, loc_str, gp_str):
+    def _get_param(self, param_name):
+        if param_name not in self.param_map:
+            if re.match("pdp", param_name):
+                self.param_map[param_name] = RP(param_name, self.rows, self.cols)
+            elif re.match("gp", param_name):
+                self.param_map[param_name] = RP(param_name, self.rows, self.cols)
+            elif re.match("grasp", param_name):
+                self.param_map[param_name] = Grasp(param_name, self.rows, self.cols, is_resampled=True)
+            elif re.match("none", param_name):
+                return None
+            else:
+                import ipdb; ipdb.set_trace()
+                print ('not a valid parameter name')
+
+        return self.param_map[param_name]
+
+    def pick(self, lineno, pr, env, robot_str, obj_str, loc_str, pos_str, gp_str):
         d = self.param_map
-        robot = d[robot_str]
-        pos = d[pos_str]
-        obj = d[obj_str]
-        obj_loc = d[loc_str]
-        gp = d[gp_str]
+        robot = self._get_param(robot_str)
+        pos = self._get_param(pos_str)
+        obj = self._get_param(obj_str)
+        obj_loc = self._get_param(loc_str)
+        gp = self._get_param(gp_str)
         action = Pick(lineno, pr, env, robot, pos, obj, obj_loc, gp)
         return action
 
-    def place(self, lineno, pr, env, robot_str, pos_str, obj_str, loc_str, gp_str):
+    def place(self, lineno, pr, env, robot_str, obj_str, loc_str, pos_str, gp_str):
         d = self.param_map
-        robot = d[robot_str]
-        pos = d[pos_str]
-        obj = d[obj_str]
-        obj_loc = d[loc_str]
-        gp = d[gp_str]
+        robot = self._get_param(robot_str)
+        pos = self._get_param(pos_str)
+        obj = self._get_param(obj_str)
+        obj_loc = self._get_param(loc_str)
+        gp = self._get_param(gp_str)
         self.world_state[obj] = obj_loc
         action = Place(lineno, pr, env, robot, pos, obj, obj_loc, gp)
         # action = Place(lineno, pr, env, robot, pos, obj, obj_loc, gp, name="place"+str(lineno), place_obj_params=self.place_objs[:], place_loc_params=self.place_locs[:])
@@ -90,23 +98,23 @@ class TwoCanOpt(object):
 
     def move(self, lineno, pr, env, robot_str, start_str, end_str, obj_str=None, gp_str=None):
         d = self.param_map
-        robot = d[robot_str]
-        start = d[start_str]
-        end = d[end_str]
+        robot = self._get_param(robot_str)
+        start = self._get_param(start_str)
+        end = self._get_param(end_str)
         # action = Move(lineno, pr, env, robot, start_param=start, end_param=end, name="move"+str(lineno), place_obj_params=self.place_objs[:], place_loc_params=self.place_locs[:])
         action = Move(lineno, pr, env, self.world_state, robot, start, end)
         return action
 
     def move_w_obj(self, lineno, pr, env, robot_str, start_str, end_str, obj_str, gp_str):
         d = self.param_map
-        robot = d[robot_str]
-        start = d[start_str]
-        end = d[end_str]
-        obj = d[obj_str]
-        gp = d[gp_str]
+        robot = self._get_param(robot_str)
+        start = self._get_param(start_str)
+        end = self._get_param(end_str)
+        obj = self._get_param(obj_str)
+        gp = self._get_param(gp_str)
         world_state = self.world_state.copy()
-        # self.place_objs.append(d['can1'])
-        # self.place_locs.append(d['goal1'])
+        # self.place_objs.append(self._get_param('can1'])
+        # self.place_locs.append(self._get_param('goal1'])
         # action = Move(lineno, pr, env, robot, start_param=start, end_param=end, obj_param=obj, obj_start_param=obj_start, obj_end_param=obj_end, gp_param=gp, name="move"+str(lineno), place_obj_params=self.place_objs[:], place_loc_params=self.place_locs[:])
         action = Move(lineno, pr, env, self.world_state, robot, start, end, obj, gp)
         return action
