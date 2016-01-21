@@ -1,6 +1,4 @@
 import numpy as np
-from opt.variable import Variable
-from opt.solver import Solver
 import time
 import ipdb
 
@@ -96,40 +94,3 @@ class Place(HLAction):
         #     place_points = np.transpose(np.hstack((place_pos, place_obj_pos)))
         #     self.handles += [self.hl_plan.env.drawlinestrip(points=place_points, linewidth=10, colors=(0,0.5,0))]
         #     self.handles += [self.hl_plan.env.drawlinestrip(points=hl_points, linewidth=10, colors=(1,0,0))]
-
-    def init_opt(self):
-        # initialize trajectories
-        self.traj.value = self.hl_loc.value - self.hl_gp.value
-        self.pos.value = self.traj.value.copy()
-        self.obj_traj.value = self.hl_loc.value
-
-        # sqp = SQP()
-        solver = Solver()
-        solver.initial_trust_box_size = 0.1
-        # solver.initial_trust_box_size = 1
-        solver.min_trust_box_size=1e-4
-        # solver.initial_penalty_coeff = 0.1
-        solver.min_approx_improve = 1e-2
-        # solver.g_use_numerical = False
-
-        self.opt_prob.make_primal()
-        self.opt_prob.init_trust_region = True
-
-        success = solver.penalty_sqp(self.opt_prob)
-        self.pos.initialized = True
-        self.loc.initialized = True
-        self.gp.initialized = True
-
-
-    def reset(self):
-        self.pos.initialized = False
-        self.loc.initialized = False
-        self.gp.initialized = False
-
-    def create_opt_prob(self):
-        super(Place, self).create_opt_prob()
-        self.opt_prob.add_var(self.pos)
-        self.opt_prob.add_var(self.loc)
-
-        for place_loc in self.place_locs:
-            self.opt_prob.add_var(place_loc)
