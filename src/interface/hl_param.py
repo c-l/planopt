@@ -40,13 +40,13 @@ class HLParam(object):
         self.gen = self.generator()
 
 
-class GP(HLParam):
+class Grasp(HLParam):
 
     def generator(self):
         yield np.array([[0], [0.6], [0]], dtype=np.float)
-        yield np.array([[0], [-0.6], [0]], dtype=np.float)
-        yield np.array([[0.6], [0], [0]], dtype=np.float)
-        yield np.array([[-0.6], [0], [0]], dtype=np.float)
+        # yield np.array([[0], [-0.6], [0]], dtype=np.float)
+        # yield np.array([[0.6], [0], [0]], dtype=np.float)
+        # yield np.array([[-0.6], [0], [0]], dtype=np.float)
 
 
 class RP(HLParam):
@@ -95,6 +95,7 @@ class Obj(HLParam):
     def __init__(self, name):
         self.name = name
         self.is_var = False
+        self.is_resampled = False
 
     def get_pose(self, env):
         transform = self.get_env_body(env).GetTransform()
