@@ -149,7 +149,9 @@ class HybridPlanner:
             # print "Generated plan: "
             # generatedPlan.printPlan()
             # print "Trimmed plan:"
-            generatedPlan.trimActions()
+
+            # generatedPlan.trimActions()
+
             # generatedPlan.printPlan()
             if oldPlan != None:
                 resumeFrom = generatedPlan.incorporate(oldPlan, failureStep)
@@ -180,16 +182,16 @@ class HybridPlanner:
         usefulErrors = False
         childCount = 0
         while not usefulErrors:
-            # try:
-            self.tryMotionPlanning(resume_key, resumeFrom, startTime)
-            sys.exit(0)
-            # except pr_graph.ActionError as e:
-            #     errorStr = e.pddl_error_info
-            #     failureStep = self.getFailedActionNumberAndProps(errorStr)[0]
-            #     #strPlanFileH.seek(0)
-            #     usefulErrors = True
-            #     cur_plan = e.cur_plan
-            #     self.iteration += 1
+            try:
+                self.tryMotionPlanning(resume_key, resumeFrom, startTime)
+                sys.exit(0)
+            except pr_graph.Fluent as f:
+                errorStr = f.pddl_error_info
+                failureStep = self.getFailedActionNumberAndProps(errorStr)[0]
+                #strPlanFileH.seek(0)
+                usefulErrors = True
+                cur_plan = f.cur_plan
+                self.iteration += 1
 
         if errorStr == "":
             print "Lower level failed without error message."

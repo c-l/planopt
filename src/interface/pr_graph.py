@@ -6,6 +6,7 @@ import pprint
 
 # from hl_actions.hl_action import ActionError, InstantiationExhaustedException
 from pr_creator import PRCreator
+from fluents.fluent import Fluent
 
 pp = pprint.PrettyPrinter()
 
@@ -22,26 +23,26 @@ class PRGraph(object):
 
 
     def resume(self, plan_key):
-        # try:
-        print "Resuming plan:"
-        self.saved_plans[plan_key].printPlan()
+        try:
+            print "Resuming plan:"
+            self.saved_plans[plan_key].printPlan()
 
-        if plan_key in self.saved_environments:
-            EnvManager.restore_openrave_state(self.env, self.saved_environments[plan_key])
+            # if plan_key in self.saved_environments:
+            #     EnvManager.restore_openrave_state(self.env, self.saved_environments[plan_key])
 
-        settings.RANDOM_STATE = copy.deepcopy(self.saved_random_states[plan_key])
+            settings.RANDOM_STATE = copy.deepcopy(self.saved_random_states[plan_key])
 
-        self.plan_refinements[plan_key].get_next_instantiation()
+            self.plan_refinements[plan_key].get_next_instantiation()
 
-        import ipdb; ipdb.set_trace() # BREAKPOINT
-        self.plan_refinements[plan_key].setActionListNames(self.saved_plans[plan_key])
+            import ipdb; ipdb.set_trace() # BREAKPOINT
+            self.plan_refinements[plan_key].setActionListNames(self.saved_plans[plan_key])
 
-        # except ActionError, e:
-        #     self.saved_environments[plan_key] = EnvManager.save_openrave_state(self.env)
-        #     self.saved_random_states[plan_key] = copy.deepcopy(settings.RANDOM_STATE)
-        #     e.cur_plan = self.saved_plans[plan_key]
-        #     self._handle_error(e)
-        #     raise e
+        except Fluent, f:
+            # self.saved_environments[plan_key] = EnvManager.save_openrave_state(self.env)
+            self.saved_random_states[plan_key] = copy.deepcopy(settings.RANDOM_STATE)
+            f.cur_plan = self.saved_plans[plan_key]
+            self._handle_fluent(f)
+            raise f
 
         cur_plan = self.plan_refinements[plan_key]
         # print "Backtracking took: {} seconds".format(cur_plan.timings['backtrack'])
@@ -50,17 +51,17 @@ class PRGraph(object):
         # print "Replanning with margins..."
         # cur_plan.replan_with_margins(self.starting_state)
 
-        if not settings.run_test_mode[0]:
-            cur_plan.execute_all(self.starting_state)
-        else:
-            try:
-                cur_plan.execute_all_silent(self.starting_state)
-            except ActionError, e:
-                self.saved_environments[plan_key] = EnvManager.save_openrave_state(self.env)
-                self.saved_random_states[plan_key] = copy.deepcopy(settings.RANDOM_STATE)
-                e.cur_plan = self.saved_plans[plan_key]
-                self._handle_error(e)
-                import ipdb; ipdb.set_trace()
+        # if not settings.run_test_mode[0]:
+        #     cur_plan.execute_all(self.starting_state)
+        # else:
+        #     try:
+        #         cur_plan.execute_all_silent(self.starting_state)
+        #     except ActionError, e:
+        #         self.saved_environments[plan_key] = EnvManager.save_openrave_state(self.env)
+        #         self.saved_random_states[plan_key] = copy.deepcopy(settings.RANDOM_STATE)
+        #         e.cur_plan = self.saved_plans[plan_key]
+        #         self._handle_error(e)
+        #         import ipdb; ipdb.set_trace()
         print "Done"
 
 
@@ -68,7 +69,7 @@ class PRGraph(object):
         # import pdb; pdb.set_trace()
         parent_pr = None
         if plan_key in self.plan_refinements:
-            self.plan_refinements[plan_key].restore_openrave_state(resume_from)
+            # self.plan_refinements[plan_key].restore_openrave_state(resume_from)
             parent_pr = self.plan_refinements[plan_key]
 
         plan_fname = generated_plan.getStrIOPlan()
@@ -125,7 +126,23 @@ class PRGraph(object):
         for edge in self.graph.edges(data=True):
             print "{} --> {}: \n{}\n".format(edge[0], edge[1], edge[2]['label'])
 
-    def _handle_error(self, error):
-        assert isinstance(error, ActionError)
+    def _handle_fluent(self, fluent):
+        # assert isinstance(error, ActionError)
 
         print "Handling an error"
+        from interface.fluents.not_obstructs import NotObstructs
+        if isinstance(fluent, NotObstructs):
+            print "Got an obstruction error"
+
+            obj = fluent.obj.name
+            objs = [obj, obj, obj, obj]
+            obj_loc = fluent.obj_loc.name
+            # last two characters from end removed because of uniqueify symbols
+            # end = fluent.hl_action.end.name[:-2]
+            end = fluent.hl_action.end.name[:-2]
+            ends = [end + "_0", end + "_1", end + "_2", end + "_3"]
+            obst_list = "\n".join("(obstructs {} {} {})".format(
+                obj, obj_loc, end) for obj, end in zip(objs, ends))
+
+            fluent.pddl_error_info = "LineNumber: %d\n%s" % (fluent.hl_action.lineno, obst_list)
+            return

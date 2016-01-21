@@ -2,6 +2,7 @@ import inspect
 import settings
 import utils
 import ipdb
+import re
 
 from plan_refinement import PlanRefinement
 # from interface.env_manager import EnvManager
@@ -12,6 +13,7 @@ import settings
 class PRCreator(object):
     def __init__(self, env):
         self.env = env
+        self.putdown_mode = "PDP"
 
     def create_pr(self, file_object_or_name, parent_pr, resume_from):
         self.pddlToOpt = settings.pddlToOpt(self.env)
@@ -26,15 +28,59 @@ class PRCreator(object):
         for lineno, instruction in enumerate(functions):
             action_name = instruction["name"] + "(" + ", ".join(instruction['args']) + ")"
             if lineno < resume_from:
-                print "Adding Static: {}".format(action_name)
-                # import pdb; pdb.set_trace()
-                self.pr.add_action(parent_pr.action_list[lineno].make_static_copy())
+                # print "Adding Static: {}".format(action_name)
+                # self.pr.add_action(parent_pr.action_list[lineno].make_static_copy())
+                # self.pr.add_parent_action(lineno, parent_pr.action_list[lineno])
+                self.pr.add_action(*(lineno, instruction['method']) + tuple(instruction['args']))
             else:
                 print "Adding: {}".format(action_name)
                 # instruction['method'](*(lineno,) + tuple(instruction['args']))
                 self.pr.add_action(*(lineno, instruction['method']) + tuple(instruction['args']))
 
         return self.pr
+
+    def _uniqueify_symbols_in_line(self, stripped_line):
+        stripped_line += " " # to make replacing easier
+        print "before strip:", stripped_line
+        matches = re.findall("GP_([A-Z0-9]*)", stripped_line)
+        if matches:
+            for obj in matches:
+                curr_count = self.pr.pick_counters.setdefault(obj, 0)
+                stripped_line = stripped_line.replace("GP_%s "%(obj), "GP_%s_%d "%(obj, curr_count))
+        matches = re.findall("GRASP_([A-Z0-9]*)", stripped_line)
+        if matches:
+            for obj in matches:
+                curr_count = self.pr.pick_counters.setdefault(obj, 0)
+                stripped_line = stripped_line.replace("GRASP_%s "%(obj), "GRASP_%s_%d "%(obj, curr_count))
+        matches = re.findall("%s_(\w*)"%self.putdown_mode, stripped_line)
+        if matches:
+            for obj in matches:
+                curr_count = self.pr.place_counters.setdefault(obj, 0)
+                stripped_line = stripped_line.replace("%s_%s "%(self.putdown_mode, obj), "%s_%s_%d "%(self.putdown_mode, obj, curr_count))
+        stripped_line = stripped_line[:-1]
+
+        match = re.search("PICK ([A-Z0-9]*)", stripped_line)
+        if match:
+            obj = match.groups()[0]
+            self.pr.pick_counters[obj] = self.pr.pick_counters.setdefault(obj, 0) + 1
+            # self.pr.grasp_counters[obj] = self.pr.grasp_counters.setdefault(obj, 0) + 1
+        obj = None
+        match = re.search("PLACE \w* \w* PDP_([A-Z0-9]*_[A-Z0-9]*)", stripped_line)
+        if match:
+            if not obj: obj = match.groups()[0]
+            self.pr.place_counters[obj] = self.pr.place_counters.setdefault(obj, 0) + 1
+            # self.pr.putdown_counters[obj] = self.pr.putdown_counters.setdefault(obj, 0) + 1
+
+        # moveto start pose correction
+        match = re.search("MOVETO\w* (\w+_\d+) \w+", stripped_line)
+        if match:
+            pose = match.groups()[0]
+            correction = max(int(pose.split("_")[-1]) - 1, 0)
+            new_pose = pose[:pose.rfind("_")] + "_" + str(correction)
+            stripped_line = stripped_line.replace(pose, new_pose)
+
+        print "after strip: ", stripped_line
+        return stripped_line
 
     def _parse(self, file_obj):
         functions = []
@@ -46,6 +92,8 @@ class PRCreator(object):
                 continue
             if len(stripped_line) < 2:
                 continue
+
+            # stripped_line = self._uniqueify_symbols_in_line(stripped_line)
 
             tokens_list = stripped_line.split(" ")[1:]  # skip instruction number
             parsed_fn_name = tokens_list[0].lower()
