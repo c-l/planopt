@@ -94,6 +94,10 @@ class PlanRefinement(object):
         for action in actions:
             action.reset()
 
+    def clean_actions(self):
+        for action in self.action_list:
+            action.clean()
+
     def get_all_but_params(self, params_to_delete):
         return self.world.get_all_but_params(params_to_delete)
 
@@ -101,6 +105,7 @@ class PlanRefinement(object):
         if self.instantiation_generator is None:
             self.instantiation_generator = self._try_refine()
 
+        import ipdb; ipdb.set_trace()
         error = self.instantiation_generator.next()
         if error is not None:
             raise error
@@ -139,21 +144,25 @@ class PlanRefinement(object):
             fluents = [f for a in self.action_list for f in a.preconditions + a.postconditions]
             violated_fluents = self.find_violated_fluents(fluents)
             if len(violated_fluents) == 0:
-                return None
+                yield None
             else:
                 try:
                     self.backtracking_resample(sampled_params)
                 except StopIteration:
                     self.propagate_useful_fluent(violated_fluents)
+                    import ipdb; ipdb.set_trace()
 
         import ipdb; ipdb.set_trace() # BREAKPOINT
-        return None
+        yield None
 
     # TODO: whether a fluent is useful should be determined by domain file?
     def propagate_useful_fluent(self, fluents):
         for fluent in fluents:
             from fluents.not_obstructs import NotObstructs
             if isinstance(fluent, NotObstructs):
+                # TODO: put clean actions in a better location
+                import ipdb; ipdb.set_trace()
+                self.clean_actions()
                 raise fluent
 
     def find_violated_fluents(self, fluents):

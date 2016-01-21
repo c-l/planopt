@@ -38,6 +38,15 @@ class HLAction(object):
 
         return handles
 
+    def clean(self):
+        self.clear_plots()
+        if self.robot_clones is not None:
+            for clone in self.robot_clones:
+                self.hl_plan.env.Remove(clone)
+        if self.obj_clones is not None:
+            for clone in self.obj_clones:
+                self.hl_plan.env.Remove(clone)
+
     def create_robot_clones(self):
         self.robot_clones = []
         env = self.hl_plan.env
