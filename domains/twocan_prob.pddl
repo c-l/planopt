@@ -3,22 +3,41 @@
         can1 - movable
         can2 - movable
 
-        g1 - grasp
-        g2 - grasp
+        grasp_can1_0 - grasp
+        grasp_can2_0 - grasp
+        grasp_can1_1 - grasp
+        grasp_can2_1 - grasp
+        grasp_can1_2 - grasp
+        grasp_can2_2 - grasp
+        grasp_can1_3 - grasp
+        grasp_can2_3 - grasp
 
         robot_init_loc - pose
 
-        gp_can1 - pose
-        gp_can2 - pose
-        pdp_can1_can1_init_loc - pose
-        pdp_can2_can2_init_loc - pose
-        pdp_can1_goal1 - pose
-        pdp_can2_goal2 - pose
-
-        ;pick_can1 - pose
-        ;place_can1 - pose
-        ;pick_can2 - pose
-        ;place_can2 - pose
+        gp_can1_0 - pose
+        gp_can2_0 - pose
+        gp_can1_1 - pose
+        gp_can2_1 - pose
+        gp_can1_2 - pose
+        gp_can2_2 - pose
+        gp_can1_3 - pose
+        gp_can2_3 - pose
+        pdp_can1_can1_init_loc_0 - pose
+        pdp_can2_can2_init_loc_0 - pose
+        pdp_can1_can1_init_loc_1 - pose
+        pdp_can2_can2_init_loc_1 - pose
+        pdp_can1_can1_init_loc_2 - pose
+        pdp_can2_can2_init_loc_2 - pose
+        pdp_can1_can1_init_loc_3 - pose
+        pdp_can2_can2_init_loc_3 - pose
+        pdp_can1_goal1_0 - pose
+        pdp_can2_goal2_0 - pose
+        pdp_can1_goal1_1 - pose
+        pdp_can2_goal2_1 - pose
+        pdp_can1_goal1_2 - pose
+        pdp_can2_goal2_2 - pose
+        pdp_can1_goal1_3 - pose
+        pdp_can2_goal2_3 - pose
 
         can1_init_loc - location
         can2_init_loc - location
@@ -29,13 +48,31 @@
         (RobotAt robot_init_loc)
         (InManip none none_gp)
 
-        (IsGP gp_can1 can1 g1)
-        (IsGP gp_can2 can2 g2)
+        (IsGP gp_can1_0 can1 grasp_can1_0)
+        (IsGP gp_can2_0 can2 grasp_can2_0)
+        (IsGP gp_can1_1 can1 grasp_can1_1)
+        (IsGP gp_can2_1 can2 grasp_can2_1)
+        (IsGP gp_can1_2 can1 grasp_can1_2)
+        (IsGP gp_can2_2 can2 grasp_can2_2)
+        (IsGP gp_can1_3 can1 grasp_can1_3)
+        (IsGP gp_can2_3 can2 grasp_can2_3)
 
-        (IsAccessPointFor pdp_can1_can1_init_loc can1 can1_init_loc)
-        (IsAccessPointFor pdp_can2_can2_init_loc can2 can2_init_loc)
-        (IsAccessPointFor pdp_can1_goal1 can1 goal1)
-        (IsAccessPointFor pdp_can2_goal2 can2 goal2)
+        (IsAccessPointFor pdp_can1_can1_init_loc_0 can1 can1_init_loc)
+        (IsAccessPointFor pdp_can2_can2_init_loc_0 can2 can2_init_loc)
+        (IsAccessPointFor pdp_can1_can1_init_loc_1 can1 can1_init_loc)
+        (IsAccessPointFor pdp_can2_can2_init_loc_1 can2 can2_init_loc)
+        (IsAccessPointFor pdp_can1_can1_init_loc_2 can1 can1_init_loc)
+        (IsAccessPointFor pdp_can2_can2_init_loc_2 can2 can2_init_loc)
+        (IsAccessPointFor pdp_can1_can1_init_loc_3 can1 can1_init_loc)
+        (IsAccessPointFor pdp_can2_can2_init_loc_3 can2 can2_init_loc)
+        (IsAccessPointFor pdp_can1_goal1_0 can1 goal1)
+        (IsAccessPointFor pdp_can2_goal2_0 can2 goal2)
+        (IsAccessPointFor pdp_can1_goal1_1 can1 goal1)
+        (IsAccessPointFor pdp_can2_goal2_1 can2 goal2)
+        (IsAccessPointFor pdp_can1_goal1_2 can1 goal1)
+        (IsAccessPointFor pdp_can2_goal2_2 can2 goal2)
+        (IsAccessPointFor pdp_can1_goal1_3 can1 goal1)
+        (IsAccessPointFor pdp_can2_goal2_3 can2 goal2)
 
         (ObjAt can1 can1_init_loc)
         (ObjAt can2 can2_init_loc)

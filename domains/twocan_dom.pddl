@@ -12,8 +12,7 @@
         (IsGP ?p - pose ?obj ?gp)
         (IsPDP ?p - pose ?obj ?gp)
         (IsAccessPointFor ?p - pose ?obj - movable ?loc - location)
-        ;(IsPickPose ?lrobot - pose)
-        ;(IsPlacePose ?lrobot - pose)
+				(NotUnique ?p - pose)
 	)
 
 	(:action move
@@ -22,7 +21,6 @@
                     (RobotAt ?l1)
                     (InManip none none_gp)
                     ;(IsMP ?l1 ?l2)
-                    ;(forall (?o - movable) (not (Obstructs ?o ?l2)) )
 										(forall (?o -movable)
 												(forall (?loc - location)
 														(or (not (ObjAt ?o ?loc)) (not (Obstructs ?o ?loc ?l2)))
@@ -41,7 +39,6 @@
                     (RobotAt ?l1)
                     (InManip ?obj ?gp)
                     ;(IsMP ?l1 ?l2)
-                    ;(forall (?o - movable) (not (Obstructs ?o ?l2)) )
 										(forall (?o -movable)
 												(forall (?loc - location)
 														(or (not (ObjAt ?o ?loc)) (not (Obstructs ?o ?loc ?l2)))
@@ -55,35 +52,35 @@
 	)
 
    	(:action pick
-		:parameters (?lrobot - pose ?obj - movable ?loc - location ?gp - grasp)
+		:parameters (?obj - movable ?loc - location ?lrobot - pose ?gp - grasp)
 		:precondition (and
-                    ;(IsPickPose ?lrobot)
                     (IsGP ?lrobot ?obj ?gp)
                     (InManip none none_gp)
 					(RobotAt ?lrobot)
                     (ObjAt ?obj ?loc)
+										(not (NotUnique ?lrobot))
         )
 		:effect (and
                     (not (InManip none none_gp))
                     (InManip ?obj ?gp)
 					(not (ObjAt ?obj ?loc))
-                    ;(forall (?p - pose) (not (Obstructs ?obj ?p)))
+										(NotUnique ?lrobot)
         )
 	)
 
     (:action place
-		:parameters (?lrobot - pose ?obj - movable ?loc - location ?gp - grasp)
+		:parameters (?obj - movable ?loc - location ?lrobot - pose ?gp - grasp)
 		:precondition (and
-                    ;(IsPDP ?lrobot ?obj ?gp)
                     (IsAccessPointFor ?lrobot ?obj ?loc)
-                    ;(IsPlacePose ?lrobot)
                     (InManip ?obj ?gp)
+										(not (NotUnique ?lrobot))
 					(RobotAt ?lrobot)
         )
 		:effect (and
                     (ObjAt ?obj ?loc)
                     (InManip none none_gp)
                     (not (InManip ?obj ?gp))
+										(NotUnique ?lrobot)
         )
 	)
 )
