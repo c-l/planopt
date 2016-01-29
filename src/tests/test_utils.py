@@ -1,6 +1,6 @@
 # from openravepy import *
 from openravepy import KinBody, Environment, RaveCreateKinBody, TriMesh, \
-GeometryType
+GeometryType, RaveCreateRobot, DOFAffine
 import numpy as np
 from utils import base_pose_to_mat
 
@@ -13,7 +13,8 @@ def create_cylinder(env, body_name, t, dims, color=[0, 1, 1]):
     infocylinder._vDiffuseColor = color
     # infocylinder._t[2, 3] = dims[1] / 2
 
-    cylinder = RaveCreateKinBody(env, '')
+    # cylinder = RaveCreateKinBody(env, '')
+    cylinder = RaveCreateRobot(env, '')
     cylinder.InitFromGeometries([infocylinder])
     cylinder.SetName(body_name)
     cylinder.SetTransform(t)
@@ -114,7 +115,8 @@ def add_object(env):
     transform[0, 3] = -2
     obj = create_cylinder(env, 'obj', np.eye(4), [.35, 2])
     obj.SetTransform(transform)
-    env.AddKinBody(obj)
+    # env.AddKinBody(obj)
+    env.AddRobot(obj)
     make_transparent(obj)
 
 def move_test_env():
@@ -138,4 +140,23 @@ def pick_test_env():
     add_object(env)
     raw_input('continue past warnings')
 
+    return env
+
+def add_pr2(env):
+    robot = env.ReadRobotXMLFile("robots/pr2-beta-sim.robot.xml")
+    env.Add(robot)
+
+def pr2_env():
+    env = Environment()
+    env.SetViewer('qtcoin')
+
+    add_pr2(env)
+
+def cans_world_env():
+    env = Environment()
+    env.SetViewer('qtcoin')
+    env.Load("../envs/can_world.dae")
+    for body in env.GetBodies():
+        if 'object' in body.GetName():
+            body.SetActiveDOFs(np.ndarray(0), DOFAffine.Transform)
     return env
