@@ -105,7 +105,6 @@ class PlanRefinement(object):
         if self.instantiation_generator is None:
             self.instantiation_generator = self._try_refine()
 
-        import ipdb; ipdb.set_trace()
         error = self.instantiation_generator.next()
         if error is not None:
             raise error
@@ -176,22 +175,6 @@ class PlanRefinement(object):
                 violated_fluents.append(fluent)
                 print fluent, " is violated"
         return violated_fluents
-
-    # def find_violated_fluents(self):
-    #     violated_fluents = []
-    #
-    #     for action in self.action_list:
-    #         for fluent in action.preconditions + action.postconditions:
-    #             # if not fluent.satisfied():
-    #             if not np.all(fluent.satisfied()):
-    #                 violated_action = action.name
-    #                 violated_fluents.append(fluent)
-    #                 print violated_action, "'s fluent:", fluent, "violates constraints"
-    #
-    #     if len(violated_fluents) == 0:
-    #         return None
-    #     else:
-    #         return violated_fluents
 
     def setActionListNames(self, hlplan):
         self.action_list_names = hlplan.actionList

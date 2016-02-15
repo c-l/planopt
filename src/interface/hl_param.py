@@ -146,13 +146,16 @@ class PR2(Robot):
     def _set_active_dofs(self, env, active_bodyparts):
         robot = self.get_env_body(env)
         active_dofs = np.ndarray(0)
-        for active_bodypart in sorted(active_bodyparts):
+        # for active_bodypart in sorted(active_bodyparts):
+        for active_bodypart in active_bodyparts:
             if active_bodypart in {'rightarm', 'leftarm'}:
                 active_dofs = np.r_[active_dofs, robot.GetManipulator(active_bodypart).GetArmIndices()]
+            elif active_bodypart in {'rgripper'}:
+                active_dofs = np.r_[active_dofs, robot.GetManipulator("rightarm").GetGripperIndices()]
+            elif active_bodypart in {'lgripper'}:
+                active_dofs = np.r_[active_dofs, robot.GetManipulator("leftarm").GetGripperIndices()]
             elif active_bodypart == 'torso':
                 active_dofs = np.r_[active_dofs, robot.GetJoint("torso_lift_joint").GetDOFIndex()]
-            elif '~door:' in active_bodypart:
-                active_dofs = np.r_[active_dofs, robot.GetJoint('hinge').GetDOFIndex()]
 
         if 'base' in active_bodyparts:
             robot.SetActiveDOFs(
@@ -160,6 +163,7 @@ class PR2(Robot):
                 openravepy.DOFAffine.X + openravepy.DOFAffine.Y + openravepy.DOFAffine.RotationAxis,
                 [0, 0, 1])
         else:
+            # active_dofs = sorted(active_dofs)
             robot.SetActiveDOFs(active_dofs)
 
 class Traj(HLParam):

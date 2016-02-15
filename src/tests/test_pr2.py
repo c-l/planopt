@@ -157,7 +157,7 @@ class NotObstructsPR2(FnLEFluent):
             normal = c.GetNormal()
 
             # plotting
-            # self.plot_collision(ptRobot, ptObj, distance)
+            self.plot_collision(ptRobot, ptObj, distance)
             # import ipdb; ipdb.set_trace()
 
             # if there are multiple collisions, use the one with the greatest penetration distance
@@ -230,6 +230,7 @@ class PR2Move(HLAction):
         Q = 2 * np.dot(np.transpose(P), P)
 
         self.cost = QuadFn(self.traj, Q)
+        self.create_robot_clones()
 
     def create_robot_clones(self):
         self.robot_clones = []
@@ -254,7 +255,7 @@ class PR2Move(HLAction):
             for t in range(self.T):
             # for t in range(1):
                 # xt = self.traj.value[self.K*t:self.K*(t+1)]
-                xt = self.traj.get_value()[:, t:t+1]
+                # xt = self.traj.get_value()[:, t:t+1]
                 # env.Load(robot.GetXMLFilename())
                 # newrobot = self.create_robot_kinbody(name=self.name + "_" + robot.GetName() + str(t), transparency=transparency)
                 # newrobot = RaveCreateRobot(env,robot.GetXMLId())
@@ -414,13 +415,14 @@ def plot_collision(env, ptA, ptB, distance):
     handles = []
     if not np.allclose(ptA, ptB, atol=1e-3):
         if distance < 0:
-            handles.append(env.drawarrow(p1=ptA, p2=ptB, linewidth=.01,color=(1,0,0)))
+            handles.append(env.drawarrow(p1=ptA, p2=ptB, linewidth=.002,color=(1,0,0)))
         else:
-            handles.append(env.drawarrow(p1=ptA, p2=ptB, linewidth=.01,color=(0,0,0)))
+            handles.append(env.drawarrow(p1=ptA, p2=ptB, linewidth=.002,color=(0,0,0)))
     return handles
 
-# test_not_obstructs_pr2()
-# test_pr2()
-# test_not_obstructs_pr2_table()
-test_move_pr2_gradient()
-# test_robot()
+if __name__ == "__main__":
+    # test_not_obstructs_pr2()
+    # test_pr2()
+    # test_not_obstructs_pr2_table()
+    test_move_pr2_gradient()
+    # test_robot()
