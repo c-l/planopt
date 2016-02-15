@@ -84,7 +84,7 @@ class NotObstructs(FnLEFluent):
 
     # @profile
     def calc_grad_and_val(self, xt, ot, collisions):
-        val = float("inf")
+        val = -1*float("inf")
         robot_grad = None
         obj_grad = None
         for c in collisions:
@@ -110,7 +110,7 @@ class NotObstructs(FnLEFluent):
             self.plot_collision(ptRobot, ptObj, distance)
 
             # if there are multiple collisions, use the one with the greatest penetration distance
-            if self.dsafe - distance < val:
+            if self.dsafe - distance > val:
                 val = self.dsafe - distance
 
                 robot_grad = np.dot(-1 * normal[0:2], self.calc_jacobian(np.transpose(ptObj), xt))
