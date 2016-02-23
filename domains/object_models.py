@@ -53,7 +53,6 @@ def create_cylinder(env, body_name, t, dims, color=[0,1,1]):
   cylinder.SetName(body_name)
   cylinder.SetTransform(t)
   cylinder.SetActiveDOFs(np.ndarray(0), openravepy.DOFAffine.Transform)
-  import ipdb; ipdb.set_trace()
 
   return cylinder
 
