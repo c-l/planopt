@@ -15,6 +15,8 @@ class OptProb(object):
         self.model = grb.Model()
         # suppress output
         self.model.params.OutputFlag = 0
+        # set method to primal simplex
+        self.model.params.method = 0
         # increase optimality tolerance to maximum allowed
         self.model.params.OptimalityTol = 0.01
         # quadratic objective
