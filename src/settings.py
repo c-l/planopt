@@ -83,7 +83,7 @@ INCREASE_MARGINS = False
 # runs hybridPlanner automatically, no raw_inputs, use seed that generation script used, and only motion plan, no actual execution
 # second arg is seconds before planning times out
 # run_test_mode = (False, 65000)
-run_test_mode = (True, 6000)
+run_test_mode = (False, 6000)
 
 if run_test_mode[0]:
     try:

@@ -5,21 +5,22 @@ from interface.hl_actions import *
 from interface.hl_actions.move import Move
 from interface.hl_actions.pick import Pick
 from interface.hl_actions.place import Place
+from IPython import embed as shell
 # from hl_actions import hl_action # not sure why this is needed, but otherwise hl_action.ActionError is not found
 # from rapprentice.PR2 import PR2, Arm, mirror_arm_joints
 from hl_param import *
 from utils import *
 # from ll_plan import LLPlan
 from ll_prob import LLProb
-
+from fluents.fluent import AndFluent
 # TODO: not sure if this dependency should be here
-from interface.fluents.fluent import AndFluent
+from fluents.not_obstructs import NotObstructs
 
 import random
 
 try:
     import openrave_input
-except:
+except ImportError:
     print "Warning: ROS imports failed. Okay if not using ROS."
 
 
@@ -127,7 +128,7 @@ class PlanRefinement(object):
 
     def _try_refine(self):
         # TODO: rewrite
-        initializations = 20
+        initializations = 9999
         index = 0
 
         sampled_params = self.world.get_sampled_params()
@@ -149,18 +150,14 @@ class PlanRefinement(object):
                     self.backtracking_resample(sampled_params)
                 except StopIteration:
                     self.propagate_useful_fluent(violated_fluents)
-                    import ipdb; ipdb.set_trace()
 
-        import ipdb; ipdb.set_trace() # BREAKPOINT
         yield None
 
     # TODO: whether a fluent is useful should be determined by domain file?
     def propagate_useful_fluent(self, fluents):
         for fluent in fluents:
-            from fluents.not_obstructs import NotObstructs
             if isinstance(fluent, NotObstructs):
                 # TODO: put clean actions in a better location
-                import ipdb; ipdb.set_trace()
                 self.clean_actions()
                 raise fluent
 

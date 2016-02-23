@@ -115,8 +115,7 @@ class HybridPlanner:
         # v[robot.GetJoint('torso_lift_joint').GetDOFIndex()] = 0.3
         # # robot.SetDOFValues(v)
 
-        if not run_test_mode[0]:
-          raw_input("Press Enter to start!")
+        time.sleep(1)
 
     def updatePlan(self, generatedPlan):
         self.planList.append(generatedPlan)
@@ -172,7 +171,6 @@ class HybridPlanner:
             print "Adding root node: *"
             self.pr_graph.addEdge('_', '*', generatedPlan, resumeFrom, "")
         print "\nWill try to pick objects in order: " + repr(getObjSeqInPlan(strPlanFileH, 'object')) + "\n"
-        raw_input('!')
 
 
     def tryRefiningPRNode(self, startTime, prevPDDLFile, pddlProblemFile, oldPlan, failureStep, \
