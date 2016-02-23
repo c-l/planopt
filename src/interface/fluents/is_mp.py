@@ -30,7 +30,7 @@ class IsMP(LinLEFluent):
         # P = np.matrix(np.diag(v[:,0],K) + np.diag(d[:,0]) )
         P = np.diag(v[:,0],K) + np.diag(d[:,0])
 
-        # positions between time steps are less than 0.2
+        # positions between time steps are less than 0.3
         A_ineq = np.vstack((P, -P))
         b_ineq = 0.3*np.ones((2*K*T,1))
         # linear_constraints = [A_ineq * traj <= b_ineq]
