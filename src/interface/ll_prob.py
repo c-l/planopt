@@ -104,7 +104,12 @@ class LLProb(object):
         if fix_sampled_params:
             solver.initial_trust_box_size = 1e5
             solver.max_merit_coeff_increases = 1
-        solver.penalty_sqp(prob)
+        if priority == 0:
+            # initialize with previous trajectories and set objective
+            # as l2 norm of new/old trajectory difference
+            prob.find_closest_feasible_point()
+        else:
+            solver.penalty_sqp(prob)
 
         for param, var in param_to_var.items():
             var.update_hl_param()
