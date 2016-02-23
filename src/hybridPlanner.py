@@ -169,8 +169,10 @@ class HybridPlanner:
             self.pr_graph.addEdge(old_key, new_key, generatedPlan, resumeFrom, errorStr)
         else:
             print "Adding root node: *"
-            self.pr_graph.addEdge('_', '*', generatedPlan, resumeFrom, "")
+            new_key = "*"
+            self.pr_graph.addEdge('_', new_key, generatedPlan, resumeFrom, "")
         print "\nWill try to pick objects in order: " + repr(getObjSeqInPlan(strPlanFileH, 'object')) + "\n"
+        return new_key
 
 
     def tryRefiningPRNode(self, startTime, prevPDDLFile, pddlProblemFile, oldPlan, failureStep, \
@@ -220,6 +222,7 @@ class HybridPlanner:
         oldKey = '*'
         errorStr = ""
         searchAlgo = None
+        problem_files = {}
         while True:
             # try:
             self.iteration += 1
@@ -237,22 +240,23 @@ class HybridPlanner:
                 if strPlanFileH != -1:
                     self.updatePlan(generatedPlan)
                     # add new node
-                    self.addToPRGraph(resumeFrom, resumeCount, oldKey, generatedPlan, strPlanFileH, errorStr)
-            # prompt for where to resume
+                    added_key = self.addToPRGraph(resumeFrom, resumeCount, oldKey, generatedPlan, strPlanFileH, errorStr)
+                    problem_files[added_key] = pddlProblemFile
             print "Available Plans:"
             for key in self.pr_graph.graph.nodes():
                 print "Plan key: {}".format(key)
                 if self.pr_graph.saved_plans.has_key(key):
                     self.pr_graph.saved_plans[key].printPlan()
             self.pr_graph.show_graph()
-            #resumeKey = raw_input("resumeKey: ")
+            # resumeKey = raw_input("resumeKey: ")
             if searchAlgo == None:
                 # can use "daisyChainBFS" or "default" or "IDIBDFS"
                 searchAlgo = graph_traversal.GraphTraversal(self.pr_graph, self.pr_graph.graph_source).getSearchRoutine("default")
             resumeKey = searchAlgo.next()
             oldKey = resumeKey
 
-            print "\n\n resuming with node {} \n\n".format(resumeKey)
+            pddlProblemFile = problem_files[resumeKey]
+            print "\n\nresuming with node {}\n\n".format(resumeKey)
 
             pddlProblemFile, oldPlan, origState, failureStep, errorStr = self.tryRefiningPRNode(startTime, prevPDDLFile,
                                                                                                 pddlProblemFile, oldPlan,
