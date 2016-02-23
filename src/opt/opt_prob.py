@@ -13,7 +13,10 @@ class OptProb(object):
         self.constraints = []
 
         self.model = grb.Model()
-        self.model.params.OutputFlag = 0 # suppresses output
+        # suppress output
+        self.model.params.OutputFlag = 0
+        # increase optimality tolerance to maximum allowed
+        self.model.params.OptimalityTol = 0.01
         # quadratic objective
         self.obj_quad = grb.QuadExpr()
         # sqp objective

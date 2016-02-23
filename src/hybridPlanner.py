@@ -298,11 +298,11 @@ class HybridPlanner:
         print "Cache clearing count: "+ repr(self.cacheClearCount)
         endTime = time.time()
         print "Execution took " + repr(endTime-startTime) + " seconds"
-        if run_test_mode[0]:
-            sys.exit(0)
-        else:
-            raw_input("Hit 'Enter' to close.")
-            sys.exit(0)
+        # if run_test_mode[0]:
+        #     sys.exit(0)
+        # else:
+        #     raw_input("Hit 'Enter' to close.")
+        #     sys.exit(0)
 
 
     def getFailedActionNumberAndProps(self, errorStr):

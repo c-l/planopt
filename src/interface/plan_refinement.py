@@ -137,8 +137,9 @@ class PlanRefinement(object):
             param.resample()
             index += 1
 
+        llprob = LLProb(self.action_list)
+        llprob.solve_at_priority(-1, fix_sampled_params=True)
         for _ in range(initializations):
-            llprob = LLProb(self.action_list)
             llprob.solve()
 
             fluents = [f for a in self.action_list for f in a.preconditions + a.postconditions]
@@ -170,7 +171,6 @@ class PlanRefinement(object):
             if not np.all(fluent.satisfied()):
                 # violated_action = fluent.hl_action
                 violated_fluents.append(fluent)
-                print fluent, " is violated"
         return violated_fluents
 
     def setActionListNames(self, hlplan):

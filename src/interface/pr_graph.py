@@ -34,7 +34,6 @@ class PRGraph(object):
 
             self.plan_refinements[plan_key].get_next_instantiation()
 
-            import ipdb; ipdb.set_trace() # BREAKPOINT
             self.plan_refinements[plan_key].setActionListNames(self.saved_plans[plan_key])
 
         except Fluent, f:

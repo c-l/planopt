@@ -90,7 +90,8 @@ class LLProb(object):
                 prob.add_var(var)
         model.update()
 
-        constraints = self.model_cnts_from_hla(model, param_to_var, priority)
+        # max(priority, 0) because priority = -1 used for straight-line init
+        constraints = self.model_cnts_from_hla(model, param_to_var, max(priority, 0))
         prob.add_constraints(constraints)
         for param, var in param_to_var.items():
             var.set(param.value)
