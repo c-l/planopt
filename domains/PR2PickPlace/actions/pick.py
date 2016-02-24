@@ -1,43 +1,55 @@
+import numpy as np
 import sys
 DOMAIN_PATH = "../domains/PR2PickPlace/"
 sys.path.insert(0, DOMAIN_PATH)
 from fluents.not_obstructs import NotObstructsPR2
 from fluents.is_gp import PR2IsGP
+from fluents.is_mp import PR2IsMP
+from fluents.fix_base import FixBase
 from interface.fluents.robot_at import RobotAt
 from actions.action import PR2HLAction
 from interface.hl_param import HLParam, Traj, Robot, Obj, PR2
 
+from opt.function import QuadFn
+
 class PR2Pick(PR2HLAction):
 
-    def __init__(self, lineno, hl_plan, env, robot, pos, obj, loc=None, gp=None):
+    def __init__(self, lineno, hl_plan, env, robot, start, end, obj, loc=None, gp=None):
         super(PR2Pick, self).__init__(lineno, hl_plan, env, robot)
 
         self.hl_plan = hl_plan
-        self.pos = pos
+        self.start = start
+        self.end = end
         self.obj = obj
 
         # TODO: set this using optimization domain
-        self.T = 1
-        # self.K = 8
-        self.K = 8
-        T = self.T
-        K = self.K
-        KT = self.K*self.T
+        self.T = 5
+        self.K = robot.dofs
 
         self.name = "pick" + str(lineno)
         self.traj = Traj(self, self.name + "_traj", self.K, self.T, is_var=True)
 
-        self.params = [pos, self.traj]
-        self.preconditions = [RobotAt(self, 0, pos, self.traj)]
+        self.params = [self.start, self.end, self.traj]
+        self.preconditions = [RobotAt(self, 0, self.start, self.traj)]
         self.preconditions += [PR2IsGP(self.env, self, robot, 0, obj, self.traj)]
         self.preconditions += [NotObstructsPR2(self.env, self, robot, 1, self.traj, self.obj)]
-
-        # self.preconditions += [NotObstructsPR2(env, self, robot, 1, self.traj, obj)]
+        self.preconditions += [PR2IsMP(env, self, robot, 0, self.start, self.end, self.traj)]
+        self.preconditions += [FixBase(self, robot, 0, self.traj)]
 
         self.postconditions = []
-        # self.postconditions += [RobotAt(self, 0, self.end, self.traj)]
+        self.postconditions += [RobotAt(self, 0, self.end, self.traj)]
 
-        self.cost = 0
+
+        # setting trajopt objective
+        v = -1 * np.ones((self.K*self.T - self.K, 1))
+        d = np.vstack((np.ones((self.K*self.T - self.K, 1)), np.zeros((self.K, 1))))
+        # [:,0] allows numpy to see v and d as one-dimensional so
+        # that numpy will create a diagonal matrix with v and d as a diagonal
+        P = np.diag(v[:, 0], self.K) + np.diag(d[:, 0])
+        Q = 2 * np.dot(np.transpose(P), P)
+
+        self.cost = QuadFn(self.traj, Q)
+        # self.cost = 0
         self.create_robot_clones()
 
     def plot(self):

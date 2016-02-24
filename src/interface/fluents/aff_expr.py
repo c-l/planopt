@@ -26,5 +26,10 @@ class AffExpr(dict):
         for v, x in self.items():
             if v.get_value() is None:
                 return None
-            s += np.dot(v.get_value(), x)
+            if type(x) is tuple:
+                lhs = x[0]
+                rhs = x[1]
+                s += np.dot(lhs, np.dot(v,get_value(), rhs))
+            else:
+                s += np.dot(v.get_value(), x)
         return s

@@ -9,7 +9,7 @@ class PR2HLAction(HLAction):
     def create_robot_clones(self):
         self.robot_clones = []
         env = self.hl_plan.env
-        robot = self.robot.get_env_body(env)
+        robot_body = self.robot.get_env_body(env)
 
         # active_dofs = np.ndarray(0)
         # active_dofs = np.r_[active_dofs, robot.GetManipulator('rightarm').GetArmIndices()]
@@ -20,12 +20,12 @@ class PR2HLAction(HLAction):
 
             transparency = 0.9
             # traj = self.traj.value.reshape((self.K,self.T), order='F')
-            for link in robot.GetLinks():
+            for link in robot_body.GetLinks():
                 for geom in link.GetGeometries():
                     geom.SetTransparency(1)
 
-            dof_values = robot.GetDOFValues()
-            active_dofs = robot.GetActiveDOFIndices()
+            dof_values = robot_body.GetDOFValues()
+            active_dof_inds = robot_body.GetActiveDOFIndices()
             for t in range(self.T):
                 newrobot = env.ReadRobotXMLFile("../models/pr2/pr2-head-kinect.xml")
 
@@ -33,11 +33,17 @@ class PR2HLAction(HLAction):
                     for geom in link.GetGeometries():
                         geom.SetTransparency(transparency)
 
-                newrobot.SetName(self.name + "_" + robot.GetName() + str(t))
+                newrobot.SetName(self.name + "_" + robot_body.GetName() + str(t))
 
                 env.Add(newrobot, True)
                 newrobot.SetDOFValues(dof_values)
-                newrobot.SetActiveDOFs(active_dofs)
+                if 'base' in self.robot.active_bodyparts:
+                    newrobot.SetActiveDOFs(
+                        active_dof_inds,
+                        openravepy.DOFAffine.X + openravepy.DOFAffine.Y + openravepy.DOFAffine.RotationAxis,
+                        [0, 0, 1])
+                else:
+                    newrobot.SetActiveDOFs(active_dof_inds)
                 self.robot_clones.append(newrobot)
         env.UpdatePublishedBodies()
         print ('waiting...')
