@@ -80,7 +80,6 @@ class OptProb(object):
     def clean(self, temp):
         for item in temp:
             self.model.remove(item)
-        # temp = []
 
     def inc_obj(self, quad_fn):
         self.obj_fns += [quad_fn]

@@ -45,7 +45,8 @@ class PRGraph(object):
             raise f
 
         cur_plan = self.plan_refinements[plan_key]
-        cur_plan.execute()
+        if self.env.GetViewer():
+            cur_plan.execute()
         print "Done"
 
 
