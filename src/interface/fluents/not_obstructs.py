@@ -40,14 +40,13 @@ class NotObstructs(FnLEFluent):
     # TODO: compute collisions properly
     # @profile
     def collisions(self, traj):
-        flattened = traj.flatten()
+        flattened = tuple(traj.round(5).flatten())
         v_check, j_check = None, None
-        for c in self.cache:
-            if np.allclose(c, flattened):
-                if CACHING_DEBUG:
-                    v_check, j_check = self.cache[c]
-                else:
-                    return self.cache[c]
+        if flattened in self.cache:
+            if CACHING_DEBUG:
+                v_check, j_check = self.cache[flattened]
+            else:
+                return self.cache[flattened]
 
         env = self.env
         T = self.T
@@ -93,7 +92,7 @@ class NotObstructs(FnLEFluent):
         if CACHING_DEBUG:
             assert v_check is None or np.allclose(v_check, val, atol=1e-4)
             assert j_check is None or np.allclose(j_check, jac, atol=1e-4)
-        self.cache[tuple(flattened)] = (val, jac)
+        self.cache[flattened] = (val, jac)
         return (val, jac)
 
     # @profile
