@@ -12,7 +12,6 @@
         (IsGP ?p - pose ?obj ?gp)
         (IsPDP ?p - pose ?obj ?gp)
         (IsAccessPointFor ?p - pose ?obj - movable ?loc - location)
-				(NotUnique ?p - pose)
 	)
 
 	(:action move
@@ -38,6 +37,7 @@
 		:precondition (and
                     (RobotAt ?l1)
                     (InManip ?obj ?gp)
+                    (not (InManip none none_gp))
                     ;(IsMP ?l1 ?l2)
 										(forall (?o -movable)
 												(forall (?loc - location)
@@ -58,13 +58,11 @@
                     (InManip none none_gp)
 					(RobotAt ?lrobot)
                     (ObjAt ?obj ?loc)
-										(not (NotUnique ?lrobot))
         )
 		:effect (and
                     (not (InManip none none_gp))
                     (InManip ?obj ?gp)
 					(not (ObjAt ?obj ?loc))
-										(NotUnique ?lrobot)
         )
 	)
 
@@ -73,14 +71,12 @@
 		:precondition (and
                     (IsAccessPointFor ?lrobot ?obj ?loc)
                     (InManip ?obj ?gp)
-										(not (NotUnique ?lrobot))
 					(RobotAt ?lrobot)
         )
 		:effect (and
                     (ObjAt ?obj ?loc)
                     (InManip none none_gp)
                     (not (InManip ?obj ?gp))
-										(NotUnique ?lrobot)
         )
 	)
 )

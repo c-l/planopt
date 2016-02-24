@@ -29,25 +29,8 @@ class PlanRefinement(object):
         self.env = env
         self.original_env = self.env.CloneSelf(1) # clones objects in the environment
         self.world = world
-        # self.hl_params = {}
         self.hl_params = world.param_map.values()
-        # self.sampled_params = world.params_to_sample
         self.robot = self.env.GetRobots()[0]
-
-
-
-        # self.use_ros = settings.use_ros
-
-        # self.timings = {
-        #   'mp': 0,
-        #   'backtrack': 0,
-        # }
-
-        # if self.use_ros:
-        #     self.pr2 = PR2(self.robot())
-        # else:
-        #     self.pr2 = None
-
         self.unmovable_objects = {self.env.GetKinBody('table'),
                                   self.env.GetKinBody('table6'),
                                   self.env.GetKinBody('walls'),
@@ -56,27 +39,16 @@ class PlanRefinement(object):
 
         self.action_list = []
         self.saved_env_states = []  # the stored state at index n is the state of the environment before action n
-        ##TODO[SS]: clean up: where is instantiation_generator set
         self.instantiation_generator = None
         self.resume_from_lineno = 0
-
-        self.pick_counters = {}
-        self.place_counters = {}
-        # self.mp_completed_index = 0
-        # self.last_target_cache = {}
-
-    # def robot(self):
-    #     return self.env.GetRobot('pr2')
-
-    # def robot(self):
-    #     return self.env.GetRobots()[0]
+        self.gp_counters = {}
+        self.grasp_counters = {}
+        self.pdp_counters = {}
 
     def reset_all(self):
         self.action_list = []
         self.saved_env_states = []
         self.instantiation_generator = None
-        # self.resume_from_lineno = 0
-        # self.mp_completed_index = 0
 
     def set_resume_from(self, resume_from_lineno):
         print "Setting resume from: {}".format(resume_from_lineno)

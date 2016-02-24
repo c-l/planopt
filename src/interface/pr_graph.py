@@ -7,6 +7,7 @@ import pprint
 # from hl_actions.hl_action import ActionError, InstantiationExhaustedException
 from pr_creator import PRCreator
 from fluents.fluent import Fluent
+from IPython import embed as shell
 
 pp = pprint.PrettyPrinter()
 
@@ -65,7 +66,6 @@ class PRGraph(object):
 
 
     def addEdge(self, plan_key, new_plan_key, generated_plan, resume_from, error_str):
-        # import pdb; pdb.set_trace()
         parent_pr = None
         if plan_key in self.plan_refinements:
             # self.plan_refinements[plan_key].restore_openrave_state(resume_from)
@@ -134,14 +134,10 @@ class PRGraph(object):
             print "Got an obstruction error"
 
             obj = fluent.obj.name
-            objs = [obj, obj, obj, obj]
             obj_loc = fluent.obj_loc.name
-            # last two characters from end removed because of uniqueify symbols
-            # end = fluent.hl_action.end.name[:-2]
-            end = fluent.hl_action.end.name[:-2]
-            ends = [end + "_0", end + "_1", end + "_2", end + "_3"]
-            obst_list = "\n".join("(obstructs {} {} {})".format(
-                obj, obj_loc, end) for obj, end in zip(objs, ends))
+            # undo uniqueify symbols for error propagation
+            end = fluent.hl_action.end.name[:fluent.hl_action.end.name.rfind("_")]
+            obst_list = "(obstructs {} {} {})\n".format(obj, obj_loc, end)
 
             fluent.pddl_error_info = "LineNumber: %d\n%s" % (fluent.hl_action.lineno, obst_list)
             return
