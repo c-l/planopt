@@ -8,11 +8,13 @@ RECORD = False
 
 REPLAN_FOR_GRASP = False
 
-def init_settings():
+def init_settings(ss):
     import numpy as np
     global seed
-    seed = int(time.time())
-    seed = 123456
+    if ss is None:
+        seed = 123456
+    else:
+        seed = ss
     print "SEED: {}".format(seed)
 
     global RANDOM_STATE

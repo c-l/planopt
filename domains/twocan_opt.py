@@ -9,8 +9,7 @@ import sys
 sys.path.insert(0, "../")
 from envs.world import World
 from interface.hl_param import *
-
-import re
+from IPython import embed as shell
 
 class TwoCanOpt(object):
     def __init__(self, env):
@@ -24,12 +23,11 @@ class TwoCanOpt(object):
         robot = self.param_map['robot']
         can1 = self.param_map['can1']
         can2 = self.param_map['can2']
-        self.param_map.update({\
-                "robotinitloc":RP("robotinitloc", self.rows, self.cols, is_var=False, value=robot.get_pose(env)),\
-                "can1initloc":ObjLoc("can1initloc", self.rows, self.cols, is_var=False, value=can1.get_pose(env)),\
-                "can2initloc":ObjLoc("can2initloc", self.rows, self.cols, is_var=False, value=can2.get_pose(env)), \
-                "goal1":ObjLoc("goal1", self.rows, self.cols, is_var=False, value=np.array([[3.5], [3.5], [0]])),\
-                "goal2":ObjLoc("goal2", self.rows, self.cols, is_var=False, value=np.array([[3.5], [4.5], [0]]))})
+        self.param_map.update({"robotinitloc":RP("robotinitloc", self.rows, self.cols, is_var=False, value=robot.get_pose(env)),
+                               "can1initloc":ObjLoc("can1initloc", self.rows, self.cols, is_var=False, value=can1.get_pose(env)),
+                               "can2initloc":ObjLoc("can2initloc", self.rows, self.cols, is_var=False, value=can2.get_pose(env)),
+                               "goal1":ObjLoc("goal1", self.rows, self.cols, is_var=False, value=np.array([[3.5], [3.5], [0]])),
+                               "goal2":ObjLoc("goal2", self.rows, self.cols, is_var=False, value=np.array([[3.5], [4.5], [0]]))})
 
         self.name = "twocan_world"
         self.world_state = {self.param_map["can1"]: self.param_map["can1initloc"], \
@@ -58,14 +56,18 @@ class TwoCanOpt(object):
 
     def _get_param(self, param_name):
         if param_name not in self.param_map:
-            if re.match("pdp", param_name):
+            if param_name.startswith("pdp"):
                 self.param_map[param_name] = RP(param_name, self.rows, self.cols)
-            elif re.match("gp", param_name):
+            elif param_name.startswith("gp"):
                 self.param_map[param_name] = RP(param_name, self.rows, self.cols)
-            elif re.match("grasp", param_name):
+            elif param_name.startswith("grasp"):
                 self.param_map[param_name] = Grasp(param_name, self.rows, self.cols, is_resampled=True)
-            elif re.match("none", param_name):
+            elif param_name.startswith("none"):
                 return None
+            elif "temploc" in param_name:
+                # sampled ObjLoc (object location)
+                self.param_map[param_name] = ObjLoc(param_name, self.rows, self.cols, is_var=True,
+                                                    is_resampled=True, region=(0, 7, -2, 3))
             else:
                 import ipdb; ipdb.set_trace()
                 print ('not a valid parameter name')
@@ -101,8 +103,7 @@ class TwoCanOpt(object):
         robot = self._get_param(robot_str)
         start = self._get_param(start_str)
         end = self._get_param(end_str)
-        # action = Move(lineno, pr, env, robot, start_param=start, end_param=end, name="move"+str(lineno), place_obj_params=self.place_objs[:], place_loc_params=self.place_locs[:])
-        action = Move(lineno, pr, env, self.world_state, robot, start, end)
+        action = Move(lineno, pr, env, self.world_state.copy(), robot, start, end)
         return action
 
     def move_w_obj(self, lineno, pr, env, robot_str, start_str, end_str, obj_str, gp_str):
@@ -112,9 +113,5 @@ class TwoCanOpt(object):
         end = self._get_param(end_str)
         obj = self._get_param(obj_str)
         gp = self._get_param(gp_str)
-        world_state = self.world_state.copy()
-        # self.place_objs.append(self._get_param('can1'])
-        # self.place_locs.append(self._get_param('goal1'])
-        # action = Move(lineno, pr, env, robot, start_param=start, end_param=end, obj_param=obj, obj_start_param=obj_start, obj_end_param=obj_end, gp_param=gp, name="move"+str(lineno), place_obj_params=self.place_objs[:], place_loc_params=self.place_locs[:])
-        action = Move(lineno, pr, env, self.world_state, robot, start, end, obj, gp)
+        action = Move(lineno, pr, env, self.world_state.copy(), robot, start, end, obj, gp)
         return action

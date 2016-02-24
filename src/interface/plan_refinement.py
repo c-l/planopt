@@ -16,8 +16,6 @@ from fluents.fluent import AndFluent
 # TODO: not sure if this dependency should be here
 from fluents.not_obstructs import NotObstructs
 
-import random
-
 try:
     import openrave_input
 except ImportError:

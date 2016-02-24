@@ -27,7 +27,7 @@ class Solver(object):
         # self.cnt_tolerance = 1e-4
         self.cnt_tolerance = 1e-2
         self.max_merit_coeff_increases = 1
-        self.merit_coeff_increase_ratio = 10 # doesn't matter if max_merit_coeff_increases = 1
+        self.merit_coeff_increase_ratio = 10 # doesn't matter when max_merit_coeff_increases = 1
         # self.initial_trust_box_size = 1e-4
         # self.initial_trust_box_size = .01
         # self.initial_trust_box_size = .03

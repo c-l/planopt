@@ -362,16 +362,20 @@ def getObjSeqInPlan(file_object_or_name, objectNamePrefix = 'object'):
         return objSeq
 
 def usage_str():
-    return "Use -v for viewer, -m to use MP, -e for envfile name, -d [l|t] for domain"
+    return "Use -v for viewer, -m to use MP, -e for envfile name, -d [l|t] for domain, -s for seed"
 
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:],"vpme:rd:")
+        opts, args = getopt.getopt(sys.argv[1:],"vpme:rd:s:")
     except getopt.GetoptError:
         print(usage_str())
         sys.exit(-1)
 
-    init_settings()
+    seed = None
+    for opt, arg in opts:
+        if opt == "-s":
+            seed = int(arg)
+    init_settings(ss=seed)
 
     viewer = False
     pw_file = False
