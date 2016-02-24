@@ -1,12 +1,11 @@
 import numpy as np
 from utils import *
-from numpy import random
 import openravepy
+import settings
 
 
 class HLParam(object):
-
-    def __init__(self, name, rows, cols, is_var=True, value=None, index=None, is_resampled=False):
+    def __init__(self, name, rows, cols, is_var=True, value=None, is_resampled=False):
         self.name = name
         self.rows = rows
         self.cols = cols
@@ -16,12 +15,8 @@ class HLParam(object):
             self.value = np.zeros((rows, cols))
         else:
             self.value = value
-        self.index = index
         self.is_resampled = is_resampled
         self.gen = None
-
-    def init(self):
-        pass
 
     def get_value(self):
         return self.value
@@ -43,7 +38,6 @@ class HLParam(object):
 
 
 class Grasp(HLParam):
-
     def generator(self):
         yield np.array([[0], [0.6], [0]], dtype=np.float)
         yield np.array([[0], [-0.6], [0]], dtype=np.float)
@@ -56,40 +50,20 @@ class RP(HLParam):
 
 
 class ObjLoc(HLParam):
-    # object location
-    # random.seed([1])
-    # random.seed([2]) # difficult one
-    random.seed([3])
-    # random.seed([4])
-    # random.seed([5])
-    # random.seed([6])
-    # random.seed([7])
-
     def __init__(self, name, rows, cols, is_var=True,
-                 value=None, ro=None, index=None, region=None):
-        super(ObjLoc, self).__init__(
-            name, rows, cols, is_var, value, ro, index)
-        self.region = region
+                 value=None, is_resampled=False, region=None):
+        super(ObjLoc, self).__init__(name, rows, cols, is_var, value, is_resampled)
+        if self.is_resampled:
+            assert region is not None
         if region is not None:
-            self.in_region = True
-        else:
-            self.in_region = False
-        if self.in_region:
-            assert is_var is True
-
-            self.min_x = region[0, 0]
-            self.max_x = region[0, 1]
-            self.min_y = region[1, 0]
-            self.max_y = region[1, 1]
-            self.min_z = region[2, 0]
-            self.max_z = region[2, 1]
+            assert self.is_var and self.is_resampled
+            self.min_x, self.max_x, self.min_y, self.max_y = region
 
     def generator(self):
         while True:
-            x = random.random() * (self.max_x - self.min_x) + self.min_x
-            y = random.random() * (self.max_y - self.min_y) + self.min_y
+            x = settings.RANDOM_STATE.rand() * (self.max_x - self.min_x) + self.min_x
+            y = settings.RANDOM_STATE.rand() * (self.max_y - self.min_y) + self.min_y
             yield np.array([[x], [y], [0]])
-        # yield np.array([[3.5],[4.3],[0]])
 
 
 class Obj(HLParam):
@@ -168,8 +142,8 @@ class PR2(Robot):
             robot.SetActiveDOFs(active_dofs)
 
 class Traj(HLParam):
-    def __init__(self, hl_action, name, rows, cols, is_var=True, value=None, index=None):
-        super(Traj, self).__init__(name, rows, cols, is_var, value, index)
+    def __init__(self, hl_action, name, rows, cols, is_var=True, value=None):
+        super(Traj, self).__init__(name, rows, cols, is_var, value)
         self.hl_action = hl_action
 
     # # TODO: make this less hacky

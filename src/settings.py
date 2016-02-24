@@ -8,11 +8,13 @@ RECORD = False
 
 REPLAN_FOR_GRASP = False
 
-def init_settings():
+def init_settings(ss):
     import numpy as np
     global seed
-    seed = int(time.time())
-    seed = 123456
+    if ss is None:
+        seed = 123456
+    else:
+        seed = ss
     print "SEED: {}".format(seed)
 
     global RANDOM_STATE
@@ -83,7 +85,7 @@ INCREASE_MARGINS = False
 # runs hybridPlanner automatically, no raw_inputs, use seed that generation script used, and only motion plan, no actual execution
 # second arg is seconds before planning times out
 # run_test_mode = (False, 65000)
-run_test_mode = (True, 6000)
+run_test_mode = (False, 6000)
 
 if run_test_mode[0]:
     try:

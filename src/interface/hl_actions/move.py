@@ -66,20 +66,6 @@ class Move(HLAction):
 
         self.cost = QuadFn(self.traj, Q)
 
-    # def plot(self, handles=[]):
-    #     self.clear_plots()
-    #     # self.handles += super(Move, self).plot(handles)
-    #
-    #     super(Move, self).plot()
-    #     self.handles += handles
-        # self.handles += self.plot_traj_line(self.traj, colors=(0,0,0.5))
-
-        # if self.obj is not None:
-        #     self.handles += self.plot_traj_line(self.obj_traj, colors=(0,0.5,0))
-
-        # self.plot_consensus_pos()
-        # self.plot_consensus_place_obj()
-
     def plot_consensus_pos(self):
         start = np.array(self.start.value)
         start[2] = 1

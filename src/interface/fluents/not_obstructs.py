@@ -1,4 +1,3 @@
-
 from fluent import FnLEFluent
 from opt.function import CollisionFn
 from utils import *
@@ -6,6 +5,10 @@ from openravepy import *
 import ctrajoptpy
 import numpy as np
 import time
+
+# If True, verify that caching produces equivalent results to
+# computation. If False, actually do caching (return cached value).
+CACHING_DEBUG = False
 
 class NotObstructs(FnLEFluent):
     # def __init__(self, env, hl_action, robot, priority, traj, obj, obj_loc, dsafe=0.05):
@@ -16,16 +19,14 @@ class NotObstructs(FnLEFluent):
         self.traj = traj
         self.obj = obj
         self.obj_loc = obj_loc
-        # self.obj_loc = obj_loc
         self.robot = robot
         self.priority = priority
-
         self.name = "NotObstructs"
-
         self.K = self.hl_action.K
         self.T = self.hl_action.T
         self.cc = ctrajoptpy.GetCollisionChecker(env)
         self.dsafe = dsafe
+        self.cache = {}
 
     def pre(self):
         traj = self.traj
@@ -39,6 +40,14 @@ class NotObstructs(FnLEFluent):
     # TODO: compute collisions properly
     # @profile
     def collisions(self, traj):
+        flattened = tuple(traj.round(5).flatten())
+        v_check, j_check = None, None
+        if flattened in self.cache:
+            if CACHING_DEBUG:
+                v_check, j_check = self.cache[flattened]
+            else:
+                return self.cache[flattened]
+
         env = self.env
         T = self.T
         K = self.K
@@ -80,6 +89,10 @@ class NotObstructs(FnLEFluent):
         self.plotting_env.UpdatePublishedBodies()
         handles = []
 
+        if CACHING_DEBUG:
+            assert v_check is None or np.allclose(v_check, val, atol=1e-4)
+            assert j_check is None or np.allclose(j_check, jac, atol=1e-4)
+        self.cache[flattened] = (val, jac)
         return (val, jac)
 
     # @profile

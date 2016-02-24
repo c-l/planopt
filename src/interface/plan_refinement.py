@@ -5,21 +5,20 @@ from interface.hl_actions import *
 from interface.hl_actions.move import Move
 from interface.hl_actions.pick import Pick
 from interface.hl_actions.place import Place
+from IPython import embed as shell
 # from hl_actions import hl_action # not sure why this is needed, but otherwise hl_action.ActionError is not found
 # from rapprentice.PR2 import PR2, Arm, mirror_arm_joints
 from hl_param import *
 from utils import *
 # from ll_plan import LLPlan
 from ll_prob import LLProb
-
+from fluents.fluent import AndFluent
 # TODO: not sure if this dependency should be here
-from interface.fluents.fluent import AndFluent
-
-import random
+from fluents.not_obstructs import NotObstructs
 
 try:
     import openrave_input
-except:
+except ImportError:
     print "Warning: ROS imports failed. Okay if not using ROS."
 
 
@@ -28,25 +27,8 @@ class PlanRefinement(object):
         self.env = env
         self.original_env = self.env.CloneSelf(1) # clones objects in the environment
         self.world = world
-        # self.hl_params = {}
         self.hl_params = world.param_map.values()
-        # self.sampled_params = world.params_to_sample
         self.robot = self.env.GetRobots()[0]
-
-
-
-        # self.use_ros = settings.use_ros
-
-        # self.timings = {
-        #   'mp': 0,
-        #   'backtrack': 0,
-        # }
-
-        # if self.use_ros:
-        #     self.pr2 = PR2(self.robot())
-        # else:
-        #     self.pr2 = None
-
         self.unmovable_objects = {self.env.GetKinBody('table'),
                                   self.env.GetKinBody('table6'),
                                   self.env.GetKinBody('walls'),
@@ -55,27 +37,16 @@ class PlanRefinement(object):
 
         self.action_list = []
         self.saved_env_states = []  # the stored state at index n is the state of the environment before action n
-        ##TODO[SS]: clean up: where is instantiation_generator set
         self.instantiation_generator = None
         self.resume_from_lineno = 0
-
-        self.pick_counters = {}
-        self.place_counters = {}
-        # self.mp_completed_index = 0
-        # self.last_target_cache = {}
-
-    # def robot(self):
-    #     return self.env.GetRobot('pr2')
-
-    # def robot(self):
-    #     return self.env.GetRobots()[0]
+        self.gp_counters = {}
+        self.grasp_counters = {}
+        self.pdp_counters = {}
 
     def reset_all(self):
         self.action_list = []
         self.saved_env_states = []
         self.instantiation_generator = None
-        # self.resume_from_lineno = 0
-        # self.mp_completed_index = 0
 
     def set_resume_from(self, resume_from_lineno):
         print "Setting resume from: {}".format(resume_from_lineno)
@@ -94,9 +65,9 @@ class PlanRefinement(object):
         for action in actions:
             action.reset()
 
-    def clean_actions(self):
+    def remove_plots(self):
         for action in self.action_list:
-            action.clean()
+            action.remove_plots()
 
     def get_all_but_params(self, params_to_delete):
         return self.world.get_all_but_params(params_to_delete)
@@ -127,7 +98,7 @@ class PlanRefinement(object):
 
     def _try_refine(self):
         # TODO: rewrite
-        initializations = 20
+        initializations = 9999
         index = 0
 
         sampled_params = self.world.get_sampled_params()
@@ -136,8 +107,9 @@ class PlanRefinement(object):
             param.resample()
             index += 1
 
+        llprob = LLProb(self.action_list)
+        llprob.solve_at_priority(-1, fix_sampled_params=True)
         for _ in range(initializations):
-            llprob = LLProb(self.action_list)
             llprob.solve()
 
             fluents = [f for a in self.action_list for f in a.preconditions + a.postconditions]
@@ -149,19 +121,15 @@ class PlanRefinement(object):
                     self.backtracking_resample(sampled_params)
                 except StopIteration:
                     self.propagate_useful_fluent(violated_fluents)
-                    import ipdb; ipdb.set_trace()
 
-        import ipdb; ipdb.set_trace() # BREAKPOINT
         yield None
 
     # TODO: whether a fluent is useful should be determined by domain file?
     def propagate_useful_fluent(self, fluents):
         for fluent in fluents:
-            from fluents.not_obstructs import NotObstructs
             if isinstance(fluent, NotObstructs):
-                # TODO: put clean actions in a better location
-                import ipdb; ipdb.set_trace()
-                self.clean_actions()
+                # TODO: put remove_plots in a better location
+                self.remove_plots()
                 raise fluent
 
     def find_violated_fluents(self, fluents):
@@ -173,8 +141,30 @@ class PlanRefinement(object):
             if not np.all(fluent.satisfied()):
                 # violated_action = fluent.hl_action
                 violated_fluents.append(fluent)
-                print fluent, " is violated"
         return violated_fluents
+
+    def execute(self, speedup=1):
+        self.remove_plots()
+        # make all objects fully opaque
+        utils.set_transparency(self.robot, 0)
+        for obj_name in self.world.movable_objects:
+            utils.set_transparency(self.env.GetKinBody(obj_name), 0)
+
+        raw_input("Press enter to run in simulation!")
+        for action in self.action_list:
+            if action.name.startswith("move"):
+                T = self.robot.GetTransform()
+                if action.obj:
+                    obj = self.env.GetKinBody(action.obj.name)
+                    obj_T = obj.GetTransform()
+                for ts in range(action.traj.cols):
+                    T[:3, 3] = action.traj.value[:, ts]
+                    self.robot.SetTransform(T)
+                    if action.obj:
+                        assert action.traj.cols == action.obj_traj.cols
+                        obj_T[:3, 3] = action.obj_traj.value[:, ts]
+                        obj.SetTransform(obj_T)
+                    time.sleep(0.02 / speedup)
 
     def setActionListNames(self, hlplan):
         self.action_list_names = hlplan.actionList
@@ -189,7 +179,6 @@ class PlanRefinement(object):
         env = self.original_env.CloneSelf(1) # clones objects in the environment
         robot = env.GetRobots()[0].GetName() # TODO: fix this hack, make it part of pddl
         action = action_fn(*(lineno, self, env, robot) + args)
-        # self.add_action(action)
         self._add_action(lineno, action)
 
     def _add_action(self, lineno, action):

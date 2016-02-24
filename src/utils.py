@@ -33,6 +33,10 @@ def obj_pose_from_transform(transform):
     # ipdb.set_trace()
     return np.array((yaw, pitch, roll, trans[0], trans[1], trans[2]))
 
+def set_transparency(body, transparency):
+    for link in body.GetLinks():
+        for geom in link.GetGeometries():
+            geom.SetTransparency(transparency)
 
 def transform_from_obj_pose(pose):
     alpha, beta, gamma, x, y, z = pose

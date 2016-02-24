@@ -115,8 +115,7 @@ class HybridPlanner:
         # v[robot.GetJoint('torso_lift_joint').GetDOFIndex()] = 0.3
         # # robot.SetDOFValues(v)
 
-        if not run_test_mode[0]:
-          raw_input("Press Enter to start!")
+        time.sleep(1)
 
     def updatePlan(self, generatedPlan):
         self.planList.append(generatedPlan)
@@ -170,9 +169,10 @@ class HybridPlanner:
             self.pr_graph.addEdge(old_key, new_key, generatedPlan, resumeFrom, errorStr)
         else:
             print "Adding root node: *"
-            self.pr_graph.addEdge('_', '*', generatedPlan, resumeFrom, "")
+            new_key = "*"
+            self.pr_graph.addEdge('_', new_key, generatedPlan, resumeFrom, "")
         print "\nWill try to pick objects in order: " + repr(getObjSeqInPlan(strPlanFileH, 'object')) + "\n"
-        raw_input('!')
+        return new_key
 
 
     def tryRefiningPRNode(self, startTime, prevPDDLFile, pddlProblemFile, oldPlan, failureStep, \
@@ -222,6 +222,7 @@ class HybridPlanner:
         oldKey = '*'
         errorStr = ""
         searchAlgo = None
+        problem_files = {}
         while True:
             # try:
             self.iteration += 1
@@ -239,22 +240,23 @@ class HybridPlanner:
                 if strPlanFileH != -1:
                     self.updatePlan(generatedPlan)
                     # add new node
-                    self.addToPRGraph(resumeFrom, resumeCount, oldKey, generatedPlan, strPlanFileH, errorStr)
-            # prompt for where to resume
+                    added_key = self.addToPRGraph(resumeFrom, resumeCount, oldKey, generatedPlan, strPlanFileH, errorStr)
+                    problem_files[added_key] = pddlProblemFile
             print "Available Plans:"
             for key in self.pr_graph.graph.nodes():
                 print "Plan key: {}".format(key)
                 if self.pr_graph.saved_plans.has_key(key):
                     self.pr_graph.saved_plans[key].printPlan()
             self.pr_graph.show_graph()
-            #resumeKey = raw_input("resumeKey: ")
+            # resumeKey = raw_input("resumeKey: ")
             if searchAlgo == None:
                 # can use "daisyChainBFS" or "default" or "IDIBDFS"
                 searchAlgo = graph_traversal.GraphTraversal(self.pr_graph, self.pr_graph.graph_source).getSearchRoutine("default")
             resumeKey = searchAlgo.next()
             oldKey = resumeKey
 
-            print "\n\n resuming with node {} \n\n".format(resumeKey)
+            pddlProblemFile = problem_files[resumeKey]
+            print "\n\nresuming with node {}\n\n".format(resumeKey)
 
             pddlProblemFile, oldPlan, origState, failureStep, errorStr = self.tryRefiningPRNode(startTime, prevPDDLFile,
                                                                                                 pddlProblemFile, oldPlan,
@@ -300,11 +302,8 @@ class HybridPlanner:
         print "Cache clearing count: "+ repr(self.cacheClearCount)
         endTime = time.time()
         print "Execution took " + repr(endTime-startTime) + " seconds"
-        if run_test_mode[0]:
-            sys.exit(0)
-        else:
-            raw_input("Hit 'Enter' to close.")
-            sys.exit(0)
+        self.pr_graph.env.StopSimulation()
+        self.pr_graph.env.Destroy()
 
 
     def getFailedActionNumberAndProps(self, errorStr):
@@ -363,16 +362,20 @@ def getObjSeqInPlan(file_object_or_name, objectNamePrefix = 'object'):
         return objSeq
 
 def usage_str():
-    return "Use -v for viewer, -m to use MP, -e for envfile name, -d [l|t] for domain"
+    return "Use -v for viewer, -m to use MP, -e for envfile name, -d [l|t] for domain, -s for seed"
 
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:],"vpme:rd:")
+        opts, args = getopt.getopt(sys.argv[1:],"vpme:rd:s:")
     except getopt.GetoptError:
         print(usage_str())
         sys.exit(-1)
 
-    init_settings()
+    seed = None
+    for opt, arg in opts:
+        if opt == "-s":
+            seed = int(arg)
+    init_settings(ss=seed)
 
     viewer = False
     pw_file = False

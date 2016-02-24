@@ -22,13 +22,12 @@ class Solver(object):
         self.min_approx_improve = 1e-2
         # self.min_approx_improve = 3e-1
         # self.min_approx_improve = 1e-1
-        self.max_iter = 50
         self.trust_shrink_ratio = .1
         self.trust_expand_ratio = 1.5
         # self.cnt_tolerance = 1e-4
         self.cnt_tolerance = 1e-2
-        self.max_merit_coeff_increases = 5
-        self.merit_coeff_increase_ratio = 10
+        self.max_merit_coeff_increases = 1
+        self.merit_coeff_increase_ratio = 10 # doesn't matter when max_merit_coeff_increases = 1
         # self.initial_trust_box_size = 1e-4
         # self.initial_trust_box_size = .01
         # self.initial_trust_box_size = .03
@@ -37,11 +36,10 @@ class Solver(object):
         # self.initial_trust_box_size = 2
         # self.initial_trust_box_size = 3
         # self.initial_trust_box_size = 10
-        self.initial_penalty_coeff = 1.
-        # self.initial_penalty_coeff = 10
+        # self.initial_penalty_coeff = 1.
+        self.initial_penalty_coeff = 10.
         # self.initial_penalty_coeff = 0.3
         # self.initial_penalty_coeff = 0.1
-        self.max_penalty_iter = 4
         self.callback = []
 
         # self.epsilon = 5e-3
@@ -271,7 +269,7 @@ class Solver(object):
 
                 prob.add_trust_region(trust_box_size)
                 # import ipdb; ipdb.set_trace()
-                prob.clear_plots()
+                prob.clear_handles()
                 prob.optimize()
                 prob.plot()
 
@@ -300,7 +298,7 @@ class Solver(object):
                     prob.restore()
 
                     print("Shrinking trust region")
-                    trust_box_size= trust_box_size * self.trust_shrink_ratio
+                    trust_box_size = trust_box_size * self.trust_shrink_ratio
                 else:
                     print("Growing trust region")
                     trust_box_size = trust_box_size * self.trust_expand_ratio

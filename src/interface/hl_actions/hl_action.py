@@ -38,8 +38,8 @@ class HLAction(object):
 
         return handles
 
-    def clean(self):
-        self.clear_plots()
+    def remove_plots(self):
+        self.clear_handles()
         if self.robot_clones is not None:
             for clone in self.robot_clones:
                 self.hl_plan.env.Remove(clone)
@@ -138,7 +138,7 @@ class HLAction(object):
            self.plot_traj_obj_kinbodies()
         # return handles
 
-    def clear_plots(self):
+    def clear_handles(self):
         self.handles = []
 
     def add_plot_handles(self, handles):
