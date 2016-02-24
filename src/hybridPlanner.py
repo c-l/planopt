@@ -302,6 +302,8 @@ class HybridPlanner:
         print "Cache clearing count: "+ repr(self.cacheClearCount)
         endTime = time.time()
         print "Execution took " + repr(endTime-startTime) + " seconds"
+        self.pr_graph.env.StopSimulation()
+        self.pr_graph.env.Destroy()
         # if run_test_mode[0]:
         #     sys.exit(0)
         # else:

@@ -64,6 +64,7 @@ class LLProb(object):
         self.solve_at_priority(1)
 
     def solve_at_priority(self, priority, fix_sampled_params=False):
+        # initialize gurobi Model object
         prob = OptProb()
         model = prob.get_model()
 
