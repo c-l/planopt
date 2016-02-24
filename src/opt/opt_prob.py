@@ -48,9 +48,9 @@ class OptProb(object):
         for hla in self.hlas:
             hla.plot()
 
-    def clear_plots(self):
+    def clear_handles(self):
         for hla in self.hlas:
-            hla.clear_plots()
+            hla.clear_handles()
 
     def find_closest_feasible_point(self):
         if self.trust_region_cnt is not None:

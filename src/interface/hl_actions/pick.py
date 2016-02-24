@@ -64,29 +64,3 @@ class Pick(HLAction):
 
             self.handles += [self.hl_plan.env.drawarrow(p1=pick_obj_pos, p2=hl_obj_pos, linewidth=0.01, color=(1,0,0))]
             self.handles += [self.hl_plan.env.plot3(points=hl_obj_pos[:, 0], pointsize=10, colors=(1,0,0))]
-
-    # def plot(self, handles=[]):
-    #     self.clear_plots()
-    #     self.handles += handles
-    #     # del self.handles
-    #     super(Pick, self).plot()
-        # self.plot_consensus_pos()
-        # self.plot_consensus_obj_pos()
-
-
-        # if not np.allclose(self.gp.value, self.hl_gp.value):
-        #     hl_gp = np.array(self.hl_gp.value)
-
-        #     pick_pos = np.array(self.traj.value)
-        #     pick_pos[2] = 1
-
-        #     hl_obj_pos = hl_gp + pick_pos
-        #     hl_obj_pos[2]=1
-        #     pick_obj_pos = np.array(self.obj_traj.value)
-        #     pick_obj_pos[2] = 1
-
-        #     self.handles += [self.hl_plan.env.drawarrow(p1=pick_obj_pos, p2=hl_obj_pos, linewidth=0.01, color=(1,0,0))]
-        #     hl_points = np.transpose(np.hstack((pick_pos, hl_obj_pos)))
-        #     pick_points = np.transpose(np.hstack((pick_pos, pick_obj_pos)))
-        #     self.handles += [self.hl_plan.env.drawlinestrip(points=pick_points, linewidth=10, colors=(0,0.5,0))]
-        #     self.handles += [self.hl_plan.env.drawlinestrip(points=hl_points, linewidth=10, colors=(1,0,0))]

@@ -67,9 +67,9 @@ class PlanRefinement(object):
         for action in actions:
             action.reset()
 
-    def clean_actions(self):
+    def remove_plots(self):
         for action in self.action_list:
-            action.clean()
+            action.remove_plots()
 
     def get_all_but_params(self, params_to_delete):
         return self.world.get_all_but_params(params_to_delete)
@@ -130,8 +130,8 @@ class PlanRefinement(object):
     def propagate_useful_fluent(self, fluents):
         for fluent in fluents:
             if isinstance(fluent, NotObstructs):
-                # TODO: put clean actions in a better location
-                self.clean_actions()
+                # TODO: put remove_plots in a better location
+                self.remove_plots()
                 raise fluent
 
     def find_violated_fluents(self, fluents):
@@ -144,6 +144,9 @@ class PlanRefinement(object):
                 # violated_action = fluent.hl_action
                 violated_fluents.append(fluent)
         return violated_fluents
+
+    def execute_all(self):
+        pass
 
     def setActionListNames(self, hlplan):
         self.action_list_names = hlplan.actionList
@@ -158,7 +161,6 @@ class PlanRefinement(object):
         env = self.original_env.CloneSelf(1) # clones objects in the environment
         robot = env.GetRobots()[0].GetName() # TODO: fix this hack, make it part of pddl
         action = action_fn(*(lineno, self, env, robot) + args)
-        # self.add_action(action)
         self._add_action(lineno, action)
 
     def _add_action(self, lineno, action):

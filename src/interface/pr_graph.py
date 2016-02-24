@@ -45,23 +45,7 @@ class PRGraph(object):
             raise f
 
         cur_plan = self.plan_refinements[plan_key]
-        # print "Backtracking took: {} seconds".format(cur_plan.timings['backtrack'])
-        # print "Motion planning took: {} seconds".format(cur_plan.timings['mp'])
-
-        # print "Replanning with margins..."
-        # cur_plan.replan_with_margins(self.starting_state)
-
-        # if not settings.run_test_mode[0]:
-        #     cur_plan.execute_all(self.starting_state)
-        # else:
-        #     try:
-        #         cur_plan.execute_all_silent(self.starting_state)
-        #     except ActionError, e:
-        #         self.saved_environments[plan_key] = EnvManager.save_openrave_state(self.env)
-        #         self.saved_random_states[plan_key] = copy.deepcopy(settings.RANDOM_STATE)
-        #         e.cur_plan = self.saved_plans[plan_key]
-        #         self._handle_error(e)
-        #         import ipdb; ipdb.set_trace()
+        cur_plan.execute_all()
         print "Done"
 
 

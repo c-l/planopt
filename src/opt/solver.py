@@ -269,7 +269,7 @@ class Solver(object):
 
                 prob.add_trust_region(trust_box_size)
                 # import ipdb; ipdb.set_trace()
-                prob.clear_plots()
+                prob.clear_handles()
                 prob.optimize()
                 prob.plot()
 
