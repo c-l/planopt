@@ -5,7 +5,6 @@ import openravepy
 
 
 class HLParam(object):
-
     def __init__(self, name, rows, cols, is_var=True, value=None, index=None, is_resampled=False):
         self.name = name
         self.rows = rows
@@ -19,9 +18,6 @@ class HLParam(object):
         self.index = index
         self.is_resampled = is_resampled
         self.gen = None
-
-    def init(self):
-        pass
 
     def get_value(self):
         return self.value
@@ -42,7 +38,6 @@ class HLParam(object):
 
 
 class Grasp(HLParam):
-
     def generator(self):
         yield np.array([[0], [0.6], [0]], dtype=np.float)
         yield np.array([[0], [-0.6], [0]], dtype=np.float)

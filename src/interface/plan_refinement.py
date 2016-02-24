@@ -145,8 +145,28 @@ class PlanRefinement(object):
                 violated_fluents.append(fluent)
         return violated_fluents
 
-    def execute_all(self):
-        pass
+    def execute(self, speedup=1):
+        self.remove_plots()
+        # make all objects fully opaque
+        utils.set_transparency(self.robot, 0)
+        for obj_name in self.world.movable_objects:
+            utils.set_transparency(self.env.GetKinBody(obj_name), 0)
+
+        raw_input("Press enter to run in simulation!")
+        for action in self.action_list:
+            if action.name.startswith("move"):
+                T = self.robot.GetTransform()
+                if action.obj:
+                    obj = self.env.GetKinBody(action.obj.name)
+                    obj_T = obj.GetTransform()
+                for ts in range(action.traj.cols):
+                    T[:3, 3] = action.traj.value[:, ts]
+                    self.robot.SetTransform(T)
+                    if action.obj:
+                        assert action.traj.cols == action.obj_traj.cols
+                        obj_T[:3, 3] = action.obj_traj.value[:, ts]
+                        obj.SetTransform(obj_T)
+                    time.sleep(0.02 / speedup)
 
     def setActionListNames(self, hlplan):
         self.action_list_names = hlplan.actionList
