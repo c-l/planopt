@@ -36,10 +36,8 @@ class PR2IsGP(AndFluent):
         self.fluents = [loc_fluent, up_fluent]
 
     def error(self, traj):
-        self.traj.value = traj
-
         # for t in range(self.T):
-        t = 0
+        t = self.T-1
         xt = traj[self.K*t:self.K*(t+1)]
         self.robot.set_pose(self.env, xt)
         self.hl_action.plot()
@@ -49,10 +47,23 @@ class PR2IsGP(AndFluent):
         ee_trans = rarm.GetEndEffectorTransform()
         ee_pose = poseFromMatrix(ee_trans)
         # print "ee pose: ", ee_pose
-        trans_jac = rarm.CalculateJacobian()
+        rarm_jac = rarm.CalculateJacobian()
+        base_jac = np.eye(3)
+        base_jac[2,2] = 0
+        bodypart_jac = {"rightarm": rarm_jac, "base": base_jac}
+        bp_jac = self.robot.jac_from_bodypart_jacs(bodypart_jac, 3)
+        jac = np.hstack((np.zeros((3, (self.T-1)*self.K)), bp_jac))
+        # import ipdb; ipdb.set_trace()
 
-       # jac = np.vstack((rot_jac, trans_jac))
-        jac = np.hstack((trans_jac, np.zeros((3,1)))) # gripper doesn't affect value
+
+        # # computing jacobian myself
+        # arm_inds = rarm.GetArmIndices()
+        # arm_joints = [robot_body.GetJointFromDOFIndex(ind) for ind in arm_inds]
+        # tool_link = robot_body.GetLink("r_gripper_tool_frame")
+        # xyz = rarm.GetEndEffectorTransform()[:3,3]
+        # self_jac = np.array([np.cross(xyz - joint.GetAnchor(), joint.GetAxis()) for joint in arm_joints]).T.copy()
+        #
+        # assert np.allclose(jac[:,:7], -1*self_jac)
 
         obj_body = self.obj.get_env_body(self.env)
         obj_trans = obj_body.GetTransform()
@@ -64,11 +75,13 @@ class PR2IsGP(AndFluent):
         # val = val[4:7]
 
         val = val.reshape((len(val), 1))
+        # print "val: {}".format(val)
+        # print "obj_pose: {}".format(obj_pose)
 
         return (val, jac)
 
     def face_up(self, traj):
-        t = 0
+        t = self.T-1
         xt = traj[self.K*t:self.K*(t+1)]
         self.robot.set_pose(self.env, xt)
         self.hl_action.plot()
@@ -85,9 +98,11 @@ class PR2IsGP(AndFluent):
         val = tool_link.GetTransform()[:2,:3].dot(local_dir)
 
         world_dir = tool_link.GetTransform()[:3,:3].dot(local_dir)
-        jac = np.array([np.cross(joint.GetAxis(), world_dir)[:2] for joint in arm_joints]).T.copy()
-        jac = np.hstack((jac, np.zeros((2,1)))) # gripper opening doesn't affect manipulator facing up
-        # import ipdb; ipdb.set_trace()
+        rarm_jac = np.array([np.cross(joint.GetAxis(), world_dir)[:2] for joint in arm_joints]).T.copy()
+        # base_rot_jac = np.array([np.cross([0,0,1], world_dir)[:2]]).T
+        # base_jac = np.hstack((np.zeros((2,1)), base_rot_jac))
+        bp_jac = self.robot.jac_from_bodypart_jacs({"rightarm": rarm_jac}, 2)
+        jac = np.hstack((np.zeros((2, (self.T-1)*self.K)), bp_jac)) # only last time-step matters
 
         return (val, jac)
 

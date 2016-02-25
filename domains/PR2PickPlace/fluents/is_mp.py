@@ -43,7 +43,7 @@ class PR2IsMP(AndFluent):
         # P = np.matrix(np.diag(v[:,0],K) + np.diag(d[:,0]) )
         P = np.diag(v[:,0],K) + np.diag(d[:,0])
 
-        # positions between time steps are less than 0.3
+        # positions between time steps are less than eps
         A_ineq = np.vstack((P, -P))
         b_ineq = eps*np.ones((2*K*T,1))
         # linear_constraints = [A_ineq * traj <= b_ineq]
@@ -54,6 +54,7 @@ class PR2IsMP(AndFluent):
         b_ineq = eps*np.ones((K, (T-1)*2))
         lhs = AffExpr({self.traj: A_ineq})
         rhs = AffExpr(constant = b_ineq)
+        # import ipdb; ipdb.set_trace()
         return (lhs, rhs)
 
     def upper_joint_limits(self):
@@ -61,9 +62,17 @@ class PR2IsMP(AndFluent):
         T = self.hl_action.T
         robot_body = self.robot.get_env_body(self.env)
         indices = robot_body.GetActiveDOFIndices()
-        assert len(indices) == K
+        if "base" in self.robot.active_bodyparts:
+            assert len(indices) == K - 3
+        else:
+            assert len(indices) == K
         lb, ub = robot_body.GetDOFLimits()
-        active_ub = ub[indices].reshape((K,1))
+        # import ipdb; ipdb.set_trace()
+        active_ub = ub[indices]
+        if "base" in self.robot.active_bodyparts:
+            # create an upperbound on base position and z rotation that is so large that it won't appy
+            active_ub = np.r_[ub[indices], [10000,10000,10000]]
+        active_ub = active_ub.reshape((K,1))
         ub_stack = np.tile(active_ub, (1,T))
         # import ipdb; ipdb.set_trace()
         lhs = AffExpr({self.traj: 1})
@@ -75,9 +84,16 @@ class PR2IsMP(AndFluent):
         T = self.hl_action.T
         robot_body = self.robot.get_env_body(self.env)
         indices = robot_body.GetActiveDOFIndices()
-        assert len(indices) == K
+        if "base" in self.robot.active_bodyparts:
+            assert len(indices) == K - 3
+        else:
+            assert len(indices) == K
         lb, ub = robot_body.GetDOFLimits()
-        active_lb = lb[indices].reshape((K,1))
+        active_lb = lb[indices]
+        if "base" in self.robot.active_bodyparts:
+            # create an upperbound on base position and z rotation that is so large that it won't appy
+            active_lb = np.r_[lb[indices], [-10000,-10000,-10000]]
+        active_lb = active_lb.reshape((K,1))
         lb_stack = np.tile(active_lb, (1,T))
         lhs = AffExpr(constant = lb_stack)
         rhs = AffExpr({self.traj: 1})

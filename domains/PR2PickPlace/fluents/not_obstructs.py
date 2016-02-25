@@ -52,12 +52,13 @@ class NotObstructsPR2(FnLEFluent):
         #     val = np.zeros((2*T, 1))
         #     jac = np.zeros((2*T, traj.size))
         # else:
-        val = np.zeros((T, 1))
-        jac = np.zeros((T, traj.size))
+        # val = np.zeros((T, 1))
+        # jac = np.zeros((T, traj.size))
         # if self.obj_loc is not None:
         #     self.obj.set_pose(env, self.obj_loc.value)
+        val = None
+        jac = None
 
-        # import ipdb; ipdb.set_trace()
         for t in range(self.timesteps):
             # xt = self.traj.value[K*t:K*(t+1)]
             # xt = traj[:,t:t+1]
@@ -75,9 +76,24 @@ class NotObstructsPR2(FnLEFluent):
             #     self.obj.set_pose(env, ot)
             collisions = self.cc.BodyVsAll(self.robot.get_env_body(env))
 
-            col_val, robot_jac, obj_jac = self.calc_grad_and_val(xt, ot, collisions)
-            if robot_jac is not None:
-                val[t], jac[t, robot_start_ind:robot_end_ind] = col_val, robot_jac
+            # val_t, robot_jac_t, obj_jac_t = self.calc_grad_and_val(xt, ot, collisions)
+            val_t, robot_jac_t = self.calc_grad_and_val(xt, ot, collisions)
+            if robot_jac_t is not None:
+                assert val_t is not None
+                rows = val_t.shape[0]
+                jac_t = np.zeros((rows, T*self.robot_dofs))
+                jac_t[:, robot_start_ind:robot_end_ind] = robot_jac_t
+                if val is None:
+                    assert jac is None
+                    val = val_t
+                    jac = jac_t
+                else:
+                    assert jac is not None
+                    val = np.vstack((val, val_t))
+                    jac = np.vstack((jac, jac_t))
+
+
+                # val[t], jac[t, robot_start_ind:robot_end_ind] = col_val, robot_jac
                 # if self.obj_loc is not None:
                 #     val[t+T], jac[t+T, obj_start_ind:obj_end_ind] = col_val, obj_jac
                 #     # cross terms
@@ -92,11 +108,12 @@ class NotObstructsPR2(FnLEFluent):
 
     # @profile
     def calc_grad_and_val(self, xt, ot, collisions):
-        val = -1*float("inf")
         robot = self.robot.get_env_body(self.env)
         obj = self.obj.get_env_body(self.env)
         robot_grad = None
         obj_grad = None
+        vals = []
+        robot_grads = []
         for c in collisions:
             linkAParent = c.GetLinkAParentName()
             linkBParent = c.GetLinkBParentName()
@@ -130,31 +147,33 @@ class NotObstructsPR2(FnLEFluent):
 
             # plotting
             self.plot_collision(ptRobot, ptObj, distance)
-            # import ipdb; ipdb.set_trace()
 
-            # if there are multiple collisions, use the one with the greatest penetration distance
-            # import ipdb; ipdb.set_trace()
-            if self.dsafe - distance > val:
-                val = self.dsafe - distance
+            vals.append(self.dsafe - distance)
 
-                # import ipdb; ipdb.set_trace()
-                robot_link_ind = robot.GetLink(linkRobot).GetIndex()
-                robot_jac = robot.CalculateActiveJacobian(robot_link_ind, ptRobot)
-                robot_grad = np.dot(sign * normal, robot_jac)
+            robot_link_ind = robot.GetLink(linkRobot).GetIndex()
+            robot_jac = robot.CalculateActiveJacobian(robot_link_ind, ptRobot)
+            robot_grad = np.dot(sign * normal, robot_jac)
 
-                # if ot is not None:
-                #     obj_link_ind = obj.GetLink(linkObj).GetIndex()
-                #     obj_jac = obj.CalculateActiveJacobian(obj_link_ind, ptObj)
-                #     import ipdb; ipdb.set_trace()
-                #     obj_grad = np.dot(normal, obj_jac)
+            robot_grads.append(robot_grad)
+            # if ot is not None:
+            #     obj_link_ind = obj.GetLink(linkObj).GetIndex()
+            #     obj_jac = obj.CalculateActiveJacobian(obj_link_ind, ptObj)
+            #     import ipdb; ipdb.set_trace()
+            #     obj_grad = np.dot(normal, obj_jac)
 
-        return val, robot_grad, obj_grad
+        if vals:
+            vals = np.vstack(vals)
+            robot_grads = np.vstack(robot_grads)
+        else:
+            vals = None
+            robot_grads = None
+        return vals, robot_grads
 
     def plot_collision(self, ptA, ptB, distance):
         handles = []
         if not np.allclose(ptA, ptB, atol=1e-3):
             if distance < 0:
-                handles.append(self.plotting_env.drawarrow(p1=ptA, p2=ptB, linewidth=.01,color=(1,0,0)))
+                handles.append(self.plotting_env.drawarrow(p1=ptA, p2=ptB, linewidth=.001,color=(1,0,0)))
             else:
-                handles.append(self.plotting_env.drawarrow(p1=ptA, p2=ptB, linewidth=.01,color=(0,0,0)))
+                handles.append(self.plotting_env.drawarrow(p1=ptA, p2=ptB, linewidth=.001,color=(0,0,0)))
         self.hl_action.add_plot_handles(handles)

@@ -22,6 +22,7 @@ class HLParam(object):
         return self.value
 
     def set(self, value):
+        assert (self.rows, self.cols) == value.shape
         self.value = value
 
     def resample(self):

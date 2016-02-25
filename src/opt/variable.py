@@ -57,6 +57,7 @@ class Variable(object):
             self.hl_param.set(self.value)
 
     def update_hl_param(self):
+        assert self.value.shape == (self.rows, self.cols)
         self.hl_param.value = self.value.copy()
 
     def save(self):
@@ -83,7 +84,7 @@ class Constant(object):
 
     def update_hl_param(self):
         pass
-        
+
     def update(self):
         pass
 

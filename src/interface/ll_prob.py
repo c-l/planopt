@@ -30,19 +30,32 @@ class LLProb(object):
                 constraints.add_leq_cntr(lhs, rhs)
             elif isinstance(fluent, LinEqFluent):
                 constraints.add_eq_cntr(lhs, rhs)
+        else:
+            raw_input("shouldn't be here")
+            import ipdb; ipdb.set_trace()
+
 
     def to_gurobi_expr(self, aff_expr, param_to_var):
         expr = 0.0 + aff_expr.constant
 
         for param, coeff in aff_expr.items():
             var = param_to_var[param]
-            if isinstance(var, Constant):
-                expr = expr + np.dot(param.get_value(), coeff)
-            elif isinstance(var, Variable):
-                expr = expr + np.dot(var.get_grb_vars(), coeff)
+            if type(coeff) is tuple:
+                lhs = coeff[0]
+                rhs = coeff[1]
+                if isinstance(var, Constant):
+                    expr = expr + np.dot(lhs, np.dot(param.get_value(), rhs))
+                elif isinstance(var, Variable):
+                    expr = expr + np.dot(lhs, np.dot(var.get_grb_vars(), rhs))
+                else:
+                    raw_input("shouldn't be here")
             else:
-                raw_input("shouldn't be here")
-                import ipdb; ipdb.set_trace()
+                if isinstance(var, Constant):
+                    expr = expr + np.dot(param.get_value(), coeff)
+                elif isinstance(var, Variable):
+                    expr = expr + np.dot(var.get_grb_vars(), coeff)
+                else:
+                    raw_input("shouldn't be here")
 
         return expr
 
@@ -104,6 +117,7 @@ class LLProb(object):
                 prob.inc_obj(hla.cost)
 
         solver = Solver()
+
         if fix_sampled_params:
             solver.initial_trust_box_size = 1e5
             solver.max_merit_coeff_increases = 1

@@ -5,7 +5,7 @@ from test_utils import *
 from interface.ll_prob import LLProb
 from interface.hl_actions.hl_action import HLAction
 from interface.hl_plan import HLPlan
-from interface.hl_param import HLParam, Traj, Robot, Obj, PR2
+from interface.hl_param import HLParam, Traj, Robot
 
 
 import sys
@@ -18,6 +18,7 @@ from actions.action import PR2HLAction
 from actions.move import PR2Move
 from actions.move_with_obj import PR2MoveWithObj
 from actions.obj_move import PR2ObjMove
+from param import Obj, PR2
 import ipdb
 
 from utils import obj_pose_from_transform
@@ -162,14 +163,12 @@ def test_move_pr2_with_obj_wrt_robot():
 
     hl_plan = TestDomain(env)
     move_env = env.CloneSelf(1) # clones objects in the environment
-    move_pr2 = move_env.GetKinBody('pr2')
-    move_pr2.SetActiveDOFs(move_pr2.GetManipulator('rightarm').GetArmIndices())
-    move_pr2.SetDOFValues([0.3],
-                    [move_pr2.GetJoint("torso_lift_joint").GetDOFIndex()])
 
-    robot = PR2('pr2')
+    active_bodyparts = ['rightarm']
+    robot = PR2('pr2', active_bodyparts)
     robot.tuck_arms(env)
-    robot._set_active_dofs(env, ['rightarm'])
+    robot.init_for_env(env)
+    robot.init_for_env(move_env)
     pose = robot.get_pose(env)
 
     hl_plan = HLPlan(env)
@@ -457,9 +456,9 @@ if __name__ == "__main__":
     # test_pr2()
     # test_not_obstructs_pr2_table()
     # test_move_pr2_gradient()
-    # test_move_pr2_with_obj_wrt_robot()
+    test_move_pr2_with_obj_wrt_robot()
     # test_err_in_manip()
     # test_err_obj_in_manip()
     # test_obj_pose()
-    test_move_pr2_with_obj_wrt_obj()
+    # test_move_pr2_with_obj_wrt_obj()
     # test_robot()
