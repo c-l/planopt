@@ -4,6 +4,7 @@ from opt.solver import Solver
 from opt.constraints import Constraints
 from interface.fluents.fluent import AndFluent, LinFluent, LinEqFluent, LinLEFluent, FnFluent, FnLEFluent, FnEQFluent
 import numpy as np
+from IPython import embed as shell
 
 class LLProb(object):
     def __init__(self, hlas=None):
@@ -78,11 +79,11 @@ class LLProb(object):
             if param in param_to_var:
                 continue
             if param.is_resampled and fix_sampled_params:
-                print param.name, " is fixed."
+                print param.name, "is fixed."
                 const = Constant(param)
                 param_to_var[param] = const
             elif not param.is_var:
-                print param.name, " is not a var."
+                print param.name, "is not a var."
                 const = Constant(param)
                 param_to_var[param] = const
             else: # param.is_var
