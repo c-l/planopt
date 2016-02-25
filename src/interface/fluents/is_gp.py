@@ -21,7 +21,7 @@ class IsGP(AndFluent):
         self.obj_traj = obj_traj
         self.name = "IsGP(" + self.obj.name + ", " + self.gp.name + ')'
         self.do_extension = True
-        self.extension_param = gp
+        self.extension_params = [gp, traj, obj_traj]
 
         self.cc = ctrajoptpy.GetCollisionChecker(env)
 

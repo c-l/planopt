@@ -125,19 +125,17 @@ class PlanRefinement(object):
         # add the preconditions of the next action to the postconditions, for each action
         for i in range(len(self.action_list) - 1):
             a, a_next = self.action_list[i:i+2]
-            if "move" in a.name:
+            # for move actions, add locations which are stored in world state dict
+            if a.is_move():
                 for v in a.world_state.values():
                     if v not in a.params:
                         a.params.append(v)
             for precon in a_next.preconditions:
-                if hasattr(precon, "do_extension") and precon.do_extension:
+                if precon.do_extension:
                     a.postconditions.append(precon)
-                    if precon.extension_param not in a.params:
-                        a.params.append(precon.extension_param)
-                    if hasattr(precon, "traj") and precon.traj not in a.params:
-                        a.params.append(precon.traj)
-                    if hasattr(precon, "obj_traj") and precon.obj_traj not in a.params:
-                        a.params.append(precon.obj_traj)
+                    for p in precon.extension_params:
+                        if p not in a.params:
+                            a.params.append(p)
 
         # find first action where every sampled param occurs
         sampled_params = self.world.get_sampled_params()
@@ -154,7 +152,7 @@ class PlanRefinement(object):
         violated_fluents = None
         while i < len(self.action_list):
             a = self.action_list[i]
-            if "move" in a.name:
+            if a.is_move():
                 a.end.is_var = True
             for p in action_to_param[a.name]:
                 try:
@@ -179,7 +177,7 @@ class PlanRefinement(object):
                 # optimize -- fix sampled params, so they are not optimized over
                 llprobs[i].solve_at_priority(1, fix_sampled_params=True)
                 # after optimizing a move, fix the end robot pose
-                if "move" in a.name:
+                if a.is_move():
                     a.end.is_var = False
 
                 fluents = [f for f in a.preconditions + a.postconditions]

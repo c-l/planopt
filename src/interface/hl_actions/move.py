@@ -66,6 +66,9 @@ class Move(HLAction):
 
         self.cost = QuadFn(self.traj, Q)
 
+    def is_move(self):
+        return True
+
     def plot_consensus_pos(self):
         start = np.array(self.start.value)
         start[2] = 1

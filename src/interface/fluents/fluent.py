@@ -5,6 +5,7 @@ import numpy as np
 class Fluent(Exception):
     tol = 3e-3
 
+    do_extension = False
     def __init__(self, name, priority, hl_action):
         self.name = name
         self.priority = priority

@@ -27,6 +27,9 @@ class HLAction(object):
     def get_params(self):
         return self.params
 
+    def is_move(self):
+        return False
+
     def plot_traj_line(self, traj, colors=(0,0,1)):
         handles = []
         env = self.hl_plan.env

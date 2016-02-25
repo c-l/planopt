@@ -11,7 +11,7 @@ class RobotAt(LinEqFluent):
         self.traj = traj
         self.name = 'RobotAt(' + pos.name + ')'
         self.do_extension = True
-        self.extension_param = pos
+        self.extension_params = [pos, traj]
 
     def pre(self):
         # import ipdb; ipdb.set_trace()
