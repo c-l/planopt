@@ -75,6 +75,8 @@ class PR2IsGP(AndFluent):
         # val = val[4:7]
 
         val = val.reshape((len(val), 1))
+        # print "val: {}".format(val)
+        # print "obj_pose: {}".format(obj_pose)
 
         return (val, jac)
 

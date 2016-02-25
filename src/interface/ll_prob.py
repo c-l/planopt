@@ -74,7 +74,6 @@ class LLProb(object):
 
     def solve(self):
         self.solve_at_priority(0, fix_sampled_params=True)
-        import ipdb; ipdb.set_trace()
         self.solve_at_priority(1)
 
     def solve_at_priority(self, priority, fix_sampled_params=False):

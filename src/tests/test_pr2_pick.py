@@ -155,7 +155,10 @@ def test_pick_full_DOF():
     # pick.preconditions[-1].error(pose)
     hlas = [pick]
     ll_prob = LLProb(hlas)
-    ll_prob.solve()
+    # ll_prob.solve()
+    # import ipdb; ipdb.set_trace()
+    ll_prob.solve_at_priority(-1)
+    ll_prob.solve_at_priority(1)
 
 if __name__ == "__main__":
     # test_pick_pr2_gradient()
