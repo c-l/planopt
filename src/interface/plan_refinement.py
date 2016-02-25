@@ -165,6 +165,10 @@ class PlanRefinement(object):
                         obj_T[:3, 3] = action.obj_traj.value[:, ts]
                         obj.SetTransform(obj_T)
                     time.sleep(0.02 / speedup)
+            if action.name.startswith("pick"):
+                utils.set_color(action.obj.get_env_body(self.env), [0, 1, 0])
+            if action.name.startswith("place"):
+                utils.set_color(action.obj.get_env_body(self.env), [0, 1, 1])
 
     def setActionListNames(self, hlplan):
         self.action_list_names = hlplan.actionList
