@@ -8,7 +8,7 @@ RECORD = False
 
 REPLAN_FOR_GRASP = False
 
-def init_settings(ss):
+def init_settings(ss, bt_ref):
     import numpy as np
     global seed
     if ss is None:
@@ -19,6 +19,8 @@ def init_settings(ss):
 
     global RANDOM_STATE
     RANDOM_STATE = np.random.RandomState(seed)
+    global BACKTRACKING_REFINEMENT
+    BACKTRACKING_REFINEMENT = bt_ref
 
 FF = "ff"
 MP = "mp"
@@ -73,7 +75,6 @@ envFile = ENVPATH+"created_info.dae"
 
 # DISABLE_BASE = True
 DISABLE_BASE = False
-DO_BACKTRACKING = True
 REPLAN = False
 REDETECT = False
 USE_SOFT_LIMITS = False

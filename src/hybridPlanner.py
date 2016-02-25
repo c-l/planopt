@@ -366,16 +366,19 @@ def usage_str():
 
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:],"vpme:rd:s:")
+        opts, args = getopt.getopt(sys.argv[1:], "vpme:rd:s:", ["backtrack"])
     except getopt.GetoptError:
         print(usage_str())
         sys.exit(-1)
 
     seed = None
+    bt_ref = False
     for opt, arg in opts:
         if opt == "-s":
             seed = int(arg)
-    init_settings(ss=seed)
+        if opt == "--backtrack":
+            bt_ref = True
+    init_settings(ss=seed, bt_ref=bt_ref)
 
     viewer = False
     pw_file = False

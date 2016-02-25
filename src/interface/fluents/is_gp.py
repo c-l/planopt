@@ -20,6 +20,8 @@ class IsGP(AndFluent):
         self.traj = traj
         self.obj_traj = obj_traj
         self.name = "IsGP(" + self.obj.name + ", " + self.gp.name + ')'
+        self.do_extension = True
+        self.extension_param = gp
 
         self.cc = ctrajoptpy.GetCollisionChecker(env)
 
@@ -35,7 +37,7 @@ class IsGP(AndFluent):
         K = self.hl_action.K
         T = self.hl_action.T
 
-        h = lambda x: self.distance_from_obj(x, 0.06, (K,T)) # function inequality constraint g(x) <= 0
+        h = lambda x: self.distance_from_obj(x, 0.05, (K,T)) # function inequality constraint g(x) <= 0
         # h = lambda x: self.distance_from_obj(x, 0.0, (K,T)) # function inequality constraint g(x) <= 0
         h_func = CollisionFn([self.traj], h)
 
@@ -44,6 +46,23 @@ class IsGP(AndFluent):
 
         coeff = np.zeros((T, 1), dtype=np.float)
         coeff[0, 0] = 1.0
+        lhs = AffExpr({self.obj_traj: coeff})
+        rhs = AffExpr({self.traj: coeff, self.gp: 1.0})
+        lineq_fluent = LinEqFluent('lineq_' + self.name, self.priority, self.hl_action, lhs, rhs)
+        self.fluents = [fneq_fluent, lineq_fluent]
+
+    def post(self):
+        K = self.hl_action.K
+        T = self.hl_action.T
+
+        h = lambda x: self.distance_from_obj(x, 0.05, (K,T)) # function inequality constraint g(x) <= 0
+        h_func = CollisionFn([self.traj], h)
+
+        fneq_fluent = FnEQFluent('fneq_' + self.name, self.priority, self.hl_action)
+        fneq_fluent.fn = h_func
+
+        coeff = np.zeros((T, 1), dtype=np.float)
+        coeff[T-1, 0] = 1.0
         lhs = AffExpr({self.obj_traj: coeff})
         rhs = AffExpr({self.traj: coeff, self.gp: 1.0})
         lineq_fluent = LinEqFluent('lineq_' + self.name, self.priority, self.hl_action, lhs, rhs)

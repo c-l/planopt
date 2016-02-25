@@ -9,6 +9,8 @@ class ObjAt(LinEqFluent):
         self.obj = obj
         self.loc = loc
         self.obj_traj = obj_traj
+        self.do_extension = True
+        self.extension_param = loc
 
         self.name = "ObjAt(" + obj.name + ", " + loc.name + ")"
 
