@@ -30,7 +30,8 @@ class TwoCanOpt(object):
                                "goal2":ObjLoc("goal2", self.rows, self.cols, is_var=False, value=np.array([[3.5], [4.5], [0]]))})
 
         self.name = "twocan_world"
-        self.world_state = {}
+        self.world_state = {self.param_map["can1"]: self.param_map["can1initloc"],
+                            self.param_map["can2"]: self.param_map["can2initloc"]}
 
     def get_sampled_params(self):
         params_to_sample = []
