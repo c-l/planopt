@@ -4,6 +4,23 @@ from utils import obj_pose_from_transform, transform_from_obj_pose, _axis_rot_ma
 from interface.hl_param import HLParam
 import ipdb
 
+
+class ObjLoc(HLParam):
+    def __init__(self, name, rows=3, cols=1, is_var=True,
+                 value=None, is_resampled=False, region=None):
+        super(ObjLoc, self).__init__(name, rows, cols, is_var, value, is_resampled)
+        if self.is_resampled:
+            assert region is not None
+        if region is not None:
+            assert self.is_var and self.is_resampled
+            self.min_x, self.max_x, self.min_y, self.max_y = region
+
+    def generator(self):
+        while True:
+            x = settings.RANDOM_STATE.rand() * (self.max_x - self.min_x) + self.min_x
+            y = settings.RANDOM_STATE.rand() * (self.max_y - self.min_y) + self.min_y
+            yield np.array([[x], [y], [0]])
+
 class Obj(HLParam):
     def __init__(self, name):
         self.name = name

@@ -37,7 +37,7 @@ class PR2InManip(AndFluent):
         # self.fluents = [rot_fluent]
 
     def pos_error(self,traj):
-        q = self.gp.value
+        gp = np.array([0,0,.125])
 
         dim = 3
         val = np.zeros((self.T*dim, 1))
@@ -50,7 +50,8 @@ class PR2InManip(AndFluent):
             ot = self.obj_traj.value[:,t].flatten()
             self.obj.set_pose(self.env, ot)
             W_T_O = self.obj.get_transform(self.env)
-            target = W_T_O[0:3, 3]
+            target = W_T_O[0:3, 3] + gp
+            # target[2] += 0.125
             self.hl_action.plot()
 
 
@@ -61,10 +62,11 @@ class PR2InManip(AndFluent):
             tool_link = robot_body.GetLink("r_gripper_tool_frame")
             link_ind = tool_link.GetIndex()
 
-            cur = tool_link.GetTransform().dot(np.r_[q, [[1]]])
-            cur = cur[:3]
-            # import ipdb; ipdb.set_trace()
-            # cur = cur[0:3,3]
+            # cur = tool_link.GetTransform().dot(np.r_[q, [[1]]])
+            # cur = cur[:3]
+            # grasp is fixed
+            cur = tool_link.GetTransform()
+            cur = cur[:3, 3]
             val_t = cur.flatten() - target
 
             jac_t = np.array([np.cross(joint.GetAxis(), cur.flatten() - joint.GetAnchor()) for joint in joints]).T.copy()

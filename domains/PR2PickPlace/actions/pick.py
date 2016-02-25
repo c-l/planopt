@@ -21,6 +21,8 @@ class PR2Pick(PR2HLAction):
         self.start = start
         self.end = end
         self.obj = obj
+        self.loc = loc
+        self.gp = gp
 
         # TODO: set this using optimization domain
         self.T = 5

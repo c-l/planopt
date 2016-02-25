@@ -160,3 +160,17 @@ def cans_world_env():
         if 'object' in body.GetName():
             body.SetActiveDOFs(np.ndarray(0), DOFAffine.Transform)
     return env
+
+def pr2_can_test_env():
+    env = cans_world_env()
+    obj17 = env.GetKinBody('object17')
+    tran = obj17.GetTransform()
+    tran[0,3] = .49268
+    # tran[1,3] = -.51415
+    tran[1,3] = -.34
+    obj17.SetTransform(tran)
+    return env
+
+class TestDomain(object):
+    def __init__(self, env):
+        self.env = env

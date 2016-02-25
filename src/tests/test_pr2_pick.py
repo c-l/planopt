@@ -16,10 +16,6 @@ from fluents.is_gp import PR2IsGP
 from actions.pick import PR2Pick
 from param import Obj, PR2
 
-class TestDomain(object):
-    def __init__(self, env):
-        self.env = env
-
 def test_pick_pr2_gradient():
     env = cans_world_env()
     obj17 = env.GetKinBody('object17')
@@ -108,13 +104,7 @@ def test_pick():
     ll_prob.solve()
 
 def test_pick_full_DOF():
-    env = cans_world_env()
-    obj17 = env.GetKinBody('object17')
-    tran = obj17.GetTransform()
-    tran[0,3] = .49268
-    # tran[1,3] = -.51415
-    tran[1,3] = -.34
-    obj17.SetTransform(tran)
+    env = pr2_can_test_env()
 
     # robot = PR2('pr2')
     # active_body_parts = ['rightarm', 'rgripper', 'torso', 'base']
