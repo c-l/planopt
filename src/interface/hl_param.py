@@ -25,6 +25,7 @@ class HLParam(object):
         self.value = value
 
     def resample(self):
+        assert self.is_resampled
         if self.gen is None:
             self.gen = self.generator()
         self.value = next(self.gen)
