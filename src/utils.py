@@ -38,6 +38,11 @@ def set_transparency(body, transparency):
         for geom in link.GetGeometries():
             geom.SetTransparency(transparency)
 
+def set_color(body, color):
+    for link in body.GetLinks():
+        for geom in link.GetGeometries():
+            geom.SetDiffuseColor(color)
+
 def transform_from_obj_pose(pose):
     alpha, beta, gamma, x, y, z = pose
     Rz, Ry, Rx = _axis_rot_matrices(pose)

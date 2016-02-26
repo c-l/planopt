@@ -1,4 +1,3 @@
-
 from fluent import AndFluent
 from not_obstructs import NotObstructs
 import ctrajoptpy

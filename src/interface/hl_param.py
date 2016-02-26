@@ -26,6 +26,7 @@ class HLParam(object):
         self.value = value
 
     def resample(self):
+        assert self.is_var and self.is_resampled
         if self.gen is None:
             self.gen = self.generator()
         self.value = next(self.gen)
@@ -67,7 +68,6 @@ class ObjLoc(HLParam):
 
 
 class Obj(HLParam):
-
     def __init__(self, name):
         self.name = name
         self.is_var = False

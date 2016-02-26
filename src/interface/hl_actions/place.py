@@ -36,6 +36,9 @@ class Place(HLAction):
         self.preconditions = [RobotAt(self, 0, pos, self.traj)]
         self.preconditions += [InManip(self, 0, obj, gp, self.traj, self.obj_traj)]
         self.preconditions += [IsPDP(self.env, self, robot, 0, obj, gp, self.traj, self.obj_traj)]
+        # if backtracking, we need this to be a precon (it's still a postcon too) so that
+        # the previous move action is constrained to move to target location
+        self.preconditions += [ObjAt(self, 0, obj, loc, self.obj_traj)]
 
         self.postconditions = []
         self.postconditions += [ObjAt(self, 0, obj, loc, self.obj_traj)]

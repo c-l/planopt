@@ -43,9 +43,11 @@ class HLAction(object):
         if self.robot_clones is not None:
             for clone in self.robot_clones:
                 self.hl_plan.env.Remove(clone)
+        self.robot_clones = None
         if self.obj_clones is not None:
             for clone in self.obj_clones:
                 self.hl_plan.env.Remove(clone)
+        self.obj_clones = None
 
     def create_robot_clones(self):
         self.robot_clones = []

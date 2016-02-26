@@ -74,17 +74,17 @@ class PlanRefinement(object):
 
     def get_next_instantiation(self):
         if self.instantiation_generator is None:
-            self.instantiation_generator = self._try_refine()
+            if settings.BACKTRACKING_REFINEMENT:
+                self.instantiation_generator = self._try_backtracking_refine()
+            else:
+                self.instantiation_generator = self._try_joint_refine()
 
         error = self.instantiation_generator.next()
         if error is not None:
             raise error
 
     def backtracking_resample(self, sampled_params):
-        hl_params = sampled_params
-        hl_params.sort(key=lambda f: -f.index)
-
-        for param in hl_params:
+        for param in sampled_params:
             try:
                 param.resample()
                 break
@@ -93,12 +93,10 @@ class PlanRefinement(object):
                 param.resample()
                 continue
         else:
-            print 'Need to raise an error'
+            print "Need to raise an error"
             raise StopIteration
 
-    def _try_refine(self):
-        # TODO: rewrite
-        initializations = 9999
+    def _try_joint_refine(self):
         index = 0
 
         sampled_params = self.world.get_sampled_params()
@@ -106,10 +104,11 @@ class PlanRefinement(object):
             param.index = index
             param.resample()
             index += 1
+        sampled_params.sort(key=lambda f: -f.index)
 
         llprob = LLProb(self.action_list)
         llprob.solve_at_priority(-1, fix_sampled_params=True)
-        for _ in range(initializations):
+        while True:
             llprob.solve()
 
             fluents = [f for a in self.action_list for f in a.preconditions + a.postconditions]
@@ -122,6 +121,77 @@ class PlanRefinement(object):
                 except StopIteration:
                     self.propagate_useful_fluent(violated_fluents)
 
+    def _try_backtracking_refine(self):
+        # add the preconditions of the next action to the postconditions, for each action
+        for i in range(len(self.action_list) - 1):
+            a, a_next = self.action_list[i:i+2]
+            if "move" in a.name:
+                for v in a.world_state.values():
+                    if v not in a.params:
+                        a.params.append(v)
+            for precon in a_next.preconditions:
+                if hasattr(precon, "do_extension") and precon.do_extension:
+                    a.postconditions.append(precon)
+                    if precon.extension_param not in a.params:
+                        a.params.append(precon.extension_param)
+                    if hasattr(precon, "traj") and precon.traj not in a.params:
+                        a.params.append(precon.traj)
+                    if hasattr(precon, "obj_traj") and precon.obj_traj not in a.params:
+                        a.params.append(precon.obj_traj)
+
+        # find first action where every sampled param occurs
+        sampled_params = self.world.get_sampled_params()
+        action_to_param = dict([a.name, []] for a in self.action_list)
+        for p in sampled_params:
+            for a in self.action_list:
+                if p in a.params:
+                    action_to_param[a.name].append(p)
+                    break
+
+        llprobs = [LLProb([a]) for a in self.action_list]
+
+        i = 0
+        violated_fluents = None
+        while i < len(self.action_list):
+            a = self.action_list[i]
+            if "move" in a.name:
+                a.end.is_var = True
+            for p in action_to_param[a.name]:
+                try:
+                    p.resample()
+                except StopIteration:
+                    if i == 0:
+                        # backtracking exhausted
+                        self.propagate_useful_fluent(violated_fluents)
+                        raise Exception("Should not get here because error propagation should occur!")
+                    p.reset_gen()
+                    p.resample()
+                    # move index back to STRICTLY previous action which has a resampled param
+                    self.action_list[i].remove_plots()
+                    i -= 1
+                    while not action_to_param[self.action_list[i].name]:
+                        self.action_list[i].remove_plots()
+                        i -= 1
+                    break
+            else:
+                # straight-line initialization
+                llprobs[i].solve_at_priority(-1, fix_sampled_params=True)
+                # optimize -- fix sampled params, so they are not optimized over
+                llprobs[i].solve_at_priority(1, fix_sampled_params=True)
+                # after optimizing a move, fix the end robot pose
+                if "move" in a.name:
+                    a.end.is_var = False
+
+                fluents = [f for f in a.preconditions + a.postconditions]
+                violated_fluents = self.find_violated_fluents(fluents)
+                if len(violated_fluents) == 0:
+                    i += 1
+                else:
+                    # move index back to previous OR CURRENT action which has a resampled param
+                    while not action_to_param[self.action_list[i].name]:
+                        self.action_list[i].remove_plots()
+                        i -= 1
+
         yield None
 
     # TODO: whether a fluent is useful should be determined by domain file?
@@ -133,13 +203,14 @@ class PlanRefinement(object):
                 raise fluent
 
     def find_violated_fluents(self, fluents):
+        # REQUIREMENT: this function assumes fluents are ordered by action, so
+        # that propagate_useful_fluents will do the right thing
         violated_fluents = []
         for fluent in fluents:
             if isinstance(fluent, AndFluent):
                 violated_fluents.extend(self.find_violated_fluents(fluent.fluents))
 
             if not np.all(fluent.satisfied()):
-                # violated_action = fluent.hl_action
                 violated_fluents.append(fluent)
         return violated_fluents
 
@@ -165,6 +236,10 @@ class PlanRefinement(object):
                         obj_T[:3, 3] = action.obj_traj.value[:, ts]
                         obj.SetTransform(obj_T)
                     time.sleep(0.02 / speedup)
+            if action.name.startswith("pick"):
+                utils.set_color(action.obj.get_env_body(self.env), [0, 1, 0])
+            if action.name.startswith("place"):
+                utils.set_color(action.obj.get_env_body(self.env), [0, 1, 1])
 
     def setActionListNames(self, hlplan):
         self.action_list_names = hlplan.actionList
