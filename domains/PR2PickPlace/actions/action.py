@@ -27,7 +27,8 @@ class PR2HLAction(HLAction):
             dof_values = robot_body.GetDOFValues()
             active_dof_inds = robot_body.GetActiveDOFIndices()
             for t in range(self.T):
-                newrobot = env.ReadRobotXMLFile("../models/pr2/pr2-head-kinect.xml")
+                # newrobot = env.ReadRobotXMLFile("../models/pr2/pr2-head-kinect.xml")
+                newrobot = env.ReadRobotXMLFile("../models/pr2/pr2.zae")
 
                 for link in newrobot.GetLinks():
                     for geom in link.GetGeometries():
