@@ -236,6 +236,26 @@ class World(object):
         self.make_transparent(can2)
 
         return env
+
+    def generate_swap_env(self):
+        env = self.env
+        robot = self.create_robot()
+        robot.SetTransform(base_pose_to_mat(np.array([[3.5],[1.5],[0]])))
+        # self.create_walls(env, [[0.0,-2.0],[0.0,3.0],[3.0,3.0],[3.0,5.0],[4.0,5.0],[4.0,3.0],[7.0,3.0],[7.0,-2.0],[0.0,-2.0]])
+        self.create_walls(env, [[-1.0,-3.0],[-1.0,4.0],[2.0,4.0],[2.0,6.0],[5.0,6.0],[5.0,4.0],[8.0,4.0],[8.0,-3.0],[-1.0,-3.0]])
+
+        dims = [0.35, 2.0]
+        can1t= base_pose_to_mat(np.array([[3.5],[4.5],[0]]))
+        can2t= base_pose_to_mat(np.array([[3.5],[3.5],[0]]))
+        can1 = self.create_cylinder(env, "can1", can1t, dims)
+        can2 = self.create_cylinder(env, "can2", can2t, dims)
+        env.AddKinBody(can1)
+        env.AddKinBody(can2)
+        self.make_transparent(can1)
+        self.make_transparent(can2)
+
+        return env
+
     def generate_boxes_env(self, num=1):
         env = self.env
         # self.create_obj()
@@ -357,11 +377,25 @@ class World(object):
                     geom.SetTransparency(transparency)
         return env
 
+def usage():
+    print "'tc' for basic two-can world, 'swap' for swap setup."
+
 if __name__ == "__main__":
     world = World()
-    env = world.generate_twocans_env()
-    env.SetViewer('qtcoin') # attach viewer (optional)
-    # env, target_locations = world.generate_boxes_env(1)
-    # env.Save("../envs/one_box_world.dae", Environment.SelectionOptions.Everything)
-    env.Save("../envs/twocan_world.dae", Environment.SelectionOptions.Everything)
-    import ipdb; ipdb.set_trace() # BREAKPOINT
+    if len(sys.argv) == 1:
+        usage()
+        sys.exit(1)
+    m = sys.argv[1]
+    if m == "tc":
+        env = world.generate_twocans_env()
+        env.SetViewer('qtcoin')
+        env.Save("../envs/twocan_world.dae", Environment.SelectionOptions.Everything)
+        import ipdb; ipdb.set_trace()
+    elif m == "swap":
+        env = world.generate_swap_env()
+        env.SetViewer('qtcoin')
+        env.Save("../envs/swap_world.dae", Environment.SelectionOptions.Everything)
+        import ipdb; ipdb.set_trace()
+    else:
+        usage()
+        sys.exit(1)
