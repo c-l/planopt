@@ -27,7 +27,7 @@ class TwoCanOpt(object):
                                "can1initloc":ObjLoc("can1initloc", self.rows, self.cols, is_var=False, value=can1.get_pose(env)),
                                "can2initloc":ObjLoc("can2initloc", self.rows, self.cols, is_var=False, value=can2.get_pose(env)),
                                "goal1":ObjLoc("goal1", self.rows, self.cols, is_var=False, value=np.array([[3.5], [3.5], [0]])),
-                               "goal2":ObjLoc("goal2", self.rows, self.cols, is_var=False, value=np.array([[3.5], [4.5], [0]]))})
+                               "goal2":ObjLoc("goal2", self.rows, self.cols, is_var=False, value=np.array([[3.5], [5.5], [0]]))})
 
         self.name = "twocan_world"
         self.world_state = {self.param_map["can1"]: self.param_map["can1initloc"],
