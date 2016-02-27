@@ -5,6 +5,7 @@ from numpy.linalg import norm
 import gurobipy as grb
 from function import Function
 GRB = grb.GRB
+from IPython import embed as shell
 
 
 class OptProb(object):
@@ -21,7 +22,7 @@ class OptProb(object):
         # increase optimality tolerance to maximum allowed
         self.model.params.OptimalityTol = 0.01
         # quadratic objective
-        self.obj_quad = grb.QuadExpr()
+        self.obj_quad = []
         # sqp objective
         self.obj_sqp = None
         # objective functions that need to be convexified
@@ -70,7 +71,7 @@ class OptProb(object):
             elif var.value is not None and var.is_resampled:
                 obj += 10 * self.l2_norm_diff_squared(self.model, var)
         if mode == "straight":
-            obj += self.obj_quad
+            obj += grb.quicksum(self.obj_quad)
         elif mode == "adapt":
             for var in self.vars:
                 if var.hl_param.is_traj:
@@ -126,12 +127,14 @@ class OptProb(object):
 
     def inc_obj(self, quad_fn):
         self.obj_fns += [quad_fn]
-        self.obj_quad += quad_fn.expr
+        self.obj_quad += [quad_fn.expr]
 
     def val(self, penalty_coeff):
-        val = 0
-        for fn in self.obj_fns:
-            val += fn.val()
+        param_to_inds = {}
+        val = []
+        for i, fn in enumerate(self.obj_fns):
+            val.append(fn.val())
+            param_to_inds.setdefault(fn.param, set()).add(i)
 
         # if self.augmented_objective:
         #     dual_val = 0
@@ -139,10 +142,12 @@ class OptProb(object):
         #         dual_val += np.dot(np.transpose(dual.value), var.value)[0, 0] + ro / 2 * square(norm(var.value - consensus.value, 2))
         #     val += dual_val
 
+        assert len(self.constraints) == 1
         arr = []
         for c in self.constraints:
-            arr.extend(c.val_lst())
-        return val, penalty_coeff * np.array(arr)
+            arr.extend(c.val_lst(start_ind=i+1, param_to_inds=param_to_inds))
+
+        return np.hstack((val, penalty_coeff * np.array(arr))), param_to_inds
 
     def save(self):
         for var in self.vars:
@@ -199,37 +204,38 @@ class OptProb(object):
             self.convexified_constr.extend(constraint.convexify(self.model, penalty_coeff))
         penalty_obj = grb.quicksum(self.convexified_constr)
         # self.obj_sqp = self.obj + penalty_coeff * self.nonlinear_cnts.convexify(self.model, penalty_coeff)
-        self.obj_sqp = self.obj_quad + penalty_obj
+        self.obj_sqp = grb.quicksum(self.obj_quad) + penalty_obj
         self.add_dual_costs()
 
     # @profile
-    def add_trust_region(self, trust_region_size):
+    def add_trust_region(self, trust_region_sizes):
         if self.trust_region_cnt is not None:
             self.model.remove(self.trust_region_cnt)
         self.clean(self.trust_temp)
         self.trust_temp = []
 
-        var_list = [
-            grb_var for var in self.vars for grb_var in var.grb_vars.flatten()]
-        val_list = [val for var in self.vars for val in var.value.flatten()]
+        # var_list = [grb_var for var in self.vars for grb_var in var.grb_vars.flatten()]
+        # val_list = [val for var in self.vars for val in var.value.flatten()]
 
-        # self.trust_region_cnt = self.add_trust_region_cnt(
-        self.add_trust_region_cnt(var_list, val_list, trust_region_size)
+        # self.add_trust_region_cnt(var_list, val_list, trust_region_size)
+
+        for var in self.vars:
+            if var.hl_param in trust_region_sizes:
+                self.add_trust_region_cnt(var.name, var.grb_vars.flatten(), var.value.flatten(), trust_region_sizes[var.hl_param])
 
     # @profile
-    def add_trust_region_cnt(self, x, xp, trust_box_size):
+    def add_trust_region_cnt(self, var_name, x, xp, trust_box_size):
         if self.init_trust_region:
             rows = len(x)
 
             pos = []
             neg = []
             expr = []
-            self.diffs = []
             for i in range(rows):
                 pos.append(
-                    self.model.addVar(lb=0, ub=GRB.INFINITY, name='pos' + str(i)))
+                    self.model.addVar(lb=0, ub=GRB.INFINITY, name='%s_pos_%d'%(var_name, i)))
                 neg.append(
-                    self.model.addVar(lb=0, ub=GRB.INFINITY, name='neg' + str(i)))
+                    self.model.addVar(lb=0, ub=GRB.INFINITY, name='%s_neg_%d'%(var_name, i)))
 
             self.model.update()
             for i in range(rows):
@@ -243,11 +249,9 @@ class OptProb(object):
                     self.model.addConstr(diff, GRB.EQUAL, abs_diff))
                 abs_val = grb.LinExpr(pos[i] + neg[i])
                 self.trust_temp.append(self.model.addConstr(abs_val <= trust_box_size))
-                self.diffs.append(abs)
         # not being used currently
         else:
-            print "Is this being used?"
-            import ipdb; ipdb.set_trace()
+            assert False
             rows = len(x)
             for i in range(rows):
                 diff = grb.LinExpr(-1 * x[i])
