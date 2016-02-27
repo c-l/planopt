@@ -20,7 +20,7 @@ class Solver(object):
         self.improve_ratio_threshold = .25
         self.min_trust_box_size = 1e-4
         # self.min_trust_box_size = 1e-2
-        self.max_trust_box_size = .1
+        self.max_trust_box_size = 1
         # self.min_approx_improve = 1e-4
         self.min_approx_improve = 1e-2
         self.min_constr_approx_improve = -1
@@ -288,11 +288,8 @@ class Solver(object):
 
         while True:
             print("  sqp_iter: {0}".format(sqp_iter))
-            if sqp_iter == 3:
-                assert False
 
             prob.convexify(penalty_coeff)
-            # import ipdb; ipdb.set_trace()
             merit = prob.val_old(penalty_coeff)
             prob.save()
 
@@ -310,8 +307,6 @@ class Solver(object):
                 approx_merit_improve = merit - model_merit
                 exact_merit_improve = merit - new_merit
                 merit_improve_ratio = exact_merit_improve / approx_merit_improve
-                with open("temp.txt", "a") as f:
-                    f.write(str(merit_improve_ratio) + "\n")
 
                 print("      approx_merit_improve: {0}. exact_merit_improve: {1}. merit_improve_ratio: {2}".format(approx_merit_improve, exact_merit_improve, merit_improve_ratio))
 
@@ -381,9 +376,6 @@ class Solver(object):
                 exact_param_merit_improves = {k: param_merits[k] - param_new_merits[k] for k in param_merits}
                 merit_improve_ratio = exact_merit_improve / approx_merit_improve
                 param_merit_improve_ratios = {k: exact_param_merit_improves[k] / approx_param_merit_improves[k] for k in param_merits}
-                # for k, v in param_merit_improve_ratios.items():
-                #     print k.name, v
-                # raw_input("!!")
 
                 print("      approx_merit_improve: {0}. exact_merit_improve: {1}. merit_improve_ratio: {2}".format(approx_merit_improve,
                                                                                                                    exact_merit_improve,
@@ -396,7 +388,6 @@ class Solver(object):
                     prob.restore()
                     return (trust_box_sizes, success)
                 elif approx_merit_improve < self.min_approx_improve:
-                    # TODO
                     print("Converged: y tolerance")
                     # why do we restore if there is some improvement?
                     prob.restore()
@@ -404,39 +395,31 @@ class Solver(object):
                 elif exact_merit_improve > 0 and merit_improve_ratio > self.improve_ratio_threshold:
                     print "\n\nOverall improvement, grew trust region for all params\n\n"
                     for p in trust_box_sizes:
-                        # trust_box_sizes[p] = min(trust_box_sizes[p] * self.trust_expand_ratio, self.max_trust_box_size)
-                        trust_box_sizes[p] = trust_box_sizes[p] * self.trust_expand_ratio
+                        trust_box_sizes[p] = min(trust_box_sizes[p] * self.trust_expand_ratio, self.max_trust_box_size)
                     break
                 else:
-                    print "\n\nshrink trust region for all params\n\n"
+                    shrunk = False
                     for p in trust_box_sizes:
-                        trust_box_sizes[p] = trust_box_sizes[p] * self.trust_shrink_ratio
-                # else:
-                #     shrunk = False
-                #     for p in trust_box_sizes:
-                #         if trust_box_sizes[p] < self.min_trust_box_size:
-                #             continue
-                #         if exact_param_merit_improves[p] < 0 or param_merit_improve_ratios[p] < self.improve_ratio_threshold:
-                #             shrunk = True
-                #             trust_box_sizes[p] = trust_box_sizes[p] * self.trust_shrink_ratio
-                #         else:
-                #             trust_box_sizes[p] = min(trust_box_sizes[p] * self.trust_expand_ratio, self.max_trust_box_size)
+                        if trust_box_sizes[p] < self.min_trust_box_size:
+                            continue
+                        if exact_param_merit_improves[p] < 0 or param_merit_improve_ratios[p] < self.improve_ratio_threshold:
+                            shrunk = True
+                            trust_box_sizes[p] = trust_box_sizes[p] * self.trust_shrink_ratio
+                        else:
+                            trust_box_sizes[p] = min(trust_box_sizes[p] * self.trust_expand_ratio, self.max_trust_box_size)
 
-                #     if max(trust_box_sizes.values()) < self.min_trust_box_size:
-                #         print "\n\nConverged: x tolerance\n\n"
-                #         return (trust_box_sizes, success)
+                    if max(trust_box_sizes.values()) < self.min_trust_box_size:
+                        print "\n\nConverged: x tolerance\n\n"
+                        return (trust_box_sizes, success)
 
-                #     if shrunk:
-                #         prob.restore()
-                #     else:
-                #         print "\n\nGrew trust region for all params, re-convexifying\n\n"
-                #         for k, v in trust_box_sizes.items():
-                #             if v < self.min_trust_box_size:
-                #                 trust_box_sizes[k] = v / self.trust_shrink_ratio
-                #         break
-                if trust_box_sizes.values()[0] < self.min_trust_box_size:
-                    print("Converged: x tolerance")
-                    return (trust_box_sizes, success)
+                    if shrunk:
+                        prob.restore()
+                    else:
+                        print "\n\nGrew trust region for all params, re-convexifying\n\n"
+                        for k, v in trust_box_sizes.items():
+                            if v < self.min_trust_box_size:
+                                trust_box_sizes[k] = v / self.trust_shrink_ratio
+                        break
 
             sqp_iter = sqp_iter + 1
 
