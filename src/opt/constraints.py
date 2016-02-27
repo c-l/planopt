@@ -122,6 +122,14 @@ class Constraints(object):
             i += 1
         return val
 
+    def val_old(self):
+        val = 0
+        for g in self.gs:
+            val += self.hinge_val(g)
+        for h in self.hs:
+            val += self.abs_val(h)
+        return val
+
     # @profile
     def convexify(self, model, penalty_coeff):
         all_exprs = []
