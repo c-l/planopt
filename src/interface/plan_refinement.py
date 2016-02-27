@@ -120,6 +120,7 @@ class PlanRefinement(object):
             except StopIteration:
                 lst[0].reset_gen()
                 lst[0].resample()
+            return [lst[0]]
         elif mode == "random":
             settings.RANDOM_STATE.shuffle(lst)
             try:
@@ -127,34 +128,32 @@ class PlanRefinement(object):
             except StopIteration:
                 lst[0].reset_gen()
                 lst[0].resample()
+            return [lst[0]]
         elif mode == "all":
-            shell()
             for p in lst:
                 try:
                     p.resample()
                 except StopIteration:
                     p.reset_gen()
                     p.resample()
+            return lst
         else:
             raise Exception("Invalid mode!")
 
     def _try_joint_refine(self):
-        index = 0
-
         sampled_params = self.world.get_sampled_params()
+        sampled_params.sort(key=lambda p: p.sample_priority)
+        recently_sampled = sampled_params
         for param in sampled_params:
-            param.index = index
             param.resample()
-            index += 1
-        sampled_params.sort(key=lambda f: -f.index)
 
         llprob = LLProb(self.action_list)
-        llprob.solve_at_priority(-1, fix_sampled_params=True)
+        llprob.solve_at_priority(-1, recently_sampled=recently_sampled)
         all_useful_fluents = set()
         count = 0
         while True:
             count += 1
-            llprob.solve_at_priority(0, fix_sampled_params=True)
+            llprob.solve_at_priority(0, recently_sampled=recently_sampled)
             for priority in JOINT_REF_PRIORITIES:
                 llprob.solve_at_priority(priority)
                 self.execute(speedup=1, pause=False)
@@ -168,7 +167,7 @@ class PlanRefinement(object):
                 else:
                     try:
                         self.save_useful_fluents(violated_fluents, all_useful_fluents)
-                        self.randomized_resample(sampled_params, violated_fluents, mode="all", count=count)
+                        recently_sampled = self.randomized_resample(sampled_params, violated_fluents, mode="all", count=count)
                     except StopIteration:
                         for f in all_useful_fluents:
                             self.remove_plots()
@@ -203,6 +202,7 @@ class PlanRefinement(object):
 
         # find first action where every sampled param occurs
         sampled_params = self.world.get_sampled_params()
+        sampled_params.sort(key=lambda p: p.sample_priority)
         action_to_param = dict([a.name, []] for a in self.action_list)
         for p in sampled_params:
             for a in self.action_list:
@@ -242,7 +242,7 @@ class PlanRefinement(object):
                     break
             else:
                 # straight-line initialization
-                llprobs[i].solve_at_priority(-1, fix_sampled_params=True)
+                llprobs[i].solve_at_priority(-1, recently_sampled)
                 # optimize -- fix sampled params, so they are not optimized over
                 llprobs[i].solve_at_priority(2, fix_sampled_params=True)
                 # after optimizing a move, fix the end robot pose

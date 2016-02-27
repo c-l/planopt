@@ -2,6 +2,7 @@ import numpy as np
 from utils import *
 import openravepy
 import settings
+from IPython import embed as shell
 
 
 class HLParam(object):
@@ -17,6 +18,8 @@ class HLParam(object):
             self.value = value
         self.is_resampled = is_resampled
         self.gen = None
+        self.sample_priority = 0
+        self.is_traj = False
 
     def get_value(self):
         return self.value
@@ -50,8 +53,21 @@ class Grasp(HLParam):
             yield v
 
 class RP(HLParam):
-    pass
+    def __init__(self, name, rows, cols, obj_loc=None, is_var=True,
+                 value=None, is_resampled=False):
+        super(RP, self).__init__(name, rows, cols, is_var, value, is_resampled)
+        self.obj_loc = obj_loc
 
+    def generator(self):
+        assert self.obj_loc is not None
+        vals = [np.array([[0], [0.6], [0]], dtype=np.float),
+                np.array([[0], [-0.6], [0]], dtype=np.float),
+                # yield np.array([[0.6], [0], [0]], dtype=np.float),
+                # yield np.array([[-0.6], [0], [0]], dtype=np.float),
+                ]
+        settings.RANDOM_STATE.shuffle(vals)
+        for v in vals:
+            yield self.obj_loc.value + v
 
 class ObjLoc(HLParam):
     def __init__(self, name, rows, cols, is_var=True,
@@ -62,6 +78,8 @@ class ObjLoc(HLParam):
         if region is not None:
             assert self.is_var and self.is_resampled
             self.min_x, self.max_x, self.min_y, self.max_y = region
+        # sample object locations first
+        self.sample_priority = -1
 
     def generator(self):
         for _ in range(3):
@@ -148,6 +166,7 @@ class Traj(HLParam):
     def __init__(self, hl_action, name, rows, cols, is_var=True, value=None):
         super(Traj, self).__init__(name, rows, cols, is_var, value)
         self.hl_action = hl_action
+        self.is_traj = True
 
     # # TODO: make this less hacky
     # def resample(self):

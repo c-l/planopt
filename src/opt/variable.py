@@ -6,12 +6,14 @@ GRB = grb.GRB
 
 class Variable(object):
 
-    def __init__(self, model, hl_param, name=None):
+    def __init__(self, model, hl_param, name=None, recently_sampled=False):
         self.model = model
         self.hl_param = hl_param
+        self.is_resampled = hl_param.is_resampled
         self.rows = hl_param.rows
         self.cols = hl_param.cols
         self.set(hl_param.value)
+        self.recently_sampled = recently_sampled
         if name is None:
             self.name = hl_param.name
         else:

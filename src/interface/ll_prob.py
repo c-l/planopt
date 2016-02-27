@@ -73,10 +73,12 @@ class LLProb(object):
                     self.add_fluent_to_constraints(constraints, fluent, param_to_var)
         return constraints
 
-    def solve_at_priority(self, priority, fix_sampled_params=False):
+    def solve_at_priority(self, priority, fix_sampled_params=False, recently_sampled=None):
         # initialize gurobi Model object
         prob = OptProb()
         model = prob.get_model()
+        if recently_sampled is None:
+            recently_sampled = []
 
         params = []
         for hla in self.hlas:
@@ -96,7 +98,7 @@ class LLProb(object):
                 const = Constant(param)
                 param_to_var[param] = const
             else: # param.is_var
-                var = Variable(model, param)
+                var = Variable(model, param, recently_sampled=(param in recently_sampled))
                 param_to_var[param] = var
                 prob.add_var(var)
         model.update()
@@ -114,13 +116,15 @@ class LLProb(object):
 
         solver = Solver()
 
-        if fix_sampled_params:
+        if fix_sampled_params or recently_sampled:
             solver.initial_trust_box_size = 1e5
             solver.max_merit_coeff_increases = 1
-        if priority == 0:
-            # initialize with previous trajectories and set objective
-            # as l2 norm of new/old trajectory difference
-            prob.find_closest_feasible_point()
+        if priority == -1:
+            # initialize straight-line trajectories
+            prob.initialize_traj(mode="straight")
+        elif priority == 0:
+            # initialize from adapted previous trajectories
+            prob.initialize_traj(mode="adapt")
         else:
             solver.penalty_sqp(prob)
 

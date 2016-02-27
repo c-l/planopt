@@ -3,6 +3,7 @@ from numpy import square, dot
 from numpy.linalg import norm
 # import cvxpy as cvx
 import gurobipy as grb
+from function import Function
 GRB = grb.GRB
 
 
@@ -51,6 +52,48 @@ class OptProb(object):
     def clear_handles(self):
         for hla in self.hlas:
             hla.clear_handles()
+
+    def initialize_traj(self, mode):
+        # mode can be "straight" for straight line or
+        # "adapt" for adapted previous trajectories
+        if self.trust_region_cnt is not None:
+            self.model.remove(self.trust_region_cnt)
+        self.clean(self.trust_temp)
+
+        for constraint in self.constraints:
+            constraint.clean()
+
+        obj = grb.QuadExpr()
+        for var in self.vars:
+            if var.value is not None and var.recently_sampled:
+                obj += 100 * self.l2_norm_diff_squared(self.model, var)
+            elif var.value is not None and var.is_resampled:
+                obj += 10 * self.l2_norm_diff_squared(self.model, var)
+        if mode == "straight":
+            obj += self.obj_quad
+        elif mode == "adapt":
+            for var in self.vars:
+                if var.hl_param.is_traj:
+                    K = var.hl_param.rows
+                    T = var.hl_param.cols
+                    KT = K * T
+                    v = -1 * np.ones((KT - K, 1))
+                    d = np.vstack((np.ones((KT - K, 1)), np.zeros((K, 1))))
+                    # [:,0] allows numpy to see v and d as one-dimensional so
+                    # that numpy will create a diagonal matrix with v and d as a diagonal
+                    P = np.diag(v[:, 0], K) + np.diag(d[:, 0])
+                    # minimum-velocity finite difference
+                    Q = np.dot(np.transpose(P), P)
+                    obj += Function.quad_expr((var.get_grb_vars() - var.value).flatten(order="f"), Q)
+        else:
+            raise NotImplementedError
+
+        self.model.setObjective(obj)
+        self.model.update()
+        self.model.optimize()
+        self.update_vars()
+        self.plot()
+        return True
 
     def find_closest_feasible_point(self):
         if self.trust_region_cnt is not None:

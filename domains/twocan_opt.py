@@ -57,9 +57,12 @@ class TwoCanOpt(object):
     def _get_param(self, param_name):
         if param_name not in self.param_map:
             if param_name.startswith("pdp"):
-                self.param_map[param_name] = RP(param_name, self.rows, self.cols)
+                obj_loc = self._get_param(param_name.split("_")[2])
+                self.param_map[param_name] = RP(param_name, self.rows, self.cols, obj_loc, is_resampled=True)
             elif param_name.startswith("gp"):
-                self.param_map[param_name] = RP(param_name, self.rows, self.cols)
+                obj = self.param_map[param_name.split("_")[1]]
+                obj_loc = self.world_state[obj]
+                self.param_map[param_name] = RP(param_name, self.rows, self.cols, obj_loc, is_resampled=True)
             elif param_name.startswith("grasp"):
                 self.param_map[param_name] = Grasp(param_name, self.rows, self.cols, is_resampled=True)
             elif param_name.startswith("none"):
@@ -67,7 +70,7 @@ class TwoCanOpt(object):
             elif "temploc" in param_name:
                 # sampled ObjLoc (object location)
                 self.param_map[param_name] = ObjLoc(param_name, self.rows, self.cols, is_var=True,
-                                                    is_resampled=True, region=(0, 7, -2, 3))
+                                                    is_resampled=True, region=(0.5, 6.5, -1.5, 2.5))
             else:
                 import ipdb; ipdb.set_trace()
                 print ('not a valid parameter name')

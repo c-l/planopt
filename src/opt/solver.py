@@ -20,7 +20,7 @@ class Solver(object):
         self.min_trust_box_size = 1e-2
         # self.min_approx_improve = 1e-4
         self.min_approx_improve = 1e-2
-        self.min_constr_approx_improve = 1e-6
+        self.min_constr_approx_improve = -1
         # self.min_approx_improve = 3e-1
         # self.min_approx_improve = 1e-1
         self.trust_shrink_ratio = .1
@@ -145,9 +145,6 @@ class Solver(object):
         penalty_coeff = self.initial_penalty_coeff
 
         prob.find_closest_feasible_point()
-        # x, success = SQP.find_closest_feasible_point(x, x0, constraints)
-        # if not success:
-        #     return (x, success)
 
         for i in range(self.max_merit_coeff_increases):
             trust_box_size, success = self.minimize_merit_function(prob, penalty_coeff, trust_box_size)
