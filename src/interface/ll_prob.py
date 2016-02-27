@@ -127,4 +127,4 @@ class LLProb(object):
         for param, var in param_to_var.items():
             var.update_hl_param()
 
-        self.traj_cost = prob.val(0)
+        self.traj_cost = prob.val(0)[0]
