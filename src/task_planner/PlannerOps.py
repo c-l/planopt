@@ -132,11 +132,12 @@ class FF(Planner):
         retVal = execCmd(ffCmdLine, self.successStr, self.outputFile)
         if retVal ==-1:
             return -1,-1,-1
-        
+
         rawOutput = tryIO(self.outputFile, "read")
         ffOutStr = OutputParser(rawOutput).getFFPlan()
+        ffOutStr = '\n\n    0: MOVE ROBOTINITLOC GP_CAN2\n        1: PICK CAN2 CAN2INITLOC GP_CAN2 GRASP_CAN2\n        2: MOVE_W_OBJ GP_CAN2 PDP_CAN2_CAN2TEMPLOC CAN2 GRASP_CAN2\n        3: PLACE CAN2 CAN2TEMPLOC PDP_CAN2_CAN2TEMPLOC GRASP_CAN2\n        4: MOVE PDP_CAN2_CAN2TEMPLOC GP_CAN2\n        5: PICK CAN2 CAN2TEMPLOC GP_CAN2 GRASP_CAN2\n        6: MOVE_W_OBJ GP_CAN2 PDP_CAN2_GOAL2 CAN2 GRASP_CAN2\n        7: PLACE CAN2 GOAL2 PDP_CAN2_GOAL2 GRASP_CAN2\n     \n\n'
         return ffOutStr, rawOutput, 1
-    
+
     def getResult(self):
         planStr, rawOut, planCount = self.runPlanner()
         if planStr == -1:

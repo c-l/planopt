@@ -126,8 +126,8 @@ class LLProb(object):
             # initialize from adapted previous trajectories
             prob.initialize_traj(mode="adapt")
         else:
-            # solver.penalty_sqp(prob)
-            solver.structured_penalty_sqp(prob)
+            solver.penalty_sqp(prob)
+            # solver.structured_penalty_sqp(prob)
 
         for param, var in param_to_var.items():
             var.update_hl_param()

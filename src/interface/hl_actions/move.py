@@ -14,6 +14,7 @@ from interface.fluents.is_mp import IsMP
 from interface.fluents.in_manip import InManip
 from utils import *
 
+COST_COEFF = 10
 
 class Move(HLAction):
 
@@ -65,7 +66,7 @@ class Move(HLAction):
         # [:,0] allows numpy to see v and d as one-dimensional so
         # that numpy will create a diagonal matrix with v and d as a diagonal
         P = np.diag(v[:, 0], K) + np.diag(d[:, 0])
-        Q = 2 * np.dot(np.transpose(P), P)
+        Q = COST_COEFF * np.dot(np.transpose(P), P)
 
         self.cost = QuadFn(self.traj, Q)
 
