@@ -21,6 +21,7 @@ try:
 except ImportError:
     print "Warning: ROS imports failed. Okay if not using ROS."
 
+JOINT_REF_PRIORITIES = [2]
 
 class PlanRefinement(object):
     def __init__(self, env, world):
@@ -83,18 +84,59 @@ class PlanRefinement(object):
         if error is not None:
             raise error
 
-    def backtracking_resample(self, sampled_params):
-        for param in sampled_params:
-            try:
-                param.resample()
-                break
-            except StopIteration:
-                param.reset_gen()
-                param.resample()
-                continue
-        else:
-            print "Need to raise an error"
+    # def backtracking_resample(self, sampled_params):
+    #     for param in sampled_params:
+    #         try:
+    #             param.resample()
+    #             break
+    #         except StopIteration:
+    #             param.reset_gen()
+    #             param.resample()
+    #             continue
+    #     else:
+    #         print "Need to raise an error"
+    #         raise StopIteration
+
+    def randomized_resample(self, sampled_params, violated_fluents, mode, count):
+        if count >= 3:
             raise StopIteration
+        lst = []
+        for f in violated_fluents:
+            for p in f.hl_action.params:
+                if p in sampled_params and p not in lst:
+                    lst.append(p)
+        if not lst:
+            return
+        param_to_index = {}
+        for p in lst:
+            for i, a in enumerate(self.action_list):
+                if p in a.params:
+                    param_to_index[p] = i
+                    break
+        lst.sort(key=param_to_index.get)
+        if mode == "first":
+            try:
+                lst[0].resample()
+            except StopIteration:
+                lst[0].reset_gen()
+                lst[0].resample()
+        elif mode == "random":
+            settings.RANDOM_STATE.shuffle(lst)
+            try:
+                lst[0].resample()
+            except StopIteration:
+                lst[0].reset_gen()
+                lst[0].resample()
+        elif mode == "all":
+            shell()
+            for p in lst:
+                try:
+                    p.resample()
+                except StopIteration:
+                    p.reset_gen()
+                    p.resample()
+        else:
+            raise Exception("Invalid mode!")
 
     def _try_joint_refine(self):
         index = 0
@@ -108,18 +150,40 @@ class PlanRefinement(object):
 
         llprob = LLProb(self.action_list)
         llprob.solve_at_priority(-1, fix_sampled_params=True)
+        all_useful_fluents = set()
+        count = 0
         while True:
-            llprob.solve()
-
-            fluents = [f for a in self.action_list for f in a.preconditions + a.postconditions]
-            violated_fluents = self.find_violated_fluents(fluents)
-            if len(violated_fluents) == 0:
-                yield None
-            else:
-                try:
-                    self.backtracking_resample(sampled_params)
-                except StopIteration:
-                    self.propagate_useful_fluent(violated_fluents)
+            count += 1
+            llprob.solve_at_priority(0, fix_sampled_params=True)
+            for priority in JOINT_REF_PRIORITIES:
+                llprob.solve_at_priority(priority)
+                self.execute(speedup=1, pause=False)
+                fluents = [f for a in self.action_list for f in a.preconditions + a.postconditions]
+                violated_fluents = self.find_violated_fluents(fluents, priority)
+                if len(violated_fluents) == 0:
+                    if priority == JOINT_REF_PRIORITIES[-1]:
+                        self.total_cost = llprob.traj_cost
+                        yield None
+                    continue
+                else:
+                    try:
+                        self.save_useful_fluents(violated_fluents, all_useful_fluents)
+                        self.randomized_resample(sampled_params, violated_fluents, mode="all", count=count)
+                    except StopIteration:
+                        for f in all_useful_fluents:
+                            self.remove_plots()
+                            yield f
+                        # reset set of useful fluents, since we yielded them all
+                        all_useful_fluents = set()
+                        # resample all params so we don't get stuck
+                        for p in sampled_params:
+                            try:
+                                p.resample()
+                            except StopIteration:
+                                p.reset_gen()
+                                p.resample()
+                        count = 0
+                    break # out of for loop
 
     def _try_backtracking_refine(self):
         # add the preconditions of the next action to the postconditions, for each action
@@ -150,6 +214,7 @@ class PlanRefinement(object):
 
         i = 0
         violated_fluents = None
+        all_useful_fluents = set()
         while i < len(self.action_list):
             a = self.action_list[i]
             if a.is_move():
@@ -160,10 +225,14 @@ class PlanRefinement(object):
                 except StopIteration:
                     if i == 0:
                         # backtracking exhausted
-                        self.propagate_useful_fluent(violated_fluents)
-                        raise Exception("Should not get here because error propagation should occur!")
+                        for f in all_useful_fluents:
+                            self.remove_plots()
+                            yield f
+                        p.reset_gen()
+                        # reset set of useful fluents, since we yielded them all
+                        all_useful_fluents = set()
+                        break
                     p.reset_gen()
-                    p.resample()
                     # move index back to STRICTLY previous action which has a resampled param
                     self.action_list[i].remove_plots()
                     i -= 1
@@ -175,51 +244,60 @@ class PlanRefinement(object):
                 # straight-line initialization
                 llprobs[i].solve_at_priority(-1, fix_sampled_params=True)
                 # optimize -- fix sampled params, so they are not optimized over
-                llprobs[i].solve_at_priority(1, fix_sampled_params=True)
+                llprobs[i].solve_at_priority(2, fix_sampled_params=True)
                 # after optimizing a move, fix the end robot pose
                 if a.is_move():
                     a.end.is_var = False
 
                 fluents = [f for f in a.preconditions + a.postconditions]
-                violated_fluents = self.find_violated_fluents(fluents)
+                violated_fluents = self.find_violated_fluents(fluents, priority=2)
                 if len(violated_fluents) == 0:
                     i += 1
                 else:
+                    self.save_useful_fluents(violated_fluents, all_useful_fluents)
                     # move index back to previous OR CURRENT action which has a resampled param
                     while not action_to_param[self.action_list[i].name]:
                         self.action_list[i].remove_plots()
                         i -= 1
 
+        self.total_cost = sum(l.traj_cost for l in llprobs)
         yield None
 
     # TODO: whether a fluent is useful should be determined by domain file?
-    def propagate_useful_fluent(self, fluents):
+    def save_useful_fluents(self, fluents, all_useful_fluents):
         for fluent in fluents:
-            if isinstance(fluent, NotObstructs):
-                # TODO: put remove_plots in a better location
-                self.remove_plots()
-                raise fluent
+            # only movable object errors are useful
+            if isinstance(fluent, NotObstructs) and fluent.obj.name in self.world.movable_objects:
+                # don't raise obstruction for pick/place resulting from obj itself
+                if fluent.obj.name not in fluent.hl_action.end.name:
+                    all_useful_fluents.add(fluent)
 
-    def find_violated_fluents(self, fluents):
+    def find_violated_fluents(self, fluents, priority):
         # REQUIREMENT: this function assumes fluents are ordered by action, so
         # that propagate_useful_fluents will do the right thing
         violated_fluents = []
         for fluent in fluents:
+            if fluent.priority > priority:
+                continue
             if isinstance(fluent, AndFluent):
-                violated_fluents.extend(self.find_violated_fluents(fluent.fluents))
+                violated_fluents.extend(self.find_violated_fluents(fluent.fluents, priority))
 
             if not np.all(fluent.satisfied()):
                 violated_fluents.append(fluent)
         return violated_fluents
 
-    def execute(self, speedup=1):
+    def execute(self, speedup=1, pause=True):
         self.remove_plots()
         # make all objects fully opaque
         utils.set_transparency(self.robot, 0)
+        tfs = {}
+        tfs[self.robot.GetName()] = self.robot.GetTransform()
         for obj_name in self.world.movable_objects:
             utils.set_transparency(self.env.GetKinBody(obj_name), 0)
+            tfs[obj_name] = self.env.GetKinBody(obj_name).GetTransform()
 
-        raw_input("Press enter to run in simulation!")
+        if pause:
+            raw_input("Press enter to run in simulation!")
         for action in self.action_list:
             if action.name.startswith("move"):
                 T = self.robot.GetTransform()
@@ -238,6 +316,15 @@ class PlanRefinement(object):
                 utils.set_color(action.obj.get_env_body(self.env), [0, 1, 0])
             if action.name.startswith("place"):
                 utils.set_color(action.obj.get_env_body(self.env), [0, 1, 1])
+
+        # restore transparency
+        utils.set_transparency(self.robot, 0.7)
+        for obj_name in self.world.movable_objects:
+            utils.set_transparency(self.env.GetKinBody(obj_name), 0.7)
+
+        # restore transforms
+        for n, t in tfs.items():
+            self.env.GetKinBody(n).SetTransform(t)
 
     def setActionListNames(self, hlplan):
         self.action_list_names = hlplan.actionList

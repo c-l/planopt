@@ -295,13 +295,11 @@ class HybridPlanner:
         # planning_primitives.test(strPlanFileH, self.ORSetup, objList=[],
         #                          reinterpreted=reinterpreted,
         #                          resumeFrom=resumeFrom, startTime=startTime)
-        self.pr_graph.resume(resume_key)
+        self.pr_graph.resume(resume_key, startTime)
 
+        print "REPLAN COUNT: %d"%self.iteration
+        # print "Cache clearing count: "+ repr(self.cacheClearCount)
         print "Success. Quitting."
-        print "Replan count: "+ repr(self.iteration)
-        print "Cache clearing count: "+ repr(self.cacheClearCount)
-        endTime = time.time()
-        print "Execution took " + repr(endTime-startTime) + " seconds"
         self.pr_graph.env.StopSimulation()
         self.pr_graph.env.Destroy()
 

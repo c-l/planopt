@@ -66,7 +66,14 @@ class NotObstructs(FnLEFluent):
         # if self.obj_loc is not None:
         #     self.obj.set_pose(env, self.obj_loc.value)
 
-        for t in range(self.T):
+        if self.priority == 1:
+            lst = [0, T-1]
+        elif self.priority == 2:
+            # since priority 1 was already run, don't need to recheck end states
+            lst = range(1, T-1)
+        else:
+            raise NotImplementedError
+        for t in lst:
             # xt = self.traj.value[K*t:K*(t+1)]
             # xt = traj[:,t:t+1]
             xt = traj[K*t:K*(t+1)]

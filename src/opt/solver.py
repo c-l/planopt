@@ -20,6 +20,7 @@ class Solver(object):
         self.min_trust_box_size = 1e-2
         # self.min_approx_improve = 1e-4
         self.min_approx_improve = 1e-2
+        self.min_constr_approx_improve = 1e-6
         # self.min_approx_improve = 3e-1
         # self.min_approx_improve = 1e-1
         self.trust_shrink_ratio = .1
@@ -261,7 +262,8 @@ class Solver(object):
             print("  sqp_iter: {0}".format(sqp_iter))
 
             prob.convexify(penalty_coeff)
-            merit = prob.val(penalty_coeff)
+            obj_val, constr_merits = prob.val(penalty_coeff)
+            merit = obj_val + sum(constr_merits)
             prob.save()
 
             while True:
@@ -274,13 +276,20 @@ class Solver(object):
                 prob.plot()
 
                 model_merit = prob.model.objVal
-                new_merit = prob.val(penalty_coeff)
+                constr_model_merits = np.array([grb_expr.getValue() for grb_expr in prob.convexified_constr])
+                new_obj_val, new_constr_merits = prob.val(penalty_coeff)
+                new_merit = new_obj_val + sum(new_constr_merits)
 
                 approx_merit_improve = merit - model_merit
+                diffs = [m1 - m2 for m1, m2 in zip(constr_merits, constr_model_merits) if m1 > 1e-4]
+                min_constr_approx_merit_improve = np.min(diffs) / penalty_coeff if diffs else float("inf")
                 exact_merit_improve = merit - new_merit
                 merit_improve_ratio = exact_merit_improve / approx_merit_improve
 
-                print("      approx_merit_improve: {0}. exact_merit_improve: {1}. merit_improve_ratio: {2}".format(approx_merit_improve, exact_merit_improve, merit_improve_ratio))
+                print("      approx_merit_improve: {0}. min_constr_approx_merit_improve: {1}. exact_merit_improve: {2}. merit_improve_ratio: {3}".format(approx_merit_improve,
+                                                                                                                                                         min_constr_approx_merit_improve,
+                                                                                                                                                         exact_merit_improve,
+                                                                                                                                                         merit_improve_ratio))
 
                 if approx_merit_improve < -1e-5:
                     print("Approximate merit function got worse ({0})".format(approx_merit_improve))
@@ -291,6 +300,10 @@ class Solver(object):
                 elif approx_merit_improve < self.min_approx_improve:
                     print("Converged: y tolerance")
                     # why do we restore if there is some improvement?
+                    prob.restore()
+                    return (trust_box_size, success)
+                elif min_constr_approx_merit_improve < self.min_constr_approx_improve:
+                    print("Some violated constraint has converged: y tolerance")
                     prob.restore()
                     return (trust_box_size, success)
                 elif (exact_merit_improve < 0) or (merit_improve_ratio < self.improve_ratio_threshold):

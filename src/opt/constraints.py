@@ -107,35 +107,24 @@ class Constraints(object):
                 return False
         return True
 
-    def val(self):
-        val = 0
+    def val_lst(self):
+        val = []
         for g in self.gs:
-            val += self.hinge_val(g)
+            val.append(self.hinge_val(g))
         for h in self.hs:
-            val += self.abs_val(h)
+            val.append(self.abs_val(h))
         return val
 
     # @profile
     def convexify(self, model, penalty_coeff):
-        penalty_obj = grb.LinExpr()
-        convexified_g = [g.convexify() for g in self.gs]
-        convexified_g = [item for sublist in convexified_g for item in sublist]
-        hinges = self.add_hinges(model, convexified_g)
-        exprlist = grb.quicksum([penalty_coeff * expr for expr in hinges])
-        penalty_obj += exprlist
-
-        # for g in self.gs:  # non-linear inequality constraints
-        #     hinges = self.add_hinges(model, g.convexify())
-        #     exprlist = grb.quicksum([penalty_coeff * expr for expr in hinges])
-        #     penalty_obj += exprlist
-            # exprlist = penalty_coeff * self.add_hinges(model, g.convexify())
-            # penalty_obj += grb.quicksum(exprlist)
-        for h in self.hs:  # non-linear equality constraints
+        all_exprs = []
+        for g in self.gs: # non-linear inequality constraints
+            exprlist = self.add_hinges(model, g.convexify())
+            all_exprs.append(penalty_coeff * grb.quicksum(exprlist))
+        for h in self.hs: # non-linear equality constraints
             exprlist = self.l1_norm(model, h.convexify())
-            penalty_obj += grb.quicksum([penalty_coeff *
-                                         expr for expr in exprlist])
-
-        return penalty_obj
+            all_exprs.append(penalty_coeff * grb.quicksum(exprlist))
+        return all_exprs
 
     # @profile
     def add_hinges(self, model, affexprlist):

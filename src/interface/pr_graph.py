@@ -8,6 +8,7 @@ import pprint
 from pr_creator import PRCreator
 from fluents.fluent import Fluent
 from IPython import embed as shell
+import time
 
 pp = pprint.PrettyPrinter()
 
@@ -23,7 +24,7 @@ class PRGraph(object):
         self.graph = nx.DiGraph()
 
 
-    def resume(self, plan_key):
+    def resume(self, plan_key, startTime):
         try:
             print "Resuming plan:"
             self.saved_plans[plan_key].printPlan()
@@ -45,10 +46,12 @@ class PRGraph(object):
             raise f
 
         cur_plan = self.plan_refinements[plan_key]
+        print "Done!\n"
+        print "FINAL TRAJ TOTAL COST: %.3f"%cur_plan.total_cost
+        endTime = time.time()
+        print "TOTAL TIME: %.3f seconds"%(endTime-startTime)
         if self.env.GetViewer():
             cur_plan.execute()
-        print "Done"
-
 
     def addEdge(self, plan_key, new_plan_key, generated_plan, resume_from, error_str):
         parent_pr = None

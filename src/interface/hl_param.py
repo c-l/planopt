@@ -40,11 +40,14 @@ class HLParam(object):
 
 class Grasp(HLParam):
     def generator(self):
-        yield np.array([[0], [0.6], [0]], dtype=np.float)
-        yield np.array([[0], [-0.6], [0]], dtype=np.float)
-        # yield np.array([[0.6], [0], [0]], dtype=np.float)
-        # yield np.array([[-0.6], [0], [0]], dtype=np.float)
-
+        vals = [np.array([[0], [0.6], [0]], dtype=np.float),
+                np.array([[0], [-0.6], [0]], dtype=np.float),
+                # yield np.array([[0.6], [0], [0]], dtype=np.float),
+                # yield np.array([[-0.6], [0], [0]], dtype=np.float),
+                ]
+        settings.RANDOM_STATE.shuffle(vals)
+        for v in vals:
+            yield v
 
 class RP(HLParam):
     pass
@@ -61,7 +64,7 @@ class ObjLoc(HLParam):
             self.min_x, self.max_x, self.min_y, self.max_y = region
 
     def generator(self):
-        while True:
+        for _ in range(3):
             x = settings.RANDOM_STATE.rand() * (self.max_x - self.min_x) + self.min_x
             y = settings.RANDOM_STATE.rand() * (self.max_y - self.min_y) + self.min_y
             yield np.array([[x], [y], [0]])

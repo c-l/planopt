@@ -73,10 +73,6 @@ class LLProb(object):
                     self.add_fluent_to_constraints(constraints, fluent, param_to_var)
         return constraints
 
-    def solve(self):
-        self.solve_at_priority(0, fix_sampled_params=True)
-        self.solve_at_priority(1)
-
     def solve_at_priority(self, priority, fix_sampled_params=False):
         # initialize gurobi Model object
         prob = OptProb()
@@ -130,3 +126,5 @@ class LLProb(object):
 
         for param, var in param_to_var.items():
             var.update_hl_param()
+
+        self.traj_cost = prob.val(0)

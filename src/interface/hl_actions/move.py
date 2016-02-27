@@ -42,13 +42,16 @@ class Move(HLAction):
         if obj is None:
             objs = hl_plan.get_all_but_params([self.robot])
             self.preconditions += [ForAllNotObstructs(env, world_state, self, robot, 1, self.traj, objs)]
+            self.preconditions += [ForAllNotObstructs(env, world_state, self, robot, 2, self.traj, objs)]
         else:
             assert gp is not None
             objs = hl_plan.get_all_but_params([self.robot, self.obj])
             self.preconditions += [ForAllNotObstructs(env, world_state, self, robot, 1, self.traj, objs)]
+            self.preconditions += [ForAllNotObstructs(env, world_state, self, robot, 2, self.traj, objs)]
 
             self.obj_traj = Traj(self, self.name + "_objtraj", 3, 40, is_var=True)
             self.preconditions += [ForAllNotObstructs(env, world_state, self, self.obj, 1, self.obj_traj, objs)]
+            self.preconditions += [ForAllNotObstructs(env, world_state, self, self.obj, 2, self.obj_traj, objs)]
             self.preconditions += [InManip(self, 0, obj, gp, self.traj, self.obj_traj)]
             self.params += [gp, self.obj_traj]
         # self.create_robot_clones()

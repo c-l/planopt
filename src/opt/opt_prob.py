@@ -90,16 +90,16 @@ class OptProb(object):
         for fn in self.obj_fns:
             val += fn.val()
 
-        if self.augmented_objective:
-            dual_val = 0
-            for (var, dual, consensus, ro) in self.dual_terms:
-                dual_val += np.dot(np.transpose(dual.value), var.value)[0, 0] + ro / 2 * square(norm(var.value - consensus.value, 2))
-            val += dual_val
+        # if self.augmented_objective:
+        #     dual_val = 0
+        #     for (var, dual, consensus, ro) in self.dual_terms:
+        #         dual_val += np.dot(np.transpose(dual.value), var.value)[0, 0] + ro / 2 * square(norm(var.value - consensus.value, 2))
+        #     val += dual_val
 
-        penalty_cost = penalty_coeff * \
-            sum([constraint.val() for constraint in self.constraints])
-        val += penalty_cost
-        return val
+        arr = []
+        for c in self.constraints:
+            arr.extend(c.val_lst())
+        return val, penalty_coeff * np.array(arr)
 
     def save(self):
         for var in self.vars:
@@ -151,8 +151,10 @@ class OptProb(object):
         for constraint in self.constraints:
             constraint.clean()
 
-        penalty_obj = grb.quicksum([constraint.convexify(
-            self.model, penalty_coeff) for constraint in self.constraints])
+        self.convexified_constr = []
+        for c in self.constraints:
+            self.convexified_constr.extend(constraint.convexify(self.model, penalty_coeff))
+        penalty_obj = grb.quicksum(self.convexified_constr)
         # self.obj_sqp = self.obj + penalty_coeff * self.nonlinear_cnts.convexify(self.model, penalty_coeff)
         self.obj_sqp = self.obj_quad + penalty_obj
         self.add_dual_costs()
