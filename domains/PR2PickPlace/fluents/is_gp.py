@@ -43,40 +43,29 @@ class PR2IsGP(AndFluent):
         self.hl_action.plot()
         robot_body = self.robot.get_env_body(self.env)
         # self.plot_finger_pad(robot_body)
-        rarm = robot_body.GetManipulator('rightarm')
-        ee_trans = rarm.GetEndEffectorTransform()
-        ee_pose = poseFromMatrix(ee_trans)
-        # print "ee pose: ", ee_pose
-        rarm_jac = rarm.CalculateJacobian()
+        rarm_inds = robot_body.GetManipulator('rightarm').GetArmIndices()
+        rarm_joints = [robot_body.GetJointFromDOFIndex(ind) for ind in rarm_inds]
+
+        tool_link = robot_body.GetLink("r_gripper_tool_frame")
+        link_ind = tool_link.GetIndex()
+
+        robot_pos = tool_link.GetTransform()
+        robot_pos = robot_pos[:3, 3]
+
+        rarm_jac = np.array([np.cross(joint.GetAxis(), robot_pos.flatten() - joint.GetAnchor()) for joint in rarm_joints]).T.copy()
         base_jac = np.eye(3)
         base_jac[2,2] = 0
         bodypart_jac = {"rightarm": rarm_jac, "base": base_jac}
-        bp_jac = self.robot.jac_from_bodypart_jacs(bodypart_jac, 3)
-        jac = np.hstack((np.zeros((3, (self.T-1)*self.K)), bp_jac))
-        # import ipdb; ipdb.set_trace()
-
-
-        # # computing jacobian myself
-        # arm_inds = rarm.GetArmIndices()
-        # arm_joints = [robot_body.GetJointFromDOFIndex(ind) for ind in arm_inds]
-        # tool_link = robot_body.GetLink("r_gripper_tool_frame")
-        # xyz = rarm.GetEndEffectorTransform()[:3,3]
-        # self_jac = np.array([np.cross(xyz - joint.GetAnchor(), joint.GetAxis()) for joint in arm_joints]).T.copy()
-        #
-        # assert np.allclose(jac[:,:7], -1*self_jac)
+        jac = self.robot.jac_from_bodypart_jacs(bodypart_jac, 3)
+        jac = np.hstack((np.zeros((3, (self.T-1)*self.K)), jac)) # only last time-step matters
 
         obj_body = self.obj.get_env_body(self.env)
         obj_trans = obj_body.GetTransform()
         obj_trans[2,3] = obj_trans[2,3] + .125
         # obj_trans[2,3] = obj_trans[2,3] + .325
-        obj_pose = poseFromMatrix(obj_trans)
+        obj_pos = obj_trans[:3,3]
 
-        val = ee_pose[4:7] - obj_pose[4:7]
-        # val = val[4:7]
-
-        val = val.reshape((len(val), 1))
-        # print "val: {}".format(val)
-        # print "obj_pose: {}".format(obj_pose)
+        val = robot_pos.flatten() - obj_pos.flatten()
 
         return (val, jac)
 

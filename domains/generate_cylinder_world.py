@@ -124,7 +124,8 @@ def spawn_table_pr2(env, robot_dist_from_table, tabletype='rll'):
     # env.AddKinBody(table)
     env.AddRobot(table)
 
-    robot = env.ReadRobotXMLFile("../models/pr2/pr2-head-kinect.xml")
+    # robot = env.ReadRobotXMLFile("../models/pr2/pr2-head-kinect.xml")
+    robot = env.ReadRobotXMLFile("../models/pr2/pr2.zae")
     env.Add(robot)
 
 def on_table(env, table_name):
@@ -149,7 +150,7 @@ def add_drop_table(env, dist_from_robot):
 
 if __name__ == "__main__":
     usage_str = "Usage: python %s -v (for viewer) -n [num_objects] -s [seed] -e [env_filename] -t [rll|small]" %sys.argv[0]
-    cylinder_dims = (0.05, 0.25)
+    cylinder_dims = (0.04, 0.25)
     num_objects = None
     seed = int(time.time())
     envFile = ENV_PATH+DEFAULT_ENV_FILE

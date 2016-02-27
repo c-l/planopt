@@ -19,7 +19,7 @@ class ObjInManip(AndFluent):
         self.name = "InManip"
 
         self.T = hl_action.T
-        self.K = hl_action.obj_K
+        self.K = 6
 
     def pre(self):
         # h = lambda x: self.error(x) # function inequality constraint h(x) = 0
@@ -41,7 +41,7 @@ class ObjInManip(AndFluent):
         # self.fluents = [rot_fluent]
 
     def pos_error(self, obj_traj):
-        q = self.gp.value
+        gp = np.array([0,0,.125])
 
         dim = 3
         val = np.zeros((self.T*dim, 1))
@@ -55,16 +55,19 @@ class ObjInManip(AndFluent):
             # import ipdb; ipdb.set_trace()
             self.obj.set_pose(self.env, ot)
             W_T_O = self.obj.get_transform(self.env)
-            cur = W_T_O[0:3, 3]
+            cur = W_T_O[0:3, 3] + gp
             self.hl_action.plot()
+            # import ipdb; ipdb.set_trace()
 
 
             robot_body = self.robot.get_env_body(self.env)
             tool_link = robot_body.GetLink("r_gripper_tool_frame")
             link_ind = tool_link.GetIndex()
 
-            target = tool_link.GetTransform().dot(np.r_[q, [[1]]])
-            target = target[:3]
+            # target = tool_link.GetTransform().dot(np.r_[q, [[1]]])
+            # target = target[:3]
+            target = tool_link.GetTransform()
+            target = target[:3,3]
             # import ipdb; ipdb.set_trace()
             # cur = cur[0:3,3]
             val_t = cur.flatten() - target.flatten()
@@ -88,7 +91,8 @@ class ObjInManip(AndFluent):
         return val, num_jac
 
     def rot_error(self, obj_traj):
-        q = self.gp.value
+        # q = self.gp.value
+        q = np.array([0,0,.125]).reshape((3,1))
 
         dim = 1
         val = np.zeros((self.T*dim, 1))
