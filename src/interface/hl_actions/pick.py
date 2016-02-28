@@ -35,7 +35,7 @@ class Pick(HLAction):
 
         self.preconditions = [RobotAt(self, 0, pos, self.traj)]
         self.preconditions += [ObjAt(self, 0, obj, loc, self.obj_traj)]
-        self.preconditions += [IsGP(self.env, self, robot, 0, obj, gp, self.traj, self.obj_traj)]
+        self.preconditions += [IsGP(self.env, self, robot, 0, obj, gp, loc, self.traj, self.obj_traj)]
 
         self.cost = 0.0
 

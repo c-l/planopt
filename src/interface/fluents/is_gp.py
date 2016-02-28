@@ -9,7 +9,7 @@ import ctrajoptpy
 from utils import *
 
 class IsGP(AndFluent):
-    def __init__(self, env, hl_action, robot, priority, obj, gp, traj, obj_traj):
+    def __init__(self, env, hl_action, robot, priority, obj, gp, loc, traj, obj_traj):
         self.env = env
         self.hl_action = hl_action
         self.plotting_env = hl_action.hl_plan.env
@@ -17,6 +17,7 @@ class IsGP(AndFluent):
         self.robot = robot
         self.obj = obj
         self.gp = gp
+        self.loc = loc
         self.traj = traj
         self.obj_traj = obj_traj
         self.name = "IsGP(" + self.obj.name + ", " + self.gp.name + ')'
@@ -39,7 +40,7 @@ class IsGP(AndFluent):
 
         h = lambda x: self.distance_from_obj(x, 0.05, (K,T)) # function inequality constraint g(x) <= 0
         # h = lambda x: self.distance_from_obj(x, 0.0, (K,T)) # function inequality constraint g(x) <= 0
-        h_func = CollisionFn([self.traj], h)
+        h_func = CollisionFn([self.traj, self.loc], h)
 
         fneq_fluent = FnEQFluent('fneq_' + self.name, self.priority, self.hl_action)
         fneq_fluent.fn = h_func
@@ -56,7 +57,7 @@ class IsGP(AndFluent):
         T = self.hl_action.T
 
         h = lambda x: self.distance_from_obj(x, 0.05, (K,T)) # function inequality constraint g(x) <= 0
-        h_func = CollisionFn([self.traj], h)
+        h_func = CollisionFn([self.traj, self.loc], h)
 
         fneq_fluent = FnEQFluent('fneq_' + self.name, self.priority, self.hl_action)
         fneq_fluent.fn = h_func
@@ -71,6 +72,7 @@ class IsGP(AndFluent):
     def distance_from_obj(self, x, target_dist, traj_shape):
         env = self.env
         K, T = traj_shape
+        assert T == 1
         val = np.zeros((T,1))
         jac = np.zeros((val.size, x.size))
 
@@ -81,9 +83,9 @@ class IsGP(AndFluent):
         obj = self.obj
         collisions = []
 
-        xt = x[-K:]
+        xt = x[:K]
         robot.set_pose(env, xt)
-        ot = self.obj_traj.value[:,-1:]
+        ot = x[-K:]
         obj.set_pose(env, ot)
 
         cc.SetContactDistance(np.infty)
@@ -123,6 +125,7 @@ class IsGP(AndFluent):
 
             # normalObsToRobot2 = -1 * np.sign(c.GetDistance())*normalize(ptB-ptA)
 
+            ptA = np.matrix(ptA)[:, 0:2]
             ptB = np.matrix(ptB)[:, 0:2]
             # why is there a negative one?
 
@@ -131,7 +134,9 @@ class IsGP(AndFluent):
             # gradd = -1 * np.sign(val[t]) * normal[:,0:2] * self.calcJacobian(np.transpose(ptB), xt)
             # gradd = np.sign(val[t]) * normal[:,0:2] * self.calcJacobian(np.transpose(ptB), xt)
             gradd =  -1*normal[:,0:2] * self.calcJacobian(np.transpose(ptB), xt)
+            obj_grad = normal[:,0:2] * self.calcJacobian(np.transpose(ptA), ot)
             jac[t, K*t:K*(t+1)] = gradd
+            jac[t, K*T+K*t:K*T+K*(t+1)] = obj_grad
             # print "normal: ", normal[:, 0:2]
             # print "val: ", val[t]
             # print "gradd: ", gradd
