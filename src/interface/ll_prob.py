@@ -127,7 +127,13 @@ class LLProb(object):
             # initialize from adapted previous trajectories
             success = prob.initialize_traj(mode="adapt")
         else:
-            success = solver.penalty_sqp(prob, do_early_converge=settings.DO_EARLY_CONVERGE)
+            if settings.DO_SQP or settings.BACKTRACKING_REFINEMENT:
+                do_early_converge = False
+            elif settings.DO_EARLY_CONVERGE:
+                do_early_converge = True
+            else:
+                raise NotImplementedError
+            success = solver.penalty_sqp(prob, do_early_converge=do_early_converge)
 
         for param, var in param_to_var.items():
             var.update_hl_param()

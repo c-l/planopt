@@ -24,7 +24,7 @@ class PRGraph(object):
         self.graph = nx.DiGraph()
 
 
-    def resume(self, plan_key, startTime):
+    def resume(self, plan_key, startTime, replanCount):
         try:
             print "Resuming plan:"
             self.saved_plans[plan_key].printPlan()
@@ -50,6 +50,9 @@ class PRGraph(object):
         print "FINAL TRAJ TOTAL COST: %.3f"%cur_plan.total_cost
         endTime = time.time()
         print "TOTAL TIME: %.3f seconds"%(endTime-startTime)
+        print "REPLAN COUNT: %d"%replanCount
+        with open("hp_output.txt", "w") as f:
+            f.write("%.3f\n%.3f\n%d"%(cur_plan.total_cost, endTime - startTime, replanCount))
         if self.env.GetViewer():
             cur_plan.execute()
 

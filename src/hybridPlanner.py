@@ -295,9 +295,8 @@ class HybridPlanner:
         # planning_primitives.test(strPlanFileH, self.ORSetup, objList=[],
         #                          reinterpreted=reinterpreted,
         #                          resumeFrom=resumeFrom, startTime=startTime)
-        self.pr_graph.resume(resume_key, startTime)
+        self.pr_graph.resume(resume_key, startTime, self.iteration)
 
-        print "REPLAN COUNT: %d"%self.iteration
         # print "Cache clearing count: "+ repr(self.cacheClearCount)
         print "Success. Quitting."
         self.pr_graph.env.StopSimulation()
@@ -364,22 +363,25 @@ def usage_str():
 
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "vpme:rd:s:", ["backtrack", "earlyconverge"])
+        opts, args = getopt.getopt(sys.argv[1:], "vpme:rd:s:", ["backtrack", "sqp", "earlyconvergesqp"])
     except getopt.GetoptError:
         print(usage_str())
         sys.exit(-1)
 
     seed = None
     bt_ref = False
+    sqp = False
     ec = False
     for opt, arg in opts:
         if opt == "-s":
             seed = int(arg)
         if opt == "--backtrack":
             bt_ref = True
-        if opt == "--earlyconverge":
+        if opt == "--sqp":
+            sqp = True
+        if opt == "--earlyconvergesqp":
             ec = True
-    init_settings(ss=seed, bt_ref=bt_ref, ec=ec)
+    init_settings(ss=seed, bt_ref=bt_ref, sqp=sqp, ec=ec)
 
     viewer = False
     pw_file = False
