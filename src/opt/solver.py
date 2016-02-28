@@ -352,6 +352,7 @@ class Solver(object):
             vals, param_to_inds, constr_inds_to_params = prob.val(penalty_coeff)
             merit = sum(vals)
             param_merits = {k: sum(vals[ind] for ind in v) for k, v in param_to_inds.items()}
+            constr_merits = {k: vals[k] for k in constr_inds_to_params}
             prob.save()
 
             while True:
@@ -363,21 +364,38 @@ class Solver(object):
 
                 model_merit = prob.model.objVal
                 param_model_merits = {k: grb.quicksum(grb_model_exprs[ind] for ind in v).getValue() for k, v in param_to_inds.items()}
+                constr_model_merits = {k: grb_model_exprs[k].getValue() for k in constr_merits}
                 new_vals, _, _ = prob.val(penalty_coeff)
                 new_merit = sum(new_vals)
                 param_new_merits = {k: sum(new_vals[ind] for ind in v) for k, v in param_to_inds.items()}
+                constr_new_merits = {k: new_vals[k] for k in constr_merits}
 
                 approx_merit_improve = merit - model_merit
                 approx_param_merit_improves = {k: param_merits[k] - param_model_merits[k] for k in param_merits}
+                approx_constr_merit_improves = {k: constr_merits[k] - constr_model_merits[k] for k in constr_merits}
                 exact_merit_improve = merit - new_merit
                 exact_param_merit_improves = {k: param_merits[k] - param_new_merits[k] for k in param_merits}
+                exact_constr_merit_improves = {k: constr_merits[k] - constr_new_merits[k] for k in constr_merits}
                 merit_improve_ratio = exact_merit_improve / approx_merit_improve
                 param_merit_improve_ratios = {k: exact_param_merit_improves[k] / approx_param_merit_improves[k] for k in param_merits}
+                constr_merit_improve_ratios = {k: exact_constr_merit_improves[k] / approx_constr_merit_improves[k] for k in constr_merits}
 
                 violated_constr_converged = False
+                print "\nIndex\tNewVal\tApprox\tExact\tRatio\tParamApprox"
                 for ci, ps in constr_inds_to_params.items():
                     if new_vals[ci] > self.param_cnt_tolerance: # violated constraint
-                        if all(approx_param_merit_improves[p] < self.min_approx_param_improve for p in ps):
+                        print "%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%s"%(ci,
+                                                                  new_vals[ci],
+                                                                  approx_constr_merit_improves[ci],
+                                                                  exact_constr_merit_improves[ci],
+                                                                  constr_merit_improve_ratios[ci],
+                                                                  [approx_param_merit_improves[p] for p in ps])
+                        # old convergence check
+                        # if all(approx_param_merit_improves[p] < self.min_approx_param_improve for p in ps):
+                        #     violated_constr_converged = True
+                        #     break
+                        if abs(approx_constr_merit_improves[ci]) < 0.03 and abs(exact_constr_merit_improves[ci]) < 0.03 and \
+                                all(abs(approx_param_merit_improves[p]) < 0.03 for p in ps):
                             violated_constr_converged = True
                             break
 
