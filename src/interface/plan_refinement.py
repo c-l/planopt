@@ -156,7 +156,6 @@ class PlanRefinement(object):
             llprob.solve_at_priority(0, recently_sampled=recently_sampled)
             for priority in JOINT_REF_PRIORITIES:
                 llprob.solve_at_priority(priority)
-                self.execute(speedup=1, pause=False)
                 fluents = [f for a in self.action_list for f in a.preconditions + a.postconditions]
                 violated_fluents = self.find_violated_fluents(fluents, priority)
                 if len(violated_fluents) == 0:
