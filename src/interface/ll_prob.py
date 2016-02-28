@@ -5,6 +5,7 @@ from opt.constraints import Constraints
 from interface.fluents.fluent import AndFluent, LinFluent, LinEqFluent, LinLEFluent, FnFluent, FnLEFluent, FnEQFluent
 import numpy as np
 from IPython import embed as shell
+import settings
 
 class LLProb(object):
     def __init__(self, hlas=None):
@@ -126,8 +127,7 @@ class LLProb(object):
             # initialize from adapted previous trajectories
             prob.initialize_traj(mode="adapt")
         else:
-            # solver.penalty_sqp(prob)
-            solver.structured_penalty_sqp(prob)
+            solver.penalty_sqp(prob, do_early_converge=settings.DO_EARLY_CONVERGE)
 
         for param, var in param_to_var.items():
             var.update_hl_param()

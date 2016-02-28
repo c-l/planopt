@@ -364,19 +364,22 @@ def usage_str():
 
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "vpme:rd:s:", ["backtrack"])
+        opts, args = getopt.getopt(sys.argv[1:], "vpme:rd:s:", ["backtrack", "earlyconverge"])
     except getopt.GetoptError:
         print(usage_str())
         sys.exit(-1)
 
     seed = None
     bt_ref = False
+    ec = False
     for opt, arg in opts:
         if opt == "-s":
             seed = int(arg)
         if opt == "--backtrack":
             bt_ref = True
-    init_settings(ss=seed, bt_ref=bt_ref)
+        if opt == "--earlyconverge":
+            ec = True
+    init_settings(ss=seed, bt_ref=bt_ref, ec=ec)
 
     viewer = False
     pw_file = False
