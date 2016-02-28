@@ -109,11 +109,11 @@ class IsGP(AndFluent):
             # plotting collision information
             # handles.append(self.plotting_env.plot3(points=ptB, pointsize=10,colors=(1,0,0)))
             # handles.append(self.plotting_env.plot3(points=ptA, pointsize=10,colors=(0,1,0)))
-            if not np.allclose(ptA, ptB, atol=1e-3):
-                if distance < 0:
-                    handles.append(self.plotting_env.drawarrow(p1=ptA, p2=ptB, linewidth=.01,color=(1,0,0)))
-                else:
-                    handles.append(self.plotting_env.drawarrow(p1=ptA, p2=ptB, linewidth=.01,color=(0,0,0)))
+            # if not np.allclose(ptA, ptB, atol=1e-3):
+            #     if distance < 0:
+            #         handles.append(self.plotting_env.drawarrow(p1=ptA, p2=ptB, linewidth=.01,color=(1,0,0)))
+            #     else:
+            #         handles.append(self.plotting_env.drawarrow(p1=ptA, p2=ptB, linewidth=.01,color=(0,0,0)))
 
             gradd = np.zeros((1,K))
             normal = np.matrix(c.GetNormal())
@@ -145,10 +145,10 @@ class IsGP(AndFluent):
             # print "distance collision = ", (target_dist - c.GetDistance())
             # print "distance = ", (self.grasp(x) / 3.0)
 
-        self.hl_action.add_plot_handles(handles)
+        # self.hl_action.add_plot_handles(handles)
 
-        self.plotting_env.UpdatePublishedBodies()
-        handles = []
+        # self.plotting_env.UpdatePublishedBodies()
+        # handles = []
         # print 'val: ', val
         # print 'jac: ', jac
         return (val, jac)
