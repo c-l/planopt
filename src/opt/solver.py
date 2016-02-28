@@ -20,16 +20,17 @@ class Solver(object):
         self.improve_ratio_threshold = .25
         self.min_trust_box_size = 1e-4
         # self.min_trust_box_size = 1e-2
-        self.max_trust_box_size = 1
+        self.max_trust_box_size = 100
         # self.min_approx_improve = 1e-4
         self.min_approx_improve = 1e-2
-        self.min_constr_approx_improve = -1
+        self.min_approx_param_improve = -1e-3
         # self.min_approx_improve = 3e-1
         # self.min_approx_improve = 1e-1
         self.trust_shrink_ratio = .1
         self.trust_expand_ratio = 1.5
         # self.cnt_tolerance = 1e-4
         self.cnt_tolerance = 1e-2
+        self.param_cnt_tolerance = 1
         self.max_merit_coeff_increases = 1
         self.merit_coeff_increase_ratio = 10 # doesn't matter when max_merit_coeff_increases = 1
         # self.initial_trust_box_size = 1e-4
@@ -281,7 +282,7 @@ class Solver(object):
         else:
             return True, dual_updates
 
-        # @profile
+    # @profile
     def minimize_merit_function(self, prob, penalty_coeff, trust_box_size):
         success = True
         sqp_iter = 1
@@ -348,9 +349,7 @@ class Solver(object):
 
             prob.convexify(penalty_coeff)
             grb_model_exprs = np.hstack((prob.obj_quad, prob.convexified_constr))
-            vals, param_to_inds = prob.val(penalty_coeff)
-            # remove params that are not actually vars
-            param_to_inds = {k:v for k, v in param_to_inds.items() if k.is_var}
+            vals, param_to_inds, constr_inds_to_params = prob.val(penalty_coeff)
             if trust_box_sizes is None:
                 trust_box_sizes = {p: self.initial_trust_box_size for p in param_to_inds}
             merit = sum(vals)
@@ -366,7 +365,7 @@ class Solver(object):
 
                 model_merit = prob.model.objVal
                 param_model_merits = {k: grb.quicksum(grb_model_exprs[ind] for ind in v).getValue() for k, v in param_to_inds.items()}
-                new_vals, _ = prob.val(penalty_coeff)
+                new_vals, _, _ = prob.val(penalty_coeff)
                 new_merit = sum(new_vals)
                 param_new_merits = {k: sum(new_vals[ind] for ind in v) for k, v in param_to_inds.items()}
 
@@ -376,6 +375,13 @@ class Solver(object):
                 exact_param_merit_improves = {k: param_merits[k] - param_new_merits[k] for k in param_merits}
                 merit_improve_ratio = exact_merit_improve / approx_merit_improve
                 param_merit_improve_ratios = {k: exact_param_merit_improves[k] / approx_param_merit_improves[k] for k in param_merits}
+
+                violated_constr_converged = False
+                for ci, ps in constr_inds_to_params.items():
+                    if new_vals[ci] > self.param_cnt_tolerance: # violated constraint
+                        if all(approx_param_merit_improves[p] < self.min_approx_param_improve for p in ps):
+                            violated_constr_converged = True
+                            break
 
                 print("      approx_merit_improve: {0}. exact_merit_improve: {1}. merit_improve_ratio: {2}".format(approx_merit_improve,
                                                                                                                    exact_merit_improve,
@@ -390,6 +396,11 @@ class Solver(object):
                 elif approx_merit_improve < self.min_approx_improve:
                     print("Converged: y tolerance")
                     # why do we restore if there is some improvement?
+                    prob.restore()
+                    return (trust_box_sizes, success)
+                elif violated_constr_converged:
+                    print("\n\nSome violated constraint has converged, val = %f"%new_vals[ci])
+                    print("Params: %s\n\n"%[(p.name, approx_param_merit_improves[p]) for p in ps])
                     prob.restore()
                     return (trust_box_sizes, success)
                 elif exact_merit_improve > 0 and merit_improve_ratio > self.improve_ratio_threshold:

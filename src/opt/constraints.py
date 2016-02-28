@@ -107,18 +107,22 @@ class Constraints(object):
                 return False
         return True
 
-    def val_lst(self, start_ind, param_to_inds):
+    def val_lst(self, start_ind, param_to_inds, constr_inds_to_params):
         val = []
         i = start_ind
         for g in self.gs:
             val.append(self.hinge_val(g))
             for param in g.params:
-                param_to_inds.setdefault(param, set()).add(i)
+                if param.is_var:
+                    param_to_inds.setdefault(param, set()).add(i)
+                    constr_inds_to_params.setdefault(i, set()).add(param)
             i += 1
         for h in self.hs:
             val.append(self.abs_val(h))
             for param in h.params:
-                param_to_inds.setdefault(param, set()).add(i)
+                if param.is_var:
+                    param_to_inds.setdefault(param, set()).add(i)
+                    constr_inds_to_params.setdefault(i, set()).add(param)
             i += 1
         return val
 

@@ -129,12 +129,14 @@ class OptProb(object):
         self.obj_fns += [quad_fn]
         self.obj_quad += [quad_fn.expr]
 
+    # @profile
     def val(self, penalty_coeff):
         param_to_inds = {}
         val = []
         for i, fn in enumerate(self.obj_fns):
             val.append(fn.val())
-            param_to_inds.setdefault(fn.param, set()).add(i)
+            if fn.param.is_var:
+                param_to_inds.setdefault(fn.param, set()).add(i)
 
         # if self.augmented_objective:
         #     dual_val = 0
@@ -144,11 +146,13 @@ class OptProb(object):
 
         assert len(self.constraints) == 1
         arr = []
+        constr_inds_to_params = {}
         for c in self.constraints:
-            arr.extend(c.val_lst(start_ind=i+1, param_to_inds=param_to_inds))
+            arr.extend(c.val_lst(start_ind=i+1, param_to_inds=param_to_inds, constr_inds_to_params=constr_inds_to_params))
 
-        return np.hstack((val, penalty_coeff * np.array(arr))), param_to_inds
+        return np.hstack((val, penalty_coeff * np.array(arr))), param_to_inds, constr_inds_to_params
 
+    # @profile
     def val_old(self, penalty_coeff):
         val = 0
         for fn in self.obj_fns:
@@ -233,6 +237,7 @@ class OptProb(object):
             if var.hl_param in trust_region_sizes:
                 self.add_trust_region_cnt(var.name, var.grb_vars.flatten(), var.value.flatten(), trust_region_sizes[var.hl_param])
 
+    # @profile
     def add_trust_region_old(self, trust_region_size):
         if self.trust_region_cnt is not None:
             self.model.remove(self.trust_region_cnt)
