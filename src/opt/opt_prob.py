@@ -89,12 +89,7 @@ class OptProb(object):
         else:
             raise NotImplementedError
 
-        self.model.setObjective(obj)
-        self.model.update()
-        self.model.optimize()
-        self.update_vars()
-        self.plot()
-        return True
+        return self.optimize(objective=obj)
 
     def find_closest_feasible_point(self):
         if self.trust_region_cnt is not None:
@@ -109,17 +104,19 @@ class OptProb(object):
             if var.value is not None:
                 obj += self.l2_norm_diff_squared(self.model, var)
 
-        self.model.setObjective(obj)
-        self.model.update()
-        self.model.optimize()
-        self.update_vars()
-        return True
+        return self.optimize(objective=obj)
 
-    def optimize(self):
-        self.model.setObjective(self.obj_sqp)
+    def optimize(self, objective):
+        self.model.setObjective(objective)
         self.model.update()
         self.model.optimize()
+        if self.model.Status in (3, 4):
+            # 3: proven infeasible
+            # 4: proven infeasible or unbounded
+            return False
         self.update_vars()
+        self.plot()
+        return True
 
     def clean(self, temp):
         for item in temp:
@@ -133,6 +130,7 @@ class OptProb(object):
     def val(self, penalty_coeff):
         param_to_inds = {}
         val = []
+        i = 0
         for i, fn in enumerate(self.obj_fns):
             val.append(fn.val())
             if fn.param.is_var:

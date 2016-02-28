@@ -227,7 +227,7 @@ class Solver(object):
                     print("    trust region size: {0}".format(trust_box_size))
 
                     prob.add_trust_region(trust_box_size)
-                    prob.optimize()
+                    prob.optimize(objective=prob.obj_sqp)
 
                     model_merit = prob.model.objVal
                     new_merit = prob.val(penalty_coeff)
@@ -299,8 +299,7 @@ class Solver(object):
 
                 prob.add_trust_region_old(trust_box_size)
                 prob.clear_handles()
-                prob.optimize()
-                prob.plot()
+                prob.optimize(objective=prob.obj_sqp)
 
                 model_merit = prob.model.objVal
                 new_merit = prob.val_old(penalty_coeff)
@@ -359,8 +358,7 @@ class Solver(object):
                 print("    trust region size: {0}".format(trust_box_size))
                 prob.add_trust_region_old(trust_box_size)
                 prob.clear_handles()
-                prob.optimize()
-                prob.plot()
+                prob.optimize(objective=prob.obj_sqp)
 
                 model_merit = prob.model.objVal
                 param_model_merits = {k: grb.quicksum(grb_model_exprs[ind] for ind in v).getValue() for k, v in param_to_inds.items()}

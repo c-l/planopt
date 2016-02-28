@@ -122,14 +122,15 @@ class LLProb(object):
             solver.max_merit_coeff_increases = 1
         if priority == -1:
             # initialize straight-line trajectories
-            prob.initialize_traj(mode="straight")
+            success = prob.initialize_traj(mode="straight")
         elif priority == 0:
             # initialize from adapted previous trajectories
-            prob.initialize_traj(mode="adapt")
+            success = prob.initialize_traj(mode="adapt")
         else:
-            solver.penalty_sqp(prob, do_early_converge=settings.DO_EARLY_CONVERGE)
+            success = solver.penalty_sqp(prob, do_early_converge=settings.DO_EARLY_CONVERGE)
 
         for param, var in param_to_var.items():
             var.update_hl_param()
 
         self.traj_cost = sum(prob.val(0)[0])
+        return success

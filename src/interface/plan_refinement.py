@@ -202,64 +202,67 @@ class PlanRefinement(object):
         # find first action where every sampled param occurs
         sampled_params = self.world.get_sampled_params()
         sampled_params.sort(key=lambda p: p.sample_priority)
-        action_to_param = dict([a.name, []] for a in self.action_list)
-        for p in sampled_params:
-            for a in self.action_list:
-                if p in a.params:
-                    action_to_param[a.name].append(p)
-                    break
-
-        llprobs = [LLProb([a]) for a in self.action_list]
+        actions_params = []
+        last_ind_to_actions = {}
+        seen = set()
+        llprobs = {}
+        for a in self.action_list:
+            for p in sampled_params:
+                if p in a.params and p not in seen:
+                    actions_params.append((a, p))
+                    seen.add(p)
+            llprobs[a] = LLProb([a])
+            last_ind_to_actions.setdefault(len(actions_params) - 1, []).append(a)
 
         i = 0
-        violated_fluents = None
         all_useful_fluents = set()
-        while i < len(self.action_list):
-            a = self.action_list[i]
+        while i < len(actions_params):
+            a, p = actions_params[i]
+            # because we set this to False a few lines down
             if a.is_move():
                 a.end.is_var = True
-            for p in action_to_param[a.name]:
-                try:
-                    p.resample()
-                except StopIteration:
-                    if i == 0:
-                        # backtracking exhausted
-                        for f in all_useful_fluents:
-                            self.remove_plots()
-                            yield f
-                        p.reset_gen()
-                        # reset set of useful fluents, since we yielded them all
-                        all_useful_fluents = set()
-                        break
+            try:
+                p.resample()
+            except StopIteration:
+                if i == 0:
+                    # backtracking exhausted
+                    for f in all_useful_fluents:
+                        self.remove_plots()
+                        yield f
                     p.reset_gen()
-                    # move index back to STRICTLY previous action which has a resampled param
-                    self.action_list[i].remove_plots()
-                    i -= 1
-                    while not action_to_param[self.action_list[i].name]:
-                        self.action_list[i].remove_plots()
-                        i -= 1
-                    break
-            else:
+                    # reset set of useful fluents, since we yielded them all
+                    all_useful_fluents = set()
+                    continue
+                p.reset_gen()
+                a.remove_plots()
+                i -= 1
+                continue
+            if i not in last_ind_to_actions:
+                i += 1
+                continue
+            violated_fluents = []
+            successes = []
+            for a in last_ind_to_actions[i]:
                 # straight-line initialization
-                llprobs[i].solve_at_priority(-1, recently_sampled)
+                straight_line_init_succ = llprobs[a].solve_at_priority(-1, fix_sampled_params=True)
+                successes.append(straight_line_init_succ)
+                vio_prio = -1
                 # optimize -- fix sampled params, so they are not optimized over
-                llprobs[i].solve_at_priority(2, fix_sampled_params=True)
+                if straight_line_init_succ:
+                    llprobs[a].solve_at_priority(2, fix_sampled_params=True)
+                    vio_prio = 2
                 # after optimizing a move, fix the end robot pose
                 if a.is_move():
                     a.end.is_var = False
+                # get violated fluents for this action
+                violated_fluents.extend(self.find_violated_fluents([f for f in a.preconditions + a.postconditions], priority=vio_prio))
+            if all(successes) and len(violated_fluents) == 0:
+                i += 1
+            else:
+                # i stays the same
+                self.save_useful_fluents(violated_fluents, all_useful_fluents)
 
-                fluents = [f for f in a.preconditions + a.postconditions]
-                violated_fluents = self.find_violated_fluents(fluents, priority=2)
-                if len(violated_fluents) == 0:
-                    i += 1
-                else:
-                    self.save_useful_fluents(violated_fluents, all_useful_fluents)
-                    # move index back to previous OR CURRENT action which has a resampled param
-                    while not action_to_param[self.action_list[i].name]:
-                        self.action_list[i].remove_plots()
-                        i -= 1
-
-        self.total_cost = sum(l.traj_cost for l in llprobs)
+        self.total_cost = sum(l.traj_cost for l in llprobs.values())
         yield None
 
     # TODO: whether a fluent is useful should be determined by domain file?
