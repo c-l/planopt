@@ -1,5 +1,7 @@
 import subprocess
 import signal
+from IPython import embed as shell
+import numpy as np
 
 NUM_TEST = 50
 TIMEOUT = 600
@@ -60,5 +62,46 @@ def main():
             f.write("%s\n"%earlyconvergesqp_info)
     print "Testing complete."
 
+def is_failure(x):
+    return x in ("fail", "timeout")
+
+def failure_in_lst(x):
+    return "fail" in x or "timeout" in x
+
+def parse(f_name):
+    with open(f_name, "r") as f:
+        _, bt, _, sqp, _, early = f.readlines()[-6:]
+    bt_info = {}
+    sqp_info = {}
+    early_info = {}
+    for mode, d in [(bt, bt_info), (sqp, sqp_info), (early, early_info)]:
+        for i, x in enumerate(eval(mode)):
+            seed = SEEDS[i]
+            if is_failure(x):
+                d[seed] = (x, x, x)
+                continue
+            tc, t, rc = x
+            d[seed] = (float(tc.strip()), float(t.strip()), int(rc.strip()))
+        succ = len(filter(lambda x: not failure_in_lst(x), d.values())) * 1.0 / len(d)
+        fail = len(filter(lambda x: "fail" in x, d.values())) * 1.0 / len(d)
+        timeout = len(filter(lambda x: "timeout" in x, d.values())) * 1.0 / len(d)
+        traj_cost = np.average([v[0] for v in d.values() if not failure_in_lst(v)])
+        total_time = np.average([v[1] for v in d.values() if not failure_in_lst(v)])
+        replan_count = np.average([v[2] for v in d.values() if not failure_in_lst(v)])
+        d["succ"] = succ
+        d["fail"] = fail
+        d["timeout"] = timeout
+        d["traj_cost"] = traj_cost
+        d["total_time"] = total_time
+        d["replan_count"] = replan_count
+    for name, d in [("Backtrack", bt_info), ("SQP", sqp_info), ("Early Converge", early_info)]:
+        print "%s success rate: %f"%(name, d["succ"])
+        # print "%s fail rate: %f"%(name, d["fail"])
+        # print "%s timeout rate: %f"%(name, d["timeout"])
+        print "%s traj cost: %f"%(name, d["traj_cost"])
+        print "%s total time: %f"%(name, d["total_time"])
+        print "%s replan count: %f"%(name, d["replan_count"])
+
 if __name__ == "__main__":
-    main()
+    # main()
+    parse("iros_16_results/results_swap_namo.txt")
