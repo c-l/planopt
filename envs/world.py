@@ -245,8 +245,8 @@ class World(object):
         self.create_walls(env, [[-1.0,-3.0],[-1.0,4.0],[2.0,4.0],[2.0,8.0],[5.0,8.0],[5.0,4.0],[8.0,4.0],[8.0,-3.0],[-1.0,-3.0]])
 
         dims = [0.35, 2.0]
-        can1t= base_pose_to_mat(np.array([[3.5],[5.5],[0]]))
-        can2t= base_pose_to_mat(np.array([[3.5],[3.5],[0]]))
+        can1t = base_pose_to_mat(np.array([[3.5],[3.5],[0]]))
+        can2t = base_pose_to_mat(np.array([[3.5],[5.5],[0]]))
         can1 = self.create_cylinder(env, "can1", can1t, dims)
         can2 = self.create_cylinder(env, "can2", can2t, dims)
         env.AddKinBody(can1)
