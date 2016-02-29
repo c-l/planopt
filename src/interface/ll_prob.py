@@ -8,11 +8,12 @@ from IPython import embed as shell
 import settings
 
 class LLProb(object):
-    def __init__(self, hlas=None):
+    def __init__(self, hlas=None, world=None):
         if hlas is None:
             self.hlas = []
         else:
             self.hlas = hlas
+        self.world = world
 
     def add_fluent_to_constraints(self, constraints, fluent, param_to_var):
         if isinstance(fluent, AndFluent):
@@ -85,6 +86,7 @@ class LLProb(object):
         for hla in self.hlas:
             params += hla.get_params()
             prob.add_hla(hla)
+        params += self.world.world_state.values()
 
         param_to_var = {}
         for param in params:

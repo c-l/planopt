@@ -147,7 +147,7 @@ class PlanRefinement(object):
         for param in sampled_params:
             param.resample()
 
-        llprob = LLProb(self.action_list)
+        llprob = LLProb(self.action_list, self.world)
         llprob.solve_at_priority(-1, recently_sampled=recently_sampled)
         all_useful_fluents = set()
         count = 0
@@ -211,7 +211,7 @@ class PlanRefinement(object):
                 if p in a.params and p not in seen:
                     actions_params.append((a, p))
                     seen.add(p)
-            llprobs[a] = LLProb([a])
+            llprobs[a] = LLProb([a], self.world)
             last_ind_to_actions.setdefault(len(actions_params) - 1, []).append(a)
 
         i = 0

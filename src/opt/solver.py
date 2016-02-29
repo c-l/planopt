@@ -18,8 +18,7 @@ class Solver(object):
 
     def __init__(self):
         self.improve_ratio_threshold = .25
-        # self.min_trust_box_size = 1e-4
-        self.min_trust_box_size = 1e-3
+        self.min_trust_box_size = 1e-4
         self.max_trust_box_size = 100
         # self.min_approx_improve = 1e-4
         self.min_approx_improve = 1e-2

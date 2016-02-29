@@ -44,7 +44,7 @@ class HLParam(object):
 class Grasp(HLParam):
     def generator(self):
         vals = [np.array([[0], [0.6], [0]], dtype=np.float),
-                np.array([[0], [-0.6], [0]], dtype=np.float),
+                # np.array([[0], [-0.6], [0]], dtype=np.float),
                 # yield np.array([[0.6], [0], [0]], dtype=np.float),
                 # yield np.array([[-0.6], [0], [0]], dtype=np.float),
                 ]
@@ -60,8 +60,8 @@ class RP(HLParam):
 
     def generator(self):
         assert self.obj_loc is not None
-        vals = [np.array([[0], [0.6], [0]], dtype=np.float),
-                np.array([[0], [-0.6], [0]], dtype=np.float),
+        vals = [np.array([[0], [-0.6], [0]], dtype=np.float),
+                # np.array([[0], [-0.6], [0]], dtype=np.float),
                 # yield np.array([[0.6], [0], [0]], dtype=np.float),
                 # yield np.array([[-0.6], [0], [0]], dtype=np.float),
                 ]

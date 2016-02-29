@@ -16,22 +16,21 @@ class TwoCanOpt(object):
         self.rows = 3
         self.cols = 1
 
-        self.movable_objects = {"can1", "can2"}
+        num_cans = max(int(o.GetName()[3:]) for o in env.GetBodies() if o.GetName().startswith("can"))
+        self.movable_objects = {"can%d"%i for i in range(1, num_cans+1)}
         self.param_map = {}
         self.add_body_params(env, self.param_map)
         self.body_params = self.param_map.copy()
         robot = self.param_map['robot']
-        can1 = self.param_map['can1']
-        can2 = self.param_map['can2']
         self.param_map.update({"robotinitloc":RP("robotinitloc", self.rows, self.cols, is_var=False, value=robot.get_pose(env)),
-                               "can1initloc":ObjLoc("can1initloc", self.rows, self.cols, is_var=False, value=can1.get_pose(env)),
-                               "can2initloc":ObjLoc("can2initloc", self.rows, self.cols, is_var=False, value=can2.get_pose(env)),
                                "goal1":ObjLoc("goal1", self.rows, self.cols, is_var=False, value=np.array([[3.5], [5.5], [0]])),
                                "goal2":ObjLoc("goal2", self.rows, self.cols, is_var=False, value=np.array([[3.5], [3.5], [0]]))})
+        for i in range(1, num_cans+1):
+            self.param_map["can%dinitloc"%i] = ObjLoc("can%dinitloc"%i, self.rows,self.cols,
+                                                      is_var=False, value=self.param_map["can%d"%i].get_pose(env))
 
         self.name = "twocan_world"
-        self.world_state = {self.param_map["can1"]: self.param_map["can1initloc"],
-                            self.param_map["can2"]: self.param_map["can2initloc"]}
+        self.world_state = {self.param_map["can%d"%i]: self.param_map["can%dinitloc"%i] for i in range(1, num_cans+1)}
 
     def get_sampled_params(self):
         params_to_sample = []
