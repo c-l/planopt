@@ -88,13 +88,16 @@ def swap_parse(f_name):
         traj_cost = np.average([v[0] for v in d.values() if not _failure_in_lst(v)])
         total_time = np.average([v[1] for v in d.values() if not _failure_in_lst(v)])
         replan_count = np.average([v[2] for v in d.values() if not _failure_in_lst(v)])
+        l = len(d)
         d["succ"] = succ
         d["fail"] = fail
         d["timeout"] = timeout
         d["traj_cost"] = traj_cost
         d["total_time"] = total_time
         d["replan_count"] = replan_count
+        d["len"] = l
     for name, d in [("Backtrack", bt_info), ("SQP", sqp_info), ("Early Converge", early_info)]:
+        print "Num experiments: %d"%d["len"]
         print "%s success rate: %f"%(name, d["succ"])
         # print "%s fail rate: %f"%(name, d["fail"])
         # print "%s timeout rate: %f"%(name, d["timeout"])
@@ -146,5 +149,5 @@ def putaway_test():
 
 if __name__ == "__main__":
     # swap_test()
-    # swap_parse("iros_16_results/results_swap_namo.txt")
+    # swap_parse("iros_16_results/results_putaway_namo.txt")
     putaway_test()
