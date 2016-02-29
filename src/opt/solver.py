@@ -358,7 +358,9 @@ class Solver(object):
                 print("    trust region size: {0}".format(trust_box_size))
                 prob.add_trust_region_old(trust_box_size)
                 prob.clear_handles()
-                prob.optimize(objective=prob.obj_sqp)
+                optim_succeeded = prob.optimize(objective=prob.obj_sqp)
+                if not optim_succeeded:
+                    return (trust_box_size, False)
 
                 model_merit = prob.model.objVal
                 param_model_merits = {k: grb.quicksum(grb_model_exprs[ind] for ind in v).getValue() for k, v in param_to_inds.items()}
