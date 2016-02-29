@@ -6,8 +6,9 @@ GRB = grb.GRB
 
 class Constraints(object):
 
-    def __init__(self, model, g=None, h=None):
-        self.model = model
+    def __init__(self, prob, g=None, h=None):
+        self.prob = prob
+        self.model = prob.get_model()
         # linear_constraints = []
         # if linear_constraints is None:
         #     self.linear_constraints = []
