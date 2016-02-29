@@ -110,7 +110,9 @@ class OptProb(object):
         self.model.setObjective(objective)
         self.model.update()
         self.model.optimize()
-        if self.model.Status in (3, 4):
+        # if self.model.Status in (3, 4):
+        if self.model.Status != 2:
+            # 2: optimal
             # 3: proven infeasible
             # 4: proven infeasible or unbounded
             return False
