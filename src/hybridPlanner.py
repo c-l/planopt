@@ -363,7 +363,7 @@ def usage_str():
 
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "vpme:rd:s:", ["backtrack", "sqp", "earlyconvergesqp"])
+        opts, args = getopt.getopt(sys.argv[1:], "vpme:rd:s:", ["backtrack", "sqp", "earlyconvergesqp", "admm"])
     except getopt.GetoptError:
         print(usage_str())
         sys.exit(-1)
@@ -372,6 +372,7 @@ if __name__ == "__main__":
     bt_ref = False
     sqp = False
     ec = False
+    admm = False
     for opt, arg in opts:
         if opt == "-s":
             seed = int(arg)
@@ -381,7 +382,9 @@ if __name__ == "__main__":
             sqp = True
         if opt == "--earlyconvergesqp":
             ec = True
-    init_settings(ss=seed, bt_ref=bt_ref, sqp=sqp, ec=ec)
+        if opt == "--admm":
+            admm = True
+    init_settings(ss=seed, bt_ref=bt_ref, sqp=sqp, ec=ec, admm=admm)
 
     viewer = False
     pw_file = False

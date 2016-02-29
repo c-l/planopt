@@ -154,10 +154,10 @@ class QuadFn(Function):
         return val
         # return val[0, 0]
 
-    def to_gurobi_fn(self, param_to_var):
+    def to_gurobi_fn(self, prob, param_to_var):
         var = param_to_var[self.param]
         # TODO: need to specify format
-        self.expr = QuadFn.quad_expr(var.get_grb_vars().flatten(order='F'), self.Q)
+        self.expr = QuadFn.quad_expr(var.get_grb_vars(prob).flatten(order='F'), self.Q)
 
 
     # def hess(self, x):
@@ -173,13 +173,13 @@ class CollisionFn(Function):
         self.f = f
         self.params = params
 
-    def to_gurobi_fn(self, param_to_var):
+    def to_gurobi_fn(self, prob, param_to_var):
         self.vs = []
         for param in self.params:
             if param not in param_to_var:
                 raise Exception("Parameter %s not found in param_to_var!"%param.name)
             self.vs.append(param_to_var[param])
-        self.grb_vars = self.get_grb_vars()
+        self.grb_vars = self.get_grb_vars(prob)
 
     def get_values(self):
         return self.get_flattened_values()
@@ -195,10 +195,10 @@ class CollisionFn(Function):
         values = np.vstack(values)
         return values
 
-    def get_grb_vars(self):
+    def get_grb_vars(self, prob):
         grb_vars = []
         for var in self.vs:
-            grb_vars.extend(var.grb_vars.flatten(order='F'))
+            grb_vars.extend(var.get_grb_vars(prob).flatten(order='F'))
         grb_vars = np.vstack(grb_vars)
         return grb_vars
 

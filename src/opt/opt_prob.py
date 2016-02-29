@@ -6,6 +6,7 @@ import gurobipy as grb
 from function import Function
 GRB = grb.GRB
 from IPython import embed as shell
+from ipdb import set_trace
 
 
 class OptProb(object):
@@ -32,19 +33,22 @@ class OptProb(object):
         self.hlas = []
 
         self.trust_region_cnt = None
-        self.dual_terms = []
+        # self.dual_terms = []
         self.trust_temp = []
 
         self.callbacks = []
 
         self.init_trust_region = True
 
+    def update(self):
+        self.model.update()
+
     def get_model(self):
         return self.model
 
     def update_vars(self):
         for var in self.vars:
-            var.update()
+            var.update(self)
 
     def plot(self):
         for hla in self.hlas:
@@ -85,7 +89,7 @@ class OptProb(object):
                     P = np.diag(v[:, 0], K) + np.diag(d[:, 0])
                     # minimum-velocity finite difference
                     Q = np.dot(np.transpose(P), P)
-                    obj += Function.quad_expr((var.get_grb_vars() - var.value).flatten(order="f"), Q)
+                    obj += Function.quad_expr((var.get_grb_vars(self) - var.value).flatten(order="f"), Q)
         else:
             raise NotImplementedError
 
@@ -187,6 +191,7 @@ class OptProb(object):
         self.hlas.append(hla)
 
     def add_var(self, var):
+        var.add_opt_prob(self)
         self.vars.append(var)
 
     def add_constraints(self, constraints):
@@ -198,14 +203,17 @@ class OptProb(object):
     def make_primal(self):
         self.augmented_objective = False
 
-    def add_dual_cost(self, var, dual, consensus=None, ro=0.05):
-        self.dual_terms.append((var, dual, consensus, ro))
+    # def add_dual_cost(self, var, dual, consensus=None, ro=0.05):
+    #     self.dual_terms.append((var, dual, consensus, ro))
 
-    def add_dual_costs(self):
-        self.model.update()
-        if self.augmented_objective:
-            for (var, dual, consensus, ro) in self.dual_terms:
-                self.obj_sqp += np.dot(np.transpose(dual.value), var.grb_vars)[0, 0] + ro / 2 * self.l2_norm_squared(self.model, var, consensus.value)
+    def get_dual_costs(self):
+        dual_costs = grb.quicksum(v.get_dual_cost(self) for v in self.vars)
+        return dual_costs
+    # def add_dual_costs(self):
+    #     self.model.update()
+    #     if self.augmented_objective:
+    #         for (var, dual, consensus, ro) in self.dual_terms:
+    #             self.obj_sqp += np.dot(np.transpose(dual.value), var.grb_vars)[0, 0] + ro / 2 * self.l2_norm_squared(self.model, var, consensus.value)
 
     def constraints_satisfied(self, tolerance):
         for constraint in self.constraints:
@@ -224,7 +232,7 @@ class OptProb(object):
         penalty_obj = grb.quicksum(self.convexified_constr)
         # self.obj_sqp = self.obj + penalty_coeff * self.nonlinear_cnts.convexify(self.model, penalty_coeff)
         self.obj_sqp = grb.quicksum(self.obj_quad) + penalty_obj
-        self.add_dual_costs()
+        # self.add_dual_costs()
 
     # @profile
     def add_trust_region(self, trust_region_sizes):
@@ -240,7 +248,7 @@ class OptProb(object):
 
         for var in self.vars:
             if var.hl_param in trust_region_sizes:
-                self.add_trust_region_cnt(var.name, var.grb_vars.flatten(), var.value.flatten(), trust_region_sizes[var.hl_param])
+                self.add_trust_region_cnt(var.name, var.get_grb_vars(self).flatten(), var.value.flatten(), trust_region_sizes[var.hl_param])
 
     # @profile
     def add_trust_region_old(self, trust_region_size):
@@ -250,7 +258,7 @@ class OptProb(object):
         self.trust_temp = []
 
         var_list = [
-            grb_var for var in self.vars for grb_var in var.grb_vars.flatten()]
+            grb_var for var in self.vars for grb_var in var.get_grb_vars(self).flatten()]
         val_list = [val for var in self.vars for val in var.value.flatten()]
 
         # self.trust_region_cnt = self.add_trust_region_cnt(
@@ -270,6 +278,8 @@ class OptProb(object):
                     self.model.addVar(lb=0, ub=GRB.INFINITY, name='pos' + str(i)))
                 neg.append(
                     self.model.addVar(lb=0, ub=GRB.INFINITY, name='neg' + str(i)))
+            self.trust_temp.extend(pos)
+            self.trust_temp.extend(neg)
 
             self.model.update()
             for i in range(rows):
@@ -333,7 +343,7 @@ class OptProb(object):
 
     def l2_norm_squared(self, model, var, consensus):
         obj = grb.QuadExpr()
-        x = var.grb_vars
+        x = var.get_grb_vars(self)
         # value = consensus.value
         value = consensus
         rows, cols = x.shape
@@ -345,7 +355,7 @@ class OptProb(object):
 
     def l2_norm_diff_squared(self, model, var):
         obj = grb.QuadExpr()
-        x = var.grb_vars
+        x = var.get_grb_vars(self)
         value = var.value
         rows, cols = x.shape
         for i in range(rows):

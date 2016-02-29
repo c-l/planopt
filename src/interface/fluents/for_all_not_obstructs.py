@@ -21,6 +21,8 @@ class ForAllNotObstructs(AndFluent):
             obj_loc = None
             if obj in world_state:
                 obj_loc = world_state[obj]
+                # ugh.... I don't like adding params to the action this way
+                hl_action.params += [obj_loc]
             fluent = NotObstructs(env, hl_action, robot, priority, traj, obj, obj_loc)
             self.fluents.append(fluent)
 
