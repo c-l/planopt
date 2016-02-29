@@ -6,6 +6,7 @@ import gurobipy as grb
 from function import Function
 GRB = grb.GRB
 from IPython import embed as shell
+from ipdb import set_trace
 
 
 class OptProb(object):
@@ -32,7 +33,7 @@ class OptProb(object):
         self.hlas = []
 
         self.trust_region_cnt = None
-        self.dual_terms = []
+        # self.dual_terms = []
         self.trust_temp = []
 
         self.callbacks = []
@@ -205,6 +206,9 @@ class OptProb(object):
     # def add_dual_cost(self, var, dual, consensus=None, ro=0.05):
     #     self.dual_terms.append((var, dual, consensus, ro))
 
+    def get_dual_costs(self):
+        dual_costs = grb.quicksum(v.get_dual_cost(self) for v in self.vars)
+        return dual_costs
     # def add_dual_costs(self):
     #     self.model.update()
     #     if self.augmented_objective:
@@ -274,6 +278,8 @@ class OptProb(object):
                     self.model.addVar(lb=0, ub=GRB.INFINITY, name='pos' + str(i)))
                 neg.append(
                     self.model.addVar(lb=0, ub=GRB.INFINITY, name='neg' + str(i)))
+            self.trust_temp.extend(pos)
+            self.trust_temp.extend(neg)
 
             self.model.update()
             for i in range(rows):

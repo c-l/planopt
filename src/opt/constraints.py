@@ -1,5 +1,6 @@
 import numpy as np
 import gurobipy as grb
+from ipdb import set_trace
 from opt.ops import abs
 GRB = grb.GRB
 
@@ -136,15 +137,49 @@ class Constraints(object):
         return val
 
     # @profile
-    def convexify(self, model, penalty_coeff):
+    def convexify(self, model, penalty_coeff, batch=True):
         all_exprs = []
-        for g in self.gs: # non-linear inequality constraints
-            exprlist = self.add_hinges(model, g.convexify())
-            all_exprs.append(penalty_coeff * grb.quicksum(exprlist))
+        if not batch:
+            for g in self.gs: # non-linear inequality constraints
+                g_convexified = g.convexify()
+                exprlist = self.add_hinges(model, g_convexified)
+                all_exprs.append(penalty_coeff * grb.quicksum(exprlist))
+
+        if batch:
+            l_unhinged_affexprs_l = []
+            for g in self.gs:
+                l_unhinged_affexprs_l.append(g.convexify())
+            # set_trace()
+            l_hinge_affexpr_l = self.add_hinges_batch(model, l_unhinged_affexprs_l)
+            for hinge_affexpr_l in l_hinge_affexpr_l:
+                all_exprs.append(penalty_coeff * grb.quicksum(hinge_affexpr_l))
+            # set_trace()
+
         for h in self.hs: # non-linear equality constraints
             exprlist = self.l1_norm(model, h.convexify())
             all_exprs.append(penalty_coeff * grb.quicksum(exprlist))
         return all_exprs
+
+    # @profile
+    def add_hinges_batch(self, model, l_affexpr_l):
+        l_hinge_l = []
+        for affexpr_l in l_affexpr_l:
+            hinge_l = []
+            for affexpr in affexpr_l:
+                hinge_l.append(model.addVar(lb=0, ub=GRB.INFINITY, name='hinge'))
+            l_hinge_l.append(hinge_l)
+        model.update()
+
+        l_expr_l = []
+        for affexpr_l, hinge_l in zip(l_affexpr_l, l_hinge_l):
+            expr_l = []
+            for affexpr, hinge in zip(affexpr_l, hinge_l):
+                cntr = model.addConstr(affexpr <= hinge)
+                expr_l.append(grb.LinExpr(hinge))
+                if self.temp is not None:
+                    self.temp.extend([hinge, cntr])
+            l_expr_l.append(expr_l)
+        return l_expr_l
 
     # @profile
     def add_hinges(self, model, affexprlist):
@@ -174,5 +209,6 @@ class Constraints(object):
             temp.extend([hinge, cntr])
         return expr
 
+    # @profile
     def l1_norm(self, model, affexprlist):
         return [abs(model, affexpr, temp=self.temp) for affexpr in affexprlist]

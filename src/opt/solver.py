@@ -4,6 +4,7 @@ import numpy as np
 import numpy.linalg as linalg
 import scipy.misc as sci
 import ipdb
+from ipdb import set_trace
 from IPython import embed as shell
 import time
 import gurobipy as grb
@@ -29,7 +30,8 @@ class Solver(object):
         self.trust_shrink_ratio = .1
         self.trust_expand_ratio = 1.5
         # self.cnt_tolerance = 1e-4
-        self.cnt_tolerance = 1e-2
+        # self.cnt_tolerance = 1e-2
+        self.cnt_tolerance = 3e-3
         self.param_cnt_tolerance = 1
         self.max_merit_coeff_increases = 1
         self.merit_coeff_increase_ratio = 10 # doesn't matter when max_merit_coeff_increases = 1
@@ -51,7 +53,10 @@ class Solver(object):
         # self.epsilon = 1e-2
         # self.epsilon = 2e-2
         self.epsilon = 3e-2
+        self.eps_primal = 1e-4
+        self.eps_dual = 1e-4
         self.sqp_iters = 0
+        self.max_dual_iters = 5
 
     def big_sqp(self, opt_probs, params):
         start = time.time()
@@ -91,6 +96,35 @@ class Solver(object):
         print "admm_sqp time: ", end-start
         print "sqp_iters: ", self.sqp_iters
         return True
+
+    # @profile
+    def sqp_qp_admm(self, probs, opt_vars):
+        start = time.time()
+        trust_box_size = self.initial_trust_box_size
+        penalty_coeff = self.initial_penalty_coeff
+
+        for prob in probs:
+            prob.find_closest_feasible_point()
+
+        for i in range(self.max_merit_coeff_increases):
+            trust_box_size, success = self.min_merit_fn_qp_admm(probs, opt_vars, penalty_coeff, trust_box_size)
+            print '\n'
+
+            constraints_satisfied = np.all([prob.constraints_satisfied(self.cnt_tolerance) for prob in probs])
+
+            if not constraints_satisfied:
+                penalty_coeff = penalty_coeff*self.merit_coeff_increase_ratio
+                trust_box_size = self.initial_trust_box_size
+            else:
+                end = time.time()
+                print "sqp time: ", end-start
+                print "sqp_qp_admm success: {}".format(success)
+                return success
+        end = time.time()
+        print "sqp time: ", end-start
+        print "sqp_qp_admm success: {}".format(success)
+        return False
+
 
     # @profile
     def sqp_convexify_admm(self, opt_probs, params):
@@ -142,6 +176,7 @@ class Solver(object):
         import ipdb; ipdb.set_trace() # BREAKPOINT
         return success
 
+    # @profile
     def penalty_sqp(self, prob, do_early_converge=False):
         start = time.time()
         trust_box_size = self.initial_trust_box_size

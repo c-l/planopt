@@ -1,5 +1,5 @@
 from opt.opt_prob import OptProb
-from opt.variable import Variable, Constant
+from opt.variable import Variable, Constant, GlobalVariable
 from opt.solver import Solver
 from opt.constraints import Constraints
 from interface.fluents.fluent import AndFluent, LinFluent, LinEqFluent, LinLEFluent, FnFluent, FnLEFluent, FnEQFluent
@@ -75,13 +75,14 @@ class LLProb(object):
                     self.add_fluent_to_constraints(constraints, fluent, param_to_var)
         prob.add_constraints(constraints)
 
-    def solve_at_priority(self, priority, admm, fix_sampled_params=False, recently_sampled=None):
-        if admm:
+    def solve_at_priority(self, priority, fix_sampled_params=False, recently_sampled=None):
+        do_admm = settings.DO_ADMM
+        if do_admm:
             return self.solve_at_priority_admm(priority, fix_sampled_params=fix_sampled_params, recently_sampled=recently_sampled)
         else:
-            return self.solve_at_priority(priority, fix_sampled_params=fix_sampled_params, recently_sampled=recently_sampled)
+            return self.solve_at_priority_regular(priority, fix_sampled_params=fix_sampled_params, recently_sampled=recently_sampled)
 
-    def solve_at_priority(self, priority, fix_sampled_params=False, recently_sampled=None):
+    def solve_at_priority_regular(self, priority, fix_sampled_params=False, recently_sampled=None):
         # initialize gurobi Model object
         prob = OptProb()
         if recently_sampled is None:
@@ -152,51 +153,46 @@ class LLProb(object):
         if recently_sampled is None:
             recently_sampled = []
 
-        opt_probs = []
+        hla_to_prob = {}
         param_to_var = {}
         # construct opt probs for each action and create variables for each parameter
         for hla in self.hlas:
             prob = OptProb()
             prob.add_hla(hla)
-            opt_probs.append(prob)
-            params = hla.get_params()
+            hla_to_prob[hla] = prob
 
+            params = hla.get_params()
             for param in params:
                 if param.is_resampled and fix_sampled_params:
                     if param not in param_to_var:
-                        print param.name, "is fixed."
+                        # print param.name, "is fixed."
                         const = Constant(param)
                         param_to_var[param] = const
                 elif not param.is_var:
                     if param not in param_to_var:
-                        print param.name, "is not a var."
+                        # print param.name, "is not a var."
                         const = Constant(param)
                         param_to_var[param] = const
                 else: # param.is_var
                     if param in param_to_var:
                         var = param_to_var[param]
-                    elif param.is_resampled:
-                        print param.name, "is a global var."
-                        var = GlobalVariable(param, recently_sampled=(param in recently_sampled))
                     else:
-                        print param.name, "is a var."
-                        var = Variable(param, recently_sampled=(param in recently_sampled))
+                        if param.is_resampled:
+                            # print param.name, "is a global var."
+                            var = GlobalVariable(param, recently_sampled=(param in recently_sampled))
+                            param_to_var[param] = var
+                        else:
+                            # print param.name, "is a var."
+                            var = Variable(param, recently_sampled=(param in recently_sampled))
+                        param_to_var[param] = var
 
-                    set_trace()
-                    if param.is_resampled:
-                        assert isinstance(var, GlobalVariable)
-                        var.add_opt_prob(prob)
                     prob.add_var(var)
-            model.update()
+            prob.update()
+            self.add_cnts_to_opt_prob(prob, param_to_var=param_to_var, priority=max(priority, 0))
 
-        # max(priority, 0) because priority = -1 used for straight-line init
-        constraints = self.model_cnts_from_hla(model, param_to_var, max(priority, 0))
-        for param, var in param_to_var.items():
-            var.set(param.value)
-
-        for hla in self.hlas:
+        for hla, prob in hla_to_prob.items():
             if hla.cost != 0.0:
-                hla.cost.to_gurobi_fn(param_to_var)
+                hla.cost.to_gurobi_fn(prob, param_to_var)
                 prob.inc_obj(hla.cost)
 
         solver = Solver()
@@ -206,21 +202,19 @@ class LLProb(object):
             solver.max_merit_coeff_increases = 1
         if priority == -1:
             # initialize straight-line trajectories
-            success = prob.initialize_traj(mode="straight")
+            for prob in hla_to_prob.values():
+                success = prob.initialize_traj(mode="straight")
         elif priority == 0:
             # initialize from adapted previous trajectories
-            success = prob.initialize_traj(mode="adapt")
+            for prob in hla_to_prob.values():
+                success = prob.initialize_traj(mode="adapt")
         else:
-            if settings.DO_SQP or settings.BACKTRACKING_REFINEMENT:
-                do_early_converge = False
-            elif settings.DO_EARLY_CONVERGE:
-                do_early_converge = True
-            else:
-                raise NotImplementedError
-            success = solver.penalty_sqp(prob, do_early_converge=do_early_converge)
+            success = solver.sqp_qp_admm(hla_to_prob.values(), param_to_var.values())
 
         for param, var in param_to_var.items():
             var.update_hl_param()
 
-        self.traj_cost = sum(prob.val(0)[0])
+        self.traj_cost = 0
+        for prob in hla_to_prob.values():
+            self.traj_cost += sum(prob.val(0)[0])
         return success
