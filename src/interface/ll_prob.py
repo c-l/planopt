@@ -93,7 +93,7 @@ class LLProb(object):
         for hla in self.hlas:
             params.update(hla.get_params())
             prob.add_hla(hla)
-        params += self.world.world_state.values()
+        params.update(self.world.world_state.values())
 
         # check whether there are duplicate parameters (prob shouldn't add variables into the problem multiple times)
         param_to_var = {}

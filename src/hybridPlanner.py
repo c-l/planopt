@@ -372,6 +372,7 @@ if __name__ == "__main__":
     bt_ref = False
     sqp = False
     ec = False
+    admm = False
     for opt, arg in opts:
         if opt == "-s":
             seed = int(arg)
