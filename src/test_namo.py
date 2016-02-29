@@ -22,13 +22,13 @@ class Alarm(Exception):
 def alarm_handler(signum, frame):
   raise Alarm
 
-def main():
+def swap_test():
     backtrack_info = []
     sqp_info = []
     earlyconvergesqp_info = []
 
-    raw_input("Deleting old results.txt, press enter to continue")
-    open("results.txt", "w").close()
+    raw_input("Deleting old results, press enter to continue")
+    open("results_swap.txt", "w").close()
     for i in range(NUM_TEST):
         print "\n\n\nTesting %d of %d"%(i, NUM_TEST)
         seed = SEEDS[i]
@@ -36,7 +36,7 @@ def main():
 
         for mode, info in [("backtrack", backtrack_info), ("sqp", sqp_info), ("earlyconvergesqp", earlyconvergesqp_info)]:
             hp_instance = subprocess.Popen(["python", "../src/hybridPlanner.py", "-d", "tc", "--%s"%mode,
-                                              "-e", "../envs/swap_world.dae", "-s", str(SEEDS[i])] + viewer_arg)
+                                            "-e", "../envs/swap_world.dae", "-s", str(SEEDS[i])] + viewer_arg)
             signal.signal(signal.SIGALRM, alarm_handler)
             signal.alarm(TIMEOUT)
             try:
@@ -53,7 +53,7 @@ def main():
                 hp_instance.kill()
                 info.append("timeout")
 
-        with open("results.txt", "a") as f:
+        with open("results_swap.txt", "a") as f:
             f.write("Backtracking\n")
             f.write("%s\n"%backtrack_info)
             f.write("SQP\n")
@@ -62,13 +62,13 @@ def main():
             f.write("%s\n"%earlyconvergesqp_info)
     print "Testing complete."
 
-def is_failure(x):
+def _is_failure(x):
     return x in ("fail", "timeout")
 
-def failure_in_lst(x):
+def _failure_in_lst(x):
     return "fail" in x or "timeout" in x
 
-def parse(f_name):
+def swap_parse(f_name):
     with open(f_name, "r") as f:
         _, bt, _, sqp, _, early = f.readlines()[-6:]
     bt_info = {}
@@ -77,17 +77,17 @@ def parse(f_name):
     for mode, d in [(bt, bt_info), (sqp, sqp_info), (early, early_info)]:
         for i, x in enumerate(eval(mode)):
             seed = SEEDS[i]
-            if is_failure(x):
+            if _is_failure(x):
                 d[seed] = (x, x, x)
                 continue
             tc, t, rc = x
             d[seed] = (float(tc.strip()), float(t.strip()), int(rc.strip()))
-        succ = len(filter(lambda x: not failure_in_lst(x), d.values())) * 1.0 / len(d)
+        succ = len(filter(lambda x: not _failure_in_lst(x), d.values())) * 1.0 / len(d)
         fail = len(filter(lambda x: "fail" in x, d.values())) * 1.0 / len(d)
         timeout = len(filter(lambda x: "timeout" in x, d.values())) * 1.0 / len(d)
-        traj_cost = np.average([v[0] for v in d.values() if not failure_in_lst(v)])
-        total_time = np.average([v[1] for v in d.values() if not failure_in_lst(v)])
-        replan_count = np.average([v[2] for v in d.values() if not failure_in_lst(v)])
+        traj_cost = np.average([v[0] for v in d.values() if not _failure_in_lst(v)])
+        total_time = np.average([v[1] for v in d.values() if not _failure_in_lst(v)])
+        replan_count = np.average([v[2] for v in d.values() if not _failure_in_lst(v)])
         d["succ"] = succ
         d["fail"] = fail
         d["timeout"] = timeout
@@ -102,6 +102,49 @@ def parse(f_name):
         print "%s total time: %f"%(name, d["total_time"])
         print "%s replan count: %f"%(name, d["replan_count"])
 
+def putaway_test():
+    backtrack_info = []
+    sqp_info = []
+    earlyconvergesqp_info = []
+
+    raw_input("Deleting old results, press enter to continue")
+    open("results_putaway.txt", "w").close()
+    for i in range(NUM_TEST):
+        print "\n\n\nTesting %d of %d"%(i, NUM_TEST)
+        seed = SEEDS[i]
+        viewer_arg = ["-v"] if VIEWER else []
+        world = subprocess.Popen(["python", "../envs/world.py", "mc7", str(SEEDS[i])])
+        world.communicate()
+
+        for mode, info in [("backtrack", backtrack_info), ("sqp", sqp_info), ("earlyconvergesqp", earlyconvergesqp_info)]:
+            hp_instance = subprocess.Popen(["python", "../src/hybridPlanner.py", "-d", "tc", "--%s"%mode,
+                                            "-e", "../envs/putaway_world.dae", "-s", str(SEEDS[i])] + viewer_arg)
+            signal.signal(signal.SIGALRM, alarm_handler)
+            signal.alarm(TIMEOUT)
+            try:
+                hp_instance.communicate()
+                signal.alarm(0)
+                if hp_instance.returncode == 0:
+                    with open("hp_output.txt", "r") as f:
+                        traj_cost, total_time, replan_count = f.readlines()
+                    info.append((traj_cost, total_time, replan_count))
+                else:
+                    info.append("fail")
+            except Alarm:
+                print "Timed out!"
+                hp_instance.kill()
+                info.append("timeout")
+
+        with open("results_putaway.txt", "a") as f:
+            f.write("Backtracking\n")
+            f.write("%s\n"%backtrack_info)
+            f.write("SQP\n")
+            f.write("%s\n"%sqp_info)
+            f.write("Early converge SQP\n")
+            f.write("%s\n"%earlyconvergesqp_info)
+    print "Testing complete."
+
 if __name__ == "__main__":
-    # main()
-    parse("iros_16_results/results_swap_namo.txt")
+    # swap_test()
+    # swap_parse("iros_16_results/results_swap_namo.txt")
+    putaway_test()

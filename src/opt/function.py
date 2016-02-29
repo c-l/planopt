@@ -176,6 +176,8 @@ class CollisionFn(Function):
     def to_gurobi_fn(self, prob, param_to_var):
         self.vs = []
         for param in self.params:
+            if param not in param_to_var:
+                raise Exception("Parameter %s not found in param_to_var!"%param.name)
             self.vs.append(param_to_var[param])
         self.grb_vars = self.get_grb_vars(prob)
 

@@ -3,7 +3,7 @@ import numpy as np
 
 # TODO: should the fluent class be an exception?
 class Fluent(Exception):
-    tol = 3e-3
+    tol = 1e-2
 
     do_extension = False
     def __init__(self, name, priority, hl_action):

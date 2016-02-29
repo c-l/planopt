@@ -3,6 +3,9 @@ import numpy as np
 import sys
 sys.path.append("../src")
 from utils import *
+import time
+import openravepy
+from IPython import embed as shell
 
 
 class World(object):
@@ -218,26 +221,42 @@ class World(object):
 
         return env
 
-    def generate_twocans_env(self):
+    def generate_multicans_env(self, randstate, num_cans):
         env = self.env
         robot = self.create_robot()
         robot.SetTransform(base_pose_to_mat(np.array([[3.5],[1.5],[0]])))
-        # self.create_walls(env, [[0.0,-2.0],[0.0,3.0],[3.0,3.0],[3.0,5.0],[4.0,5.0],[4.0,3.0],[7.0,3.0],[7.0,-2.0],[0.0,-2.0]])
         self.create_walls(env, [[-1.0,-3.0],[-1.0,4.0],[2.0,4.0],[2.0,8.0],[5.0,8.0],[5.0,4.0],[8.0,4.0],[8.0,-3.0],[-1.0,-3.0]])
+        old_col_check = self.env.GetCollisionChecker()
+        collision_checker = openravepy.RaveCreateCollisionChecker(self.env, "bullet")
+        collision_checker.SetCollisionOptions(openravepy.CollisionOptions.Contacts)
+        self.env.SetCollisionChecker(collision_checker)
 
         dims = [0.35, 2.0]
-        can1t= base_pose_to_mat(np.array([[1],[1.5],[0]]))
-        can2t= base_pose_to_mat(np.array([[6],[1.5],[0]]))
-        can1 = self.create_cylinder(env, "can1", can1t, dims)
-        can2 = self.create_cylinder(env, "can2", can2t, dims)
-        env.AddKinBody(can1)
-        env.AddKinBody(can2)
-        self.make_transparent(can1)
-        self.make_transparent(can2)
+        min_x, max_x = 0.8, 5.8
+        min_y, max_y = 0.5, 2.5
+        for i in range(num_cans):
+            color = [0, 1, 1]
+            if i not in (0, 1):
+                color = [0, 1, 0]
+            can = self.create_cylinder(env, "can%d"%(i+1), np.eye(4), dims, color=color)
+            env.AddKinBody(can)
+            while True:
+                x = randstate.rand() * (max_x - min_x) + min_x
+                y = randstate.rand() * (max_y - min_y) + min_y
+                can.SetTransform(base_pose_to_mat(np.array([[x],[y],[0]])))
+                collision = False
+                for other in env.GetBodies():
+                    if env.CheckCollision(other, can):
+                        collision = True
+                        break
+                if not collision:
+                    break
+            self.make_transparent(can)
 
+        self.env.SetCollisionChecker(old_col_check)
         return env
 
-    def generate_swap_env(self):
+    def generate_swap_env(self, randstate):
         env = self.env
         robot = self.create_robot()
         robot.SetTransform(base_pose_to_mat(np.array([[3.5],[1.5],[0]])))
@@ -245,8 +264,8 @@ class World(object):
         self.create_walls(env, [[-1.0,-3.0],[-1.0,4.0],[2.0,4.0],[2.0,8.0],[5.0,8.0],[5.0,4.0],[8.0,4.0],[8.0,-3.0],[-1.0,-3.0]])
 
         dims = [0.35, 2.0]
-        can1t= base_pose_to_mat(np.array([[3.5],[5.5],[0]]))
-        can2t= base_pose_to_mat(np.array([[3.5],[3.5],[0]]))
+        can1t = base_pose_to_mat(np.array([[3.5],[3.5],[0]]))
+        can2t = base_pose_to_mat(np.array([[3.5],[5.5],[0]]))
         can1 = self.create_cylinder(env, "can1", can1t, dims)
         can2 = self.create_cylinder(env, "can2", can2t, dims)
         env.AddKinBody(can1)
@@ -378,24 +397,28 @@ class World(object):
         return env
 
 def usage():
-    print "'tc' for basic two-can world, 'swap' for swap setup."
+    print "'mc#' for multi-can world with # objects, 'swap' for swap setup. Then seed."
+    print "Ex: python %s tc 1234"%sys.argv[0]
 
 if __name__ == "__main__":
     world = World()
-    if len(sys.argv) == 1:
+    if len(sys.argv) != 3:
         usage()
         sys.exit(1)
     m = sys.argv[1]
-    if m == "tc":
-        env = world.generate_twocans_env()
+    seed = int(sys.argv[2])
+    randstate = np.random.RandomState(seed)
+    if m.startswith("mc"):
+        num_obj = int(m[2:])
+        env = world.generate_multicans_env(randstate, num_obj)
         env.SetViewer('qtcoin')
-        env.Save("../envs/twocan_world.dae", Environment.SelectionOptions.Everything)
-        import ipdb; ipdb.set_trace()
+        time.sleep(1)
+        env.Save("../envs/putaway_world.dae", Environment.SelectionOptions.Everything)
     elif m == "swap":
-        env = world.generate_swap_env()
+        env = world.generate_swap_env(randstate)
         env.SetViewer('qtcoin')
+        time.sleep(1)
         env.Save("../envs/swap_world.dae", Environment.SelectionOptions.Everything)
-        import ipdb; ipdb.set_trace()
     else:
         usage()
         sys.exit(1)
