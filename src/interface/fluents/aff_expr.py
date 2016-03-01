@@ -6,7 +6,7 @@ class AffExpr(dict):
 
     """
     Affine Expression is represented as a dictionary where the keys are
-    HLParams and the values are coefficients"
+    HLParams and the values are coefficients
     """
 
     def __init__(self, e=None, constant=0, name=None):
@@ -29,7 +29,7 @@ class AffExpr(dict):
             if type(x) is tuple:
                 lhs = x[0]
                 rhs = x[1]
-                s += np.dot(lhs, np.dot(v,get_value(), rhs))
+                s += np.dot(lhs, np.dot(v.get_value(), rhs))
             else:
                 s += np.dot(v.get_value(), x)
         return s
