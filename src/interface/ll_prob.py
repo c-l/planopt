@@ -8,6 +8,10 @@ from IPython import embed as shell
 from ipdb import set_trace
 import settings
 
+# choose from "minvel" for min-velocity, "l2" for l2-norm, "straight" for straight-line
+# affects initialization at priority 0
+INIT_MODE = "minvel"
+
 class LLProb(object):
     def __init__(self, hlas=None):
         if hlas is None:
@@ -134,7 +138,7 @@ class LLProb(object):
             success = prob.initialize_traj(mode="straight")
         elif priority == 0:
             # initialize from adapted previous trajectories
-            success = prob.initialize_traj(mode="adapt")
+            success = prob.initialize_traj(mode=INIT_MODE)
         else:
             if settings.DO_SQP or settings.BACKTRACKING_REFINEMENT:
                 do_early_converge = False

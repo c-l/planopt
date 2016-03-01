@@ -59,8 +59,7 @@ class OptProb(object):
             hla.clear_handles()
 
     def initialize_traj(self, mode):
-        # mode can be "straight" for straight line or
-        # "adapt" for adapted previous trajectories
+        # see comment at top of ll_prob.py for mode options
         if self.trust_region_cnt is not None:
             self.model.remove(self.trust_region_cnt)
         self.clean(self.trust_temp)
@@ -76,7 +75,11 @@ class OptProb(object):
                 obj += 1 * self.l2_norm_diff_squared(self.model, var)
         if mode == "straight":
             obj += grb.quicksum(self.obj_quad)
-        elif mode == "adapt":
+        elif mode == "l2":
+            for var in self.vars:
+                if var.value is not None:
+                    obj += self.l2_norm_diff_squared(self.model, var)
+        elif mode == "minvel":
             for var in self.vars:
                 if var.hl_param.is_traj:
                     K = var.hl_param.rows
