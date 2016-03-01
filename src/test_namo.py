@@ -281,6 +281,6 @@ if __name__ == "__main__":
     # swap_test()
     # swap_parse("iros_16_results/results_swap.txt")
     # swap_other_initmodes_test()
-    swap_other_initmodes_parse("iros_16_results/results_swap_other_initmodes_partial.txt", "iros_16_results/results_swap.txt")
-    # putaway_test(num_obstr=0)
+    # swap_other_initmodes_parse("iros_16_results/results_swap_other_initmodes_partial.txt", "iros_16_results/results_swap.txt")
+    putaway_test(num_obstr=5)
     # putaway_parse("iros_16_results/results_putaway_3obstr_partial.txt")
