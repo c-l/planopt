@@ -125,7 +125,8 @@ class LLProb(object):
 
         solver = Solver()
 
-        if fix_sampled_params or recently_sampled:
+        if priority == -1 or priority == 0:
+            # for initialization only because problem should be QP
             solver.initial_trust_box_size = 1e5
             solver.max_merit_coeff_increases = 1
         if priority == -1:
@@ -201,7 +202,8 @@ class LLProb(object):
 
         solver = Solver()
 
-        if fix_sampled_params or recently_sampled:
+        if priority == -1 or priority == 0:
+            # for initialization only because problem should be QP
             solver.initial_trust_box_size = 1e5
             solver.max_merit_coeff_increases = 1
         if priority == -1:
