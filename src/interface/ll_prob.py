@@ -136,7 +136,7 @@ class LLProb(object):
             # initialize from adapted previous trajectories
             success = prob.initialize_traj(mode=settings.INIT_MODE)
         else:
-            if settings.DO_SQP or settings.BACKTRACKING_REFINEMENT:
+            if settings.DO_SQP or settings.BACKTRACKING_REFINEMENT or settings.BTSMOOTH_REFINEMENT:
                 do_early_converge = False
             elif settings.DO_EARLY_CONVERGE:
                 do_early_converge = True

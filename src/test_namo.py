@@ -250,7 +250,7 @@ def putaway_parse(f_name):
             if _is_failure(x):
                 d[seed] = (x, x, x)
                 continue
-            _, _, tc, t, rc = x
+            _, num_obstr, tc, t, rc = x
             d[seed] = (float(tc.strip()), float(t.strip()), int(rc.strip()))
         succ = len(filter(lambda x: not _failure_in_lst(x), d.values())) * 1.0 / len(d)
         fail = len(filter(lambda x: "fail" in x, d.values())) * 1.0 / len(d)
@@ -266,6 +266,7 @@ def putaway_parse(f_name):
         d["total_time"] = total_time
         d["replan_count"] = replan_count
         d["len"] = l
+    print "Num obstructions: %d\n"%num_obstr
     for name, d in [("Backtrack", bt_info), ("SQP", sqp_info), ("Early Converge", early_info)]:
         print "%s num experiments: %d"%(name, d["len"])
         print "%s success rate: %f"%(name, d["succ"])

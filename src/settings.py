@@ -8,7 +8,7 @@ RECORD = False
 
 REPLAN_FOR_GRASP = False
 
-def init_settings(ss, bt_ref, sqp, ec, admm, init_mode):
+def init_settings(ss, bt_ref, btsmooth_ref, sqp, ec, admm, init_mode):
     import numpy as np
     global seed
     if ss is None:
@@ -21,6 +21,8 @@ def init_settings(ss, bt_ref, sqp, ec, admm, init_mode):
     RANDOM_STATE = np.random.RandomState(seed)
     global BACKTRACKING_REFINEMENT
     BACKTRACKING_REFINEMENT = bt_ref
+    global BTSMOOTH_REFINEMENT
+    BTSMOOTH_REFINEMENT = btsmooth_ref
     global DO_SQP
     DO_SQP = sqp
     global DO_EARLY_CONVERGE

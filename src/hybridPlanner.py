@@ -363,7 +363,7 @@ def usage_str():
 
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "vpme:rd:s:", ["backtrack", "sqp", "earlyconvergesqp", "admm",
+        opts, args = getopt.getopt(sys.argv[1:], "vpme:rd:s:", ["backtrack", "btsqpsmooth", "sqp", "earlyconvergesqp", "admm",
                                                                 "straight", "l2"])
     except getopt.GetoptError:
         print(usage_str())
@@ -371,6 +371,7 @@ if __name__ == "__main__":
 
     seed = None
     bt_ref = False
+    btsmooth_ref = False
     sqp = False
     ec = False
     admm = False
@@ -382,6 +383,8 @@ if __name__ == "__main__":
             seed = int(arg)
         if opt == "--backtrack":
             bt_ref = True
+        if opt == "--btsqpsmooth":
+            btsmooth_ref = True
         if opt == "--sqp":
             sqp = True
         if opt == "--earlyconvergesqp":
@@ -390,10 +393,10 @@ if __name__ == "__main__":
             admm = True
         if opt in ("--straight", "--l2"):
             init_mode = opt[2:]
-    if int(sqp) + int(ec) + int(bt_ref) + int(admm) != 1:
+    if int(sqp) + int(ec) + int(bt_ref) + int(admm) + int(btsmooth_ref) != 1:
         print "Need to provide mode."
         sys.exit(1)
-    init_settings(ss=seed, bt_ref=bt_ref, sqp=sqp, ec=ec, admm=admm, init_mode=init_mode)
+    init_settings(ss=seed, bt_ref=bt_ref, btsmooth_ref=btsmooth_ref, sqp=sqp, ec=ec, admm=admm, init_mode=init_mode)
 
     viewer = False
     pw_file = False

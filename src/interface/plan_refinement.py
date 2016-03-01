@@ -77,6 +77,8 @@ class PlanRefinement(object):
         if self.instantiation_generator is None:
             if settings.BACKTRACKING_REFINEMENT:
                 self.instantiation_generator = self._try_backtracking_refine()
+            elif settings.BTSMOOTH_REFINEMENT:
+                self.instantiation_generator = self._try_btsmooth_refine()
             else:
                 self.instantiation_generator = self._try_joint_refine()
 
@@ -201,8 +203,10 @@ class PlanRefinement(object):
 
     def _try_backtracking_refine(self):
         # add the preconditions of the next action to the postconditions, for each action
+        bt_added_info = {}
         for i in range(len(self.action_list) - 1):
             a, a_next = self.action_list[i:i+2]
+            bt_added_info[a] = (len(a.postconditions), len(a.params))
             for precon in a_next.preconditions:
                 if precon.do_extension:
                     a.postconditions.append(precon)
@@ -273,7 +277,35 @@ class PlanRefinement(object):
                 # i stays the same
                 self.save_useful_fluents(violated_fluents, all_useful_fluents)
 
+        # undo added preconditions
+        for i in range(len(self.action_list) - 1):
+            a = self.action_list[i]
+            postcon_len, param_len = bt_added_info[a]
+            a.postconditions = a.postconditions[:postcon_len]
+            a.params = a.params[:param_len]
+
+        # undo setting is_var to False for moves
+        for a in self.action_list:
+            if a.is_move():
+                assert not a.end.is_var
+                a.end.is_var = True
+
         self.total_cost = sum(l.traj_cost for l in llprobs.values())
+        yield None
+
+    def _try_btsmooth_refine(self):
+        bt = self._try_backtracking_refine()
+        while True:
+            fluent = next(bt)
+            if fluent is None:
+                break
+            yield fluent
+        llprob = LLProb(self.action_list)
+        llprob.solve_at_priority(0, fix_sampled_params=True)
+        llprob.solve_at_priority(2)
+        fluents = [f for a in self.action_list for f in a.preconditions + a.postconditions]
+        violated_fluents = self.find_violated_fluents(fluents, priority=2)
+        assert len(violated_fluents) == 0
         yield None
 
     # TODO: whether a fluent is useful should be determined by domain file?
