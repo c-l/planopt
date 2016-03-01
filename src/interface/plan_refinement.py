@@ -173,13 +173,6 @@ class PlanRefinement(object):
                             yield f
                         # reset set of useful fluents, since we yielded them all
                         all_useful_fluents = set()
-                        # resample all params so we don't get stuck
-                        for p in sampled_params:
-                            try:
-                                p.resample()
-                            except StopIteration:
-                                p.reset_gen()
-                                p.resample()
                         count = 0
                     break # out of for loop
 
