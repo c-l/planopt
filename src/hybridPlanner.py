@@ -384,6 +384,9 @@ if __name__ == "__main__":
             ec = True
         if opt == "--admm":
             admm = True
+    if int(sqp) + int(ec) + int(bt_ref) + int(admm) != 1:
+        print "Need to provide mode."
+        sys.exit(1)
     init_settings(ss=seed, bt_ref=bt_ref, sqp=sqp, ec=ec, admm=admm)
 
     viewer = False
