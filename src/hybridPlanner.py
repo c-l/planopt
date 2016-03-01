@@ -414,6 +414,9 @@ if __name__ == "__main__":
             elif arg == "tc":
                 set_domain(TWOCAN_DOMAIN)
                 print("\n\nRUNNING TWO CAN DOMAIN\n\n")
+            elif arg == "mc":
+                set_domain(MULTICAN_DOMAIN)
+                print("\n\nRUNNING MULTI CAN DOMAIN\n\n")
             else:
                 print("Bad domain input: need l or t for logistics or two box domain respectively")
                 sys.exit(-1)

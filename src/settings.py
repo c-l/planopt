@@ -42,6 +42,7 @@ MPEXEC = "../planners/M/Mp"
 LOG_DOMAIN = 0
 TWO_DOMAIN = 1
 TWOCAN_DOMAIN = 2
+MULTICAN_DOMAIN = 3
 
 def set_domain(dom):
     global DOMAIN, pddlDomainFile, pddlDomainFileNoGeomEff, initialProblemFile, pddlToOpt, PLANNER_TO_USE
@@ -78,6 +79,18 @@ def set_domain(dom):
         from twocan_opt import TwoCanOpt
         pddlToOpt = TwoCanOpt
         PLANNER_TO_USE = FF
+
+    elif dom == MULTICAN_DOMAIN:
+        pddlDomainFile = DOMAIN_PATH + "putaway_dom.pddl"
+        pddlDomainFileNoGeomEff = pddlDomainFile
+        initialProblemFile = DOMAIN_PATH + "putaway_prob.pddl"
+
+        import sys
+        sys.path.insert(0, DOMAIN_PATH)
+        from twocan_opt import TwoCanOpt
+        pddlToOpt = TwoCanOpt
+        PLANNER_TO_USE = FF
+
 envFile = ENVPATH+"created_info.dae"
 
 # DISABLE_BASE = True

@@ -16,14 +16,14 @@ settings.BACKTRACKING_REFINEMENT = False
 settings.DO_EARLY_CONVERGE = True
 settings.DO_ADMM = False
 
-def get_pr(plan):
+def get_pr(plan, env_file):
     f = open("temp", "w")
     f.write(plan)
     f.close()
     env = openravepy.Environment()
     env.SetViewer("qtcoin")
     time.sleep(1)
-    env.Load("../envs/swap_world.dae")
+    env.Load(env_file)
     pr_creator = PRCreator(env)
     pr = pr_creator.create_pr("temp", None, 0)
     return pr
@@ -247,7 +247,7 @@ def swap_bad_init_right_center():
 
 def swap_bad_grasp_far_right():
     plan = "0: MOVE ROBOTINITLOC GP_CAN1\n	1: PICK CAN1 CAN1INITLOC GP_CAN1 GRASP_CAN1\n	2: MOVE_W_OBJ GP_CAN1 PDP_CAN1_CAN1TEMPLOC CAN1 GRASP_CAN1\n	3: PLACE CAN1 CAN1TEMPLOC PDP_CAN1_CAN1TEMPLOC GRASP_CAN1\n	4: MOVE PDP_CAN1_CAN1TEMPLOC GP_CAN2\n	5: PICK CAN2 CAN2INITLOC GP_CAN2 GRASP_CAN2\n	6: MOVE_W_OBJ GP_CAN2 PDP_CAN2_GOAL2 CAN2 GRASP_CAN2\n	7: PLACE CAN2 GOAL2 PDP_CAN2_GOAL2 GRASP_CAN2\n	8: MOVE PDP_CAN2_GOAL2 GP_CAN1\n	9: PICK CAN1 CAN1TEMPLOC GP_CAN1 GRASP_CAN1\n	10: MOVE_W_OBJ GP_CAN1 PDP_CAN1_CAN1TEMPLOC CAN1 GRASP_CAN1\n	11: PLACE CAN1 CAN1TEMPLOC PDP_CAN1_CAN1TEMPLOC GRASP_CAN1\n	12: MOVE PDP_CAN1_CAN1TEMPLOC GP_CAN2\n	13: PICK CAN2 GOAL2 GP_CAN2 GRASP_CAN2\n	14: MOVE_W_OBJ GP_CAN2 PDP_CAN2_CAN2TEMPLOC CAN2 GRASP_CAN2\n	15: PLACE CAN2 CAN2TEMPLOC PDP_CAN2_CAN2TEMPLOC GRASP_CAN2\n	16: MOVE PDP_CAN2_CAN2TEMPLOC GP_CAN1\n	17: PICK CAN1 CAN1TEMPLOC GP_CAN1 GRASP_CAN1\n	18: MOVE_W_OBJ GP_CAN1 PDP_CAN1_GOAL1 CAN1 GRASP_CAN1\n	19: PLACE CAN1 GOAL1 PDP_CAN1_GOAL1 GRASP_CAN1\n	20: MOVE PDP_CAN1_GOAL1 GP_CAN2\n	21: PICK CAN2 CAN2TEMPLOC GP_CAN2 GRASP_CAN2\n	22: MOVE_W_OBJ GP_CAN2 PDP_CAN2_GOAL2 CAN2 GRASP_CAN2\n	23: PLACE CAN2 GOAL2 PDP_CAN2_GOAL2 GRASP_CAN2"
-    pr = get_pr(plan)
+    pr = get_pr(plan, env_file="../envs/swap_world.dae")
     sampled_params = pr.world.get_sampled_params()
     sampled_params.sort(key=lambda p: p.sample_priority)
     recently_sampled = sampled_params
@@ -269,13 +269,26 @@ def swap_bad_grasp_far_right():
                 param.value = param.obj_loc.value + np.array([[0], [-0.6], [0]], dtype=np.float)
         recently_sampled = optimize(pr, recently_sampled, sampled_params, first_prio=0)
 
+def putaway_easy():
+    plan = "0: MOVE ROBOTINITLOC GP_CAN1\n	1: PICK CAN1 CAN1INITLOC GP_CAN1 GRASP_CAN1\n	2: MOVE_W_OBJ GP_CAN1 PDP_CAN1_GOAL1 CAN1 GRASP_CAN1\n	3: PLACE CAN1 GOAL1 PDP_CAN1_GOAL1 GRASP_CAN1\n	4: MOVE PDP_CAN1_GOAL1 GP_CAN2\n	5: PICK CAN2 CAN2INITLOC GP_CAN2 GRASP_CAN2\n	6: MOVE_W_OBJ GP_CAN2 PDP_CAN2_GOAL2 CAN2 GRASP_CAN2\n	7: PLACE CAN2 GOAL2 PDP_CAN2_GOAL2 GRASP_CAN2"
+    pr = get_pr(plan, env_file="../envs/putaway_world_easy.dae")
+    sampled_params = pr.world.get_sampled_params()
+    sampled_params.sort(key=lambda p: p.sample_priority)
+    for param in sampled_params:
+        param.resample()
+    recently_sampled = sampled_params
+    recently_sampled = optimize(pr, recently_sampled, sampled_params, first_prio=-1)
+    while True:
+        recently_sampled = optimize(pr, recently_sampled, sampled_params, first_prio=0)
+
 def main():
     # swap_good_init_but_locs_stuck()
     # swap_bad_init()
-    swap_bad_grasp_far_right()
+    # swap_bad_grasp_far_right()
     # swap_good_init_left_and_right()
     # swap_start_in_object_top()
     # simple_plan()
+    putaway_easy()
 
 if __name__ == "__main__":
     main()

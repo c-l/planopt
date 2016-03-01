@@ -226,10 +226,6 @@ class World(object):
         robot = self.create_robot()
         robot.SetTransform(base_pose_to_mat(np.array([[3.5],[1.5],[0]])))
         self.create_walls(env, [[-1.0,-3.0],[-1.0,4.0],[2.0,4.0],[2.0,8.0],[5.0,8.0],[5.0,4.0],[8.0,4.0],[8.0,-3.0],[-1.0,-3.0]])
-        old_col_check = self.env.GetCollisionChecker()
-        collision_checker = openravepy.RaveCreateCollisionChecker(self.env, "bullet")
-        collision_checker.SetCollisionOptions(openravepy.CollisionOptions.Contacts)
-        self.env.SetCollisionChecker(collision_checker)
 
         dims = [0.35, 2.0]
         min_x, max_x = 0.8, 5.8
@@ -237,7 +233,7 @@ class World(object):
         for i in range(num_cans):
             color = [0, 1, 1]
             if i not in (0, 1):
-                color = [0, 1, 0]
+                color = [1, 0, 1]
             can = self.create_cylinder(env, "can%d"%(i+1), np.eye(4), dims, color=color)
             env.AddKinBody(can)
             while True:
@@ -246,14 +242,14 @@ class World(object):
                 can.SetTransform(base_pose_to_mat(np.array([[x],[y],[0]])))
                 collision = False
                 for other in env.GetBodies():
-                    if env.CheckCollision(other, can):
+                    o_x, o_y = other.GetTransform()[:2, 3]
+                    if other != can and np.sqrt((x - o_x) ** 2 + (y - o_y) ** 2) <= 0.76:
                         collision = True
                         break
                 if not collision:
                     break
             self.make_transparent(can)
 
-        self.env.SetCollisionChecker(old_col_check)
         return env
 
     def generate_swap_env(self, randstate):
@@ -398,7 +394,7 @@ class World(object):
 
 def usage():
     print "'mc#' for multi-can world with # objects, 'swap' for swap setup. Then seed."
-    print "Ex: python %s tc 1234"%sys.argv[0]
+    print "Ex: python %s mc7 1234"%sys.argv[0]
 
 if __name__ == "__main__":
     world = World()

@@ -120,7 +120,7 @@ def putaway_test():
         world.communicate()
 
         for mode, info in [("backtrack", backtrack_info), ("sqp", sqp_info), ("earlyconvergesqp", earlyconvergesqp_info)]:
-            hp_instance = subprocess.Popen(["python", "../src/hybridPlanner.py", "-d", "tc", "--%s"%mode,
+            hp_instance = subprocess.Popen(["python", "../src/hybridPlanner.py", "-d", "mc", "--%s"%mode,
                                             "-e", "../envs/putaway_world.dae", "-s", str(SEEDS[i])] + viewer_arg)
             signal.signal(signal.SIGALRM, alarm_handler)
             signal.alarm(TIMEOUT)
