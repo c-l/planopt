@@ -4,7 +4,7 @@ from IPython import embed as shell
 import numpy as np
 
 NUM_TEST = 50
-TIMEOUT = 900
+TIMEOUT = 1200
 VIEWER = False
 SEEDS = [11395659, 43736804, 26283602, 11583896, 25950117, 35437313,
          19194086, 42831540,  5082254, 24053257, 45035977, 27577047,
@@ -99,8 +99,8 @@ def swap_parse(f_name):
     for name, d in [("Backtrack", bt_info), ("SQP", sqp_info), ("Early Converge", early_info)]:
         print "Num experiments: %d"%d["len"]
         print "%s success rate: %f"%(name, d["succ"])
-        # print "%s fail rate: %f"%(name, d["fail"])
-        # print "%s timeout rate: %f"%(name, d["timeout"])
+        print "%s failure rate: %f"%(name, d["fail"])
+        print "%s timeout rate: %f"%(name, d["timeout"])
         print "%s traj cost: %f"%(name, d["traj_cost"])
         print "%s total time: %f"%(name, d["total_time"])
         print "%s replan count: %f"%(name, d["replan_count"])
