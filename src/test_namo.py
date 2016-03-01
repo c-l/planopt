@@ -4,7 +4,7 @@ from IPython import embed as shell
 import numpy as np
 
 NUM_TEST = 50
-TIMEOUT = 1200
+TIMEOUT = 600
 VIEWER = False
 SEEDS = [11395659, 43736804, 26283602, 11583896, 25950117, 35437313,
          19194086, 42831540,  5082254, 24053257, 45035977, 27577047,
@@ -200,6 +200,7 @@ def putaway_test(num_obstr):
     backtrack_info = []
     sqp_info = []
     earlyconvergesqp_info = []
+    btsmooth_info = []
 
     raw_input("Deleting old results, press enter to continue")
     open("results_putaway_%dobstr.txt"%num_obstr, "w").close()
@@ -210,7 +211,8 @@ def putaway_test(num_obstr):
         world = subprocess.Popen(["python", "../envs/world.py", "mc%d"%(num_obstr+2), str(SEEDS[i])])
         world.communicate()
 
-        for mode, info in [("backtrack", backtrack_info), ("sqp", sqp_info), ("earlyconvergesqp", earlyconvergesqp_info)]:
+        for mode, info in [("backtrack", backtrack_info), ("sqp", sqp_info),
+                           ("earlyconvergesqp", earlyconvergesqp_info), ("btsqpsmooth", btsmooth_info)]:
             hp_instance = subprocess.Popen(["python", "../src/hybridPlanner.py", "-d", "mc", "--%s"%mode,
                                             "-e", "../envs/putaway_world.dae", "-s", str(SEEDS[i])] + viewer_arg)
             signal.signal(signal.SIGALRM, alarm_handler)
@@ -236,6 +238,8 @@ def putaway_test(num_obstr):
             f.write("%s\n"%sqp_info)
             f.write("Early converge SQP\n")
             f.write("%s\n"%earlyconvergesqp_info)
+            f.write("BT smooth\n")
+            f.write("%s\n"%btsmooth_info)
     print "Testing complete."
 
 def putaway_parse(f_name):
