@@ -87,8 +87,8 @@ def set_domain(dom):
 
         import sys
         sys.path.insert(0, DOMAIN_PATH)
-        from twocan_opt import TwoCanOpt
-        pddlToOpt = TwoCanOpt
+        from putaway_opt import PutAwayOpt
+        pddlToOpt = PutAwayOpt
         PLANNER_TO_USE = FF
 
 envFile = ENVPATH+"created_info.dae"

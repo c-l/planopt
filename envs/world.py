@@ -225,7 +225,7 @@ class World(object):
         env = self.env
         robot = self.create_robot()
         robot.SetTransform(base_pose_to_mat(np.array([[3.5],[1.5],[0]])))
-        self.create_walls(env, [[-1.0,-3.0],[-1.0,4.0],[2.0,4.0],[2.0,8.0],[5.0,8.0],[5.0,4.0],[8.0,4.0],[8.0,-3.0],[-1.0,-3.0]])
+        self.create_walls(env, [[-1.0,-3.0],[-1.0,4.0],[2.0,4.0],[2.0,7.2],[5.0,7.2],[5.0,4.0],[8.0,4.0],[8.0,-3.0],[-1.0,-3.0]])
 
         dims = [0.35, 2.0]
         min_x, max_x = 0.8, 5.8

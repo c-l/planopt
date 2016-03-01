@@ -73,8 +73,7 @@ class ObjLoc(HLParam):
     def __init__(self, name, rows, cols, is_var=True,
                  value=None, is_resampled=False, region=None):
         super(ObjLoc, self).__init__(name, rows, cols, is_var, value, is_resampled)
-        if self.is_resampled:
-            assert region is not None
+        self.region = region
         if region is not None:
             assert self.is_var and self.is_resampled
             self.min_x, self.max_x, self.min_y, self.max_y = region
