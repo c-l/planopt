@@ -45,7 +45,7 @@ def swap_test():
                 if hp_instance.returncode == 0:
                     with open("hp_output.txt", "r") as f:
                         traj_cost, total_time, replan_count = f.readlines()
-                    info.append((traj_cost, total_time, replan_count))
+                    info.append((i, traj_cost, total_time, replan_count))
                 else:
                     info.append("fail")
             except Alarm:
@@ -130,7 +130,7 @@ def putaway_test():
                 if hp_instance.returncode == 0:
                     with open("hp_output.txt", "r") as f:
                         traj_cost, total_time, replan_count = f.readlines()
-                    info.append((traj_cost, total_time, replan_count))
+                    info.append((i, traj_cost, total_time, replan_count))
                 else:
                     info.append("fail")
             except Alarm:
