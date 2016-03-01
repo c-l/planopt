@@ -363,7 +363,8 @@ def usage_str():
 
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "vpme:rd:s:", ["backtrack", "sqp", "earlyconvergesqp", "admm"])
+        opts, args = getopt.getopt(sys.argv[1:], "vpme:rd:s:", ["backtrack", "sqp", "earlyconvergesqp", "admm",
+                                                                "straight", "l2"])
     except getopt.GetoptError:
         print(usage_str())
         sys.exit(-1)
@@ -373,6 +374,9 @@ if __name__ == "__main__":
     sqp = False
     ec = False
     admm = False
+    # init_mode affects initialization at priority 0
+    # choose from "minvel" for min-velocity, "l2" for l2-norm, "straight" for straight-line
+    init_mode = "minvel"
     for opt, arg in opts:
         if opt == "-s":
             seed = int(arg)
@@ -384,10 +388,12 @@ if __name__ == "__main__":
             ec = True
         if opt == "--admm":
             admm = True
+        if opt in ("--straight", "--l2"):
+            init_mode = opt[2:]
     if int(sqp) + int(ec) + int(bt_ref) + int(admm) != 1:
         print "Need to provide mode."
         sys.exit(1)
-    init_settings(ss=seed, bt_ref=bt_ref, sqp=sqp, ec=ec, admm=admm)
+    init_settings(ss=seed, bt_ref=bt_ref, sqp=sqp, ec=ec, admm=admm, init_mode=init_mode)
 
     viewer = False
     pw_file = False

@@ -8,7 +8,7 @@ RECORD = False
 
 REPLAN_FOR_GRASP = False
 
-def init_settings(ss, bt_ref, sqp, ec, admm):
+def init_settings(ss, bt_ref, sqp, ec, admm, init_mode):
     import numpy as np
     global seed
     if ss is None:
@@ -27,6 +27,8 @@ def init_settings(ss, bt_ref, sqp, ec, admm):
     DO_EARLY_CONVERGE = ec
     global DO_ADMM
     DO_ADMM = admm
+    global INIT_MODE
+    INIT_MODE = init_mode
 
 
 FF = "ff"

@@ -16,6 +16,7 @@ settings.BACKTRACKING_REFINEMENT = False
 settings.DO_EARLY_CONVERGE = True
 settings.DO_ADMM = False
 settings.DOMAIN = settings.MULTICAN_DOMAIN
+settings.INIT_MODE = "minvel"
 
 def get_pr(plan, env_file):
     f = open("temp", "w")
