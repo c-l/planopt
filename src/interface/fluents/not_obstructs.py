@@ -27,6 +27,7 @@ class NotObstructs(FnLEFluent):
         self.cc = ctrajoptpy.GetCollisionChecker(env)
         self.dsafe = dsafe
         self.cache = {}
+        self.allow_early_converge = True
 
     def pre(self):
         traj = self.traj
@@ -158,3 +159,7 @@ class NotObstructs(FnLEFluent):
         jac[1,2] = r[0]
         # return np.matrix(jac)
         return jac
+
+    def params_to_resample(self):
+        # resample ObjLoc, Start Robot Pose, and End Robot Pose
+        return filter(lambda p: p is not None and p.is_resampled, [self.obj_loc, self.hl_action.start, self.hl_action.end])

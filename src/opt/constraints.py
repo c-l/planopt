@@ -27,6 +27,8 @@ class Constraints(object):
             self.hs = [h]
 
         self.temp = []
+        self.fluents_gs = []
+        self.fluents_hs = []
 
     def clean(self):
         for item in self.temp:
@@ -87,11 +89,13 @@ class Constraints(object):
         constraints = self.add_geq_cntr(var, b_ineq)
         return constraints
 
-    def add_nonlinear_ineq_constraint(self, g):
-        self.gs.append(g)
+    def add_nonlinear_ineq_constraint(self, fluent):
+        self.fluents_gs.append(fluent)
+        self.gs.append(fluent.fn)
 
-    def add_nonlinear_eq_constraint(self, h):
-        self.hs.append(h)
+    def add_nonlinear_eq_constraint(self, fluent):
+        self.fluents_hs.append(fluent)
+        self.hs.append(fluent.fn)
 
     def hinge_val(self, g):
         gval = g.val()
@@ -109,17 +113,21 @@ class Constraints(object):
                 return False
         return True
 
-    def val_lst(self, start_ind, param_to_inds, constr_inds_to_params):
+    def val_lst(self, start_ind, param_to_inds, constr_inds_to_params, constr_inds_to_fluent):
         val = []
         i = start_ind
-        for g in self.gs:
+        for fluent, g in zip(self.fluents_gs, self.gs):
+            assert fluent.fn == g
+            constr_inds_to_fluent[i] = fluent
             val.append(self.hinge_val(g))
             for param in g.params:
                 if param.is_var:
                     param_to_inds.setdefault(param, set()).add(i)
                     constr_inds_to_params.setdefault(i, set()).add(param)
             i += 1
-        for h in self.hs:
+        for fluent, h in zip(self.fluents_hs, self.hs):
+            assert fluent.fn == h
+            constr_inds_to_fluent[i] = fluent
             val.append(self.abs_val(h))
             for param in h.params:
                 if param.is_var:

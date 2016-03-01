@@ -137,6 +137,17 @@ class PlanRefinement(object):
                     p.reset_gen()
                     p.resample()
             return lst
+        elif mode == "fluent":
+            lst = []
+            for f in violated_fluents:
+                for p in f.params_to_resample():
+                    lst.append(p)
+                    try:
+                        p.resample()
+                    except StopIteration:
+                        p.reset_gen()
+                        p.resample()
+            return lst
         else:
             raise Exception("Invalid mode!")
 
@@ -156,8 +167,12 @@ class PlanRefinement(object):
             llprob.solve_at_priority(0, recently_sampled=recently_sampled)
             for priority in JOINT_REF_PRIORITIES:
                 llprob.solve_at_priority(priority)
-                fluents = [f for a in self.action_list for f in a.preconditions + a.postconditions]
-                violated_fluents = self.find_violated_fluents(fluents, priority)
+                if llprob.recently_converged_vio_fluent is not None:
+                    # early converged based on a violated fluent
+                    violated_fluents = [llprob.recently_converged_vio_fluent]
+                else:
+                    fluents = [f for a in self.action_list for f in a.preconditions + a.postconditions]
+                    violated_fluents = self.find_violated_fluents(fluents, priority)
                 if len(violated_fluents) == 0:
                     if priority == JOINT_REF_PRIORITIES[-1]:
                         self.total_cost = llprob.traj_cost
@@ -166,7 +181,7 @@ class PlanRefinement(object):
                 else:
                     try:
                         self.save_useful_fluents(violated_fluents, all_useful_fluents)
-                        recently_sampled = self.randomized_resample(sampled_params, violated_fluents, mode="all", count=count)
+                        recently_sampled = self.randomized_resample(sampled_params, violated_fluents, mode="fluent", count=count)
                     except StopIteration:
                         for f in all_useful_fluents:
                             self.remove_plots()

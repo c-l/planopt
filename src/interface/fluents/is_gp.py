@@ -26,9 +26,6 @@ class IsGP(AndFluent):
 
         self.cc = ctrajoptpy.GetCollisionChecker(env)
 
-    def hl_params(self):
-        return [self.gp.hl_param]
-
     def pre(self):
         # TODO: remove assumption that grasp is one time step
         # import ipdb; ipdb.set_trace()
@@ -161,3 +158,7 @@ class IsGP(AndFluent):
         jac[0,2] = -r[1]
         jac[1,2] = r[0]
         return np.matrix(jac)
+
+    def params_to_resample(self):
+        # resample Grasp, ObjLoc, and Robot Pose
+        return filter(lambda p: p is not None and p.is_resampled, [self.gp, self.loc, self.hl_action.pos])

@@ -10,9 +10,13 @@ class Fluent(Exception):
         self.name = name
         self.priority = priority
         self.hl_action = hl_action
+        self.allow_early_converge = False
 
     def satisfied(self):
         raise NotImplementedError
+
+    def params_to_resample(self):
+        return []
 
 
 class AndFluent(Fluent):

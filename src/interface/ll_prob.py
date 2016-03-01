@@ -23,9 +23,9 @@ class LLProb(object):
         elif isinstance(fluent, FnFluent):
             fluent.fn.to_gurobi_fn(prob, param_to_var)
             if isinstance(fluent, FnLEFluent):
-                constraints.add_nonlinear_ineq_constraint(fluent.fn)
+                constraints.add_nonlinear_ineq_constraint(fluent)
             elif isinstance(fluent, FnEQFluent):
-                constraints.add_nonlinear_eq_constraint(fluent.fn)
+                constraints.add_nonlinear_eq_constraint(fluent)
         elif isinstance(fluent, LinFluent):
             lhs = self.to_gurobi_expr(prob, fluent.lhs, param_to_var)
             rhs = self.to_gurobi_expr(prob, fluent.rhs, param_to_var)
@@ -85,6 +85,7 @@ class LLProb(object):
     def solve_at_priority_regular(self, priority, fix_sampled_params=False, recently_sampled=None):
         # initialize gurobi Model object
         prob = OptProb()
+        self.recently_converged_vio_fluent = None
         if recently_sampled is None:
             recently_sampled = []
 
@@ -140,7 +141,10 @@ class LLProb(object):
                 do_early_converge = True
             else:
                 raise NotImplementedError
-            success = solver.penalty_sqp(prob, do_early_converge=do_early_converge)
+            success, converged_vio_fluent = solver.penalty_sqp(prob, do_early_converge=do_early_converge)
+            if not do_early_converge:
+                assert converged_vio_fluent is None
+            self.recently_converged_vio_fluent = converged_vio_fluent
 
         for param, var in param_to_var.items():
             var.update_hl_param()

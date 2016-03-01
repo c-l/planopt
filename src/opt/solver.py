@@ -185,7 +185,9 @@ class Solver(object):
 
         for i in range(self.max_merit_coeff_increases):
             if do_early_converge:
-                trust_box_size, success = self.minimize_merit_function_early_converge(prob, penalty_coeff, trust_box_size)
+                trust_box_size, success, converged_vio_fluent = self.minimize_merit_function_early_converge(prob, penalty_coeff, trust_box_size)
+                if converged_vio_fluent is not None:
+                    return (False, converged_vio_fluent)
             else:
                 trust_box_size, success = self.minimize_merit_function(prob, penalty_coeff, trust_box_size)
             print '\n'
@@ -198,10 +200,10 @@ class Solver(object):
             else:
                 end = time.time()
                 print "sqp time: ", end-start
-                return success
+                return (success, None)
         end = time.time()
         print "sqp time: ", end-start
-        return False
+        return (False, None)
 
 
     # @profile
@@ -382,7 +384,7 @@ class Solver(object):
 
             prob.convexify(penalty_coeff)
             grb_model_exprs = np.hstack((prob.obj_quad, prob.convexified_constr))
-            vals, param_to_inds, constr_inds_to_params = prob.val(penalty_coeff)
+            vals, param_to_inds, constr_inds_to_params, constr_inds_to_fluent = prob.val(penalty_coeff)
             merit = sum(vals)
             param_merits = {k: sum(vals[ind] for ind in v) for k, v in param_to_inds.items()}
             constr_merits = {k: vals[k] for k in constr_inds_to_params}
@@ -399,7 +401,7 @@ class Solver(object):
                 model_merit = prob.model.objVal
                 param_model_merits = {k: grb.quicksum(grb_model_exprs[ind] for ind in v).getValue() for k, v in param_to_inds.items()}
                 constr_model_merits = {k: grb_model_exprs[k].getValue() for k in constr_merits}
-                new_vals, _, _ = prob.val(penalty_coeff)
+                new_vals, _, _, _ = prob.val(penalty_coeff)
                 new_merit = sum(new_vals)
                 param_new_merits = {k: sum(new_vals[ind] for ind in v) for k, v in param_to_inds.items()}
                 constr_new_merits = {k: new_vals[k] for k in constr_merits}
@@ -428,7 +430,9 @@ class Solver(object):
                         # if all(approx_param_merit_improves[p] < self.min_approx_param_improve for p in ps):
                         #     violated_constr_converged = True
                         #     break
-                        if abs(approx_constr_merit_improves[ci]) < 0.03 and abs(exact_constr_merit_improves[ci]) < 0.03 and \
+                        if constr_inds_to_fluent[ci].allow_early_converge and \
+                                abs(approx_constr_merit_improves[ci]) < 0.03 and \
+                                abs(exact_constr_merit_improves[ci]) < 0.03 and \
                                 all(abs(approx_param_merit_improves[p]) < 0.03 for p in ps):
                             violated_constr_converged = True
                             break
@@ -442,17 +446,17 @@ class Solver(object):
                     print("Either convexification is wrong to zeroth order, or you're in numerical trouble.")
                     success = False
                     prob.restore()
-                    return (trust_box_size, success)
+                    return (trust_box_size, success, None)
                 elif approx_merit_improve < self.min_approx_improve:
                     print("Converged: y tolerance")
                     # why do we restore if there is some improvement?
                     prob.restore()
-                    return (trust_box_size, success)
+                    return (trust_box_size, success, None)
                 elif violated_constr_converged:
                     print("\n\nSome violated constraint has converged, val = %f"%new_vals[ci])
                     print("Params: %s\n\n"%[(p.name, approx_param_merit_improves[p]) for p in ps])
                     prob.restore()
-                    return (trust_box_size, success)
+                    return (trust_box_size, success, constr_inds_to_fluent[ci])
                 elif (exact_merit_improve < 0) or (merit_improve_ratio < self.improve_ratio_threshold):
                     # reset convex approximations of f,g and h to their original values
                     prob.restore()
@@ -466,7 +470,7 @@ class Solver(object):
 
                 if trust_box_size < self.min_trust_box_size:
                     print("Converged: x tolerance")
-                    return (trust_box_size, success)
+                    return (trust_box_size, success, None)
 
             sqp_iter = sqp_iter + 1
 

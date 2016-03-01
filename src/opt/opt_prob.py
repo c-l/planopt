@@ -71,9 +71,9 @@ class OptProb(object):
         obj = grb.QuadExpr()
         for var in self.vars:
             if var.value is not None and var.recently_sampled:
-                obj += 100 * self.l2_norm_diff_squared(self.model, var)
+                obj += 1e5 * self.l2_norm_diff_squared(self.model, var)
             elif var.value is not None and var.is_resampled:
-                obj += 10 * self.l2_norm_diff_squared(self.model, var)
+                obj += 1 * self.l2_norm_diff_squared(self.model, var)
         if mode == "straight":
             obj += grb.quicksum(self.obj_quad)
         elif mode == "adapt":
@@ -156,10 +156,13 @@ class OptProb(object):
         assert len(self.constraints) == 1
         arr = []
         constr_inds_to_params = {}
+        constr_inds_to_fluent = {}
         for c in self.constraints:
-            arr.extend(c.val_lst(start_ind=i+1, param_to_inds=param_to_inds, constr_inds_to_params=constr_inds_to_params))
+            arr.extend(c.val_lst(start_ind=i+1, param_to_inds=param_to_inds,
+                                 constr_inds_to_params=constr_inds_to_params,
+                                 constr_inds_to_fluent=constr_inds_to_fluent))
 
-        return np.hstack((val, penalty_coeff * np.array(arr))), param_to_inds, constr_inds_to_params
+        return np.hstack((val, penalty_coeff * np.array(arr))), param_to_inds, constr_inds_to_params, constr_inds_to_fluent
 
     # @profile
     def val_old(self, penalty_coeff):
