@@ -396,7 +396,7 @@ class Solver(object):
                 prob.clear_handles()
                 optim_succeeded = prob.optimize(objective=prob.obj_sqp)
                 if not optim_succeeded:
-                    return (trust_box_size, False)
+                    return (trust_box_size, False, None)
 
                 model_merit = prob.model.objVal
                 param_model_merits = {k: grb.quicksum(grb_model_exprs[ind] for ind in v).getValue() for k, v in param_to_inds.items()}

@@ -186,6 +186,14 @@ class PlanRefinement(object):
                         for f in all_useful_fluents:
                             self.remove_plots()
                             yield f
+                        if len(all_useful_fluents) == 0:
+                            print "Resampling all params, no violated fluents to raise..."
+                            for p in sampled_params:
+                                try:
+                                    p.resample()
+                                except StopIteration:
+                                    p.reset_gen()
+                                    p.resample()
                         # reset set of useful fluents, since we yielded them all
                         all_useful_fluents = set()
                         count = 0

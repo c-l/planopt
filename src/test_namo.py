@@ -143,7 +143,7 @@ def swap_parse(f_name):
         d["replan_count"] = replan_count
         d["len"] = l
     for name, d in [("Backtrack", bt_info), ("SQP", sqp_info), ("Early Converge", early_info)]:
-        print "Num experiments: %d"%d["len"]
+        print "%s num experiments: %d"%(name, d["len"])
         print "%s success rate: %f"%(name, d["succ"])
         print "%s failure rate: %f"%(name, d["fail"])
         print "%s timeout rate: %f"%(name, d["timeout"])
