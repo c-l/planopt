@@ -151,18 +151,18 @@ def swap_parse(f_name):
         print "%s total time: %f"%(name, d["total_time"])
         print "%s replan count: %f"%(name, d["replan_count"])
 
-def putaway_test():
+def putaway_test(num_obstr):
     backtrack_info = []
     sqp_info = []
     earlyconvergesqp_info = []
 
     raw_input("Deleting old results, press enter to continue")
-    open("results_putaway.txt", "w").close()
+    open("results_putaway_%dobstr.txt"%num_obstr, "w").close()
     for i in range(NUM_TEST):
         print "\n\n\nTesting %d of %d"%(i, NUM_TEST)
         seed = SEEDS[i]
         viewer_arg = ["-v"] if VIEWER else []
-        world = subprocess.Popen(["python", "../envs/world.py", "mc7", str(SEEDS[i])])
+        world = subprocess.Popen(["python", "../envs/world.py", "mc%d"%(num_obstr+2), str(SEEDS[i])])
         world.communicate()
 
         for mode, info in [("backtrack", backtrack_info), ("sqp", sqp_info), ("earlyconvergesqp", earlyconvergesqp_info)]:
@@ -176,7 +176,7 @@ def putaway_test():
                 if hp_instance.returncode == 0:
                     with open("hp_output.txt", "r") as f:
                         traj_cost, total_time, replan_count = f.readlines()
-                    info.append((i, traj_cost, total_time, replan_count))
+                    info.append((i, num_obstr, traj_cost, total_time, replan_count))
                 else:
                     info.append("fail")
             except Alarm:
@@ -184,7 +184,7 @@ def putaway_test():
                 hp_instance.kill()
                 info.append("timeout")
 
-        with open("results_putaway.txt", "a") as f:
+        with open("results_putaway_%dobstr.txt"%num_obstr, "a") as f:
             f.write("Backtracking\n")
             f.write("%s\n"%backtrack_info)
             f.write("SQP\n")
@@ -195,6 +195,6 @@ def putaway_test():
 
 if __name__ == "__main__":
     # swap_test()
-    swap_other_initmodes_test()
+    # swap_other_initmodes_test()
     # swap_parse("iros_16_results/results_putaway_namo.txt")
-    # putaway_test()
+    putaway_test(num_obstr=0)
