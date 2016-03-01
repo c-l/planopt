@@ -62,6 +62,52 @@ def swap_test():
             f.write("%s\n"%earlyconvergesqp_info)
     print "Testing complete."
 
+def swap_other_initmodes_test():
+    sqp_straight_info = []
+    sqp_l2_info = []
+    earlyconvergesqp_straight_info = []
+    earlyconvergesqp_l2_info = []
+
+    raw_input("Deleting old results, press enter to continue")
+    open("results_swap_other_initmodes.txt", "w").close()
+    for i in range(NUM_TEST):
+        print "\n\n\nTesting %d of %d"%(i, NUM_TEST)
+        seed = SEEDS[i]
+        viewer_arg = ["-v"] if VIEWER else []
+
+        for mode, init_mode, info in [("sqp", "straight", sqp_straight_info),
+                                      ("sqp", "l2", sqp_l2_info),
+                                      ("earlyconvergesqp", "straight", earlyconvergesqp_straight_info),
+                                      ("earlyconvergesqp", "l2", earlyconvergesqp_l2_info)]:
+            hp_instance = subprocess.Popen(["python", "../src/hybridPlanner.py", "-d", "tc", "--%s"%mode, "--%s"%init_mode,
+                                            "-e", "../envs/swap_world.dae", "-s", str(SEEDS[i])] + viewer_arg)
+            signal.signal(signal.SIGALRM, alarm_handler)
+            signal.alarm(TIMEOUT)
+            try:
+                hp_instance.communicate()
+                signal.alarm(0)
+                if hp_instance.returncode == 0:
+                    with open("hp_output.txt", "r") as f:
+                        traj_cost, total_time, replan_count = f.readlines()
+                    info.append((i, traj_cost, total_time, replan_count))
+                else:
+                    info.append("fail")
+            except Alarm:
+                print "Timed out!"
+                hp_instance.kill()
+                info.append("timeout")
+
+        with open("results_swap_other_initmodes.txt", "a") as f:
+            f.write("SQP straight line\n")
+            f.write("%s\n"%sqp_straight_info)
+            f.write("SQP l2\n")
+            f.write("%s\n"%sqp_l2_info)
+            f.write("Early converge SQP straight line\n")
+            f.write("%s\n"%earlyconvergesqp_straight_info)
+            f.write("Early converge SQP l2\n")
+            f.write("%s\n"%earlyconvergesqp_l2_info)
+    print "Testing complete."
+
 def _is_failure(x):
     return x in ("fail", "timeout")
 
@@ -149,5 +195,6 @@ def putaway_test():
 
 if __name__ == "__main__":
     # swap_test()
+    swap_other_initmodes_test()
     # swap_parse("iros_16_results/results_putaway_namo.txt")
-    putaway_test()
+    # putaway_test()
