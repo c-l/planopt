@@ -9,12 +9,11 @@ from ipdb import set_trace
 import settings
 
 class LLProb(object):
-    def __init__(self, hlas=None, world=None):
+    def __init__(self, hlas=None):
         if hlas is None:
             self.hlas = []
         else:
             self.hlas = hlas
-        self.world = world
 
     def add_fluent_to_constraints(self, constraints, fluent, param_to_var):
         prob = constraints.prob
@@ -93,7 +92,6 @@ class LLProb(object):
         for hla in self.hlas:
             params.update(hla.get_params())
             prob.add_hla(hla)
-        params.update(self.world.world_state.values())
 
         # check whether there are duplicate parameters (prob shouldn't add variables into the problem multiple times)
         param_to_var = {}

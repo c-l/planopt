@@ -147,7 +147,7 @@ class PlanRefinement(object):
         for param in sampled_params:
             param.resample()
 
-        llprob = LLProb(self.action_list, self.world)
+        llprob = LLProb(self.action_list)
         llprob.solve_at_priority(-1, recently_sampled=recently_sampled)
         all_useful_fluents = set()
         count = 0
@@ -180,11 +180,6 @@ class PlanRefinement(object):
         # add the preconditions of the next action to the postconditions, for each action
         for i in range(len(self.action_list) - 1):
             a, a_next = self.action_list[i:i+2]
-            # for move actions, add locations which are stored in world state dict
-            if a.is_move():
-                for v in a.world_state.values():
-                    if v not in a.params:
-                        a.params.append(v)
             for precon in a_next.preconditions:
                 if precon.do_extension:
                     a.postconditions.append(precon)
@@ -204,7 +199,7 @@ class PlanRefinement(object):
                 if p in a.params and p not in seen:
                     actions_params.append((a, p))
                     seen.add(p)
-            llprobs[a] = LLProb([a], self.world)
+            llprobs[a] = LLProb([a])
             last_ind_to_actions.setdefault(len(actions_params) - 1, []).append(a)
 
         i = 0
