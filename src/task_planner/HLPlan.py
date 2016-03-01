@@ -119,7 +119,9 @@ class HLPlan:
         i = 0
         while i < len(self.actionList)-1:
             if moveAction in self.getActionName(i).lower() and moveAction in self.getActionName(i+1).lower():
+                _, start, end = self.actionList[i].split()
                 del self.actionList[i]
+                self.actionList[i] = self.actionList[i].replace(end, start)
                 del self.stateList[i+1]
                 del self.origStateList[i+1]
                 removed.append(oldIndex)
