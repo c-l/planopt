@@ -114,7 +114,7 @@ def _is_failure(x):
 def _failure_in_lst(x):
     return "fail" in x or "timeout" in x
 
-def swap_parse(f_name):
+def swap_parse(f_name, parse_up_to=float("inf")):
     with open(f_name, "r") as f:
         _, bt, _, sqp, _, early = f.readlines()[-6:]
     bt_info = {}
@@ -122,6 +122,8 @@ def swap_parse(f_name):
     early_info = {}
     for mode, d in [(bt, bt_info), (sqp, sqp_info), (early, early_info)]:
         for i, x in enumerate(eval(mode)):
+            if i >= parse_up_to:
+                continue
             seed = SEEDS[i]
             if _is_failure(x):
                 d[seed] = (x, x, x)
@@ -142,7 +144,7 @@ def swap_parse(f_name):
         d["total_time"] = total_time
         d["replan_count"] = replan_count
         d["len"] = l
-    for name, d in [("Backtrack", bt_info), ("SQP", sqp_info), ("Early Converge", early_info)]:
+    for name, d in [("Backtrack Min-Vel", bt_info), ("SQP Min-Vel", sqp_info), ("Early Converge Min-Vel", early_info)]:
         print "%s num experiments: %d"%(name, d["len"])
         print "%s success rate: %f"%(name, d["succ"])
         print "%s failure rate: %f"%(name, d["fail"])
@@ -150,6 +152,49 @@ def swap_parse(f_name):
         print "%s traj cost: %f"%(name, d["traj_cost"])
         print "%s total time: %f"%(name, d["total_time"])
         print "%s replan count: %f"%(name, d["replan_count"])
+        print
+
+def swap_other_initmodes_parse(f_name, other_f_name):
+    with open(f_name, "r") as f:
+        _, sqp_straight, _, sqp_l2, _, early_straight, _, early_l2 = f.readlines()[-8:]
+    sqp_straight_info = {}
+    sqp_l2_info = {}
+    early_straight_info = {}
+    early_l2_info = {}
+    for mode, d in [(sqp_straight, sqp_straight_info), (sqp_l2, sqp_l2_info),
+                    (early_straight, early_straight_info), (early_l2, early_l2_info)]:
+        for i, x in enumerate(eval(mode)):
+            seed = SEEDS[i]
+            if _is_failure(x):
+                d[seed] = (x, x, x)
+                continue
+            _, tc, t, rc = x
+            d[seed] = (float(tc.strip()), float(t.strip()), int(rc.strip()))
+        succ = len(filter(lambda x: not _failure_in_lst(x), d.values())) * 1.0 / len(d)
+        fail = len(filter(lambda x: "fail" in x, d.values())) * 1.0 / len(d)
+        timeout = len(filter(lambda x: "timeout" in x, d.values())) * 1.0 / len(d)
+        traj_cost = np.average([v[0] for v in d.values() if not _failure_in_lst(v)])
+        total_time = np.average([v[1] for v in d.values() if not _failure_in_lst(v)])
+        replan_count = np.average([v[2] for v in d.values() if not _failure_in_lst(v)])
+        l = len(d)
+        d["succ"] = succ
+        d["fail"] = fail
+        d["timeout"] = timeout
+        d["traj_cost"] = traj_cost
+        d["total_time"] = total_time
+        d["replan_count"] = replan_count
+        d["len"] = l
+    for name, d in [("SQP Straight", sqp_straight_info), ("SQP L2", sqp_l2_info),
+                    ("Early Converge Straight", early_straight_info), ("Early Converge L2", early_l2_info)]:
+        print "%s num experiments: %d"%(name, d["len"])
+        print "%s success rate: %f"%(name, d["succ"])
+        print "%s failure rate: %f"%(name, d["fail"])
+        print "%s timeout rate: %f"%(name, d["timeout"])
+        print "%s traj cost: %f"%(name, d["traj_cost"])
+        print "%s total time: %f"%(name, d["total_time"])
+        print "%s replan count: %f"%(name, d["replan_count"])
+        print
+    swap_parse(other_f_name, parse_up_to=d["len"])
 
 def putaway_test(num_obstr):
     backtrack_info = []
@@ -193,8 +238,48 @@ def putaway_test(num_obstr):
             f.write("%s\n"%earlyconvergesqp_info)
     print "Testing complete."
 
+def putaway_parse(f_name):
+    with open(f_name, "r") as f:
+        _, bt, _, sqp, _, early = f.readlines()[-6:]
+    bt_info = {}
+    sqp_info = {}
+    early_info = {}
+    for mode, d in [(bt, bt_info), (sqp, sqp_info), (early, early_info)]:
+        for i, x in enumerate(eval(mode)):
+            seed = SEEDS[i]
+            if _is_failure(x):
+                d[seed] = (x, x, x)
+                continue
+            _, _, tc, t, rc = x
+            d[seed] = (float(tc.strip()), float(t.strip()), int(rc.strip()))
+        succ = len(filter(lambda x: not _failure_in_lst(x), d.values())) * 1.0 / len(d)
+        fail = len(filter(lambda x: "fail" in x, d.values())) * 1.0 / len(d)
+        timeout = len(filter(lambda x: "timeout" in x, d.values())) * 1.0 / len(d)
+        traj_cost = np.average([v[0] for v in d.values() if not _failure_in_lst(v)])
+        total_time = np.average([v[1] for v in d.values() if not _failure_in_lst(v)])
+        replan_count = np.average([v[2] for v in d.values() if not _failure_in_lst(v)])
+        l = len(d)
+        d["succ"] = succ
+        d["fail"] = fail
+        d["timeout"] = timeout
+        d["traj_cost"] = traj_cost
+        d["total_time"] = total_time
+        d["replan_count"] = replan_count
+        d["len"] = l
+    for name, d in [("Backtrack", bt_info), ("SQP", sqp_info), ("Early Converge", early_info)]:
+        print "%s num experiments: %d"%(name, d["len"])
+        print "%s success rate: %f"%(name, d["succ"])
+        print "%s failure rate: %f"%(name, d["fail"])
+        print "%s timeout rate: %f"%(name, d["timeout"])
+        print "%s traj cost: %f"%(name, d["traj_cost"])
+        print "%s total time: %f"%(name, d["total_time"])
+        print "%s replan count: %f"%(name, d["replan_count"])
+        print
+
 if __name__ == "__main__":
     # swap_test()
+    # swap_parse("iros_16_results/results_swap.txt")
     # swap_other_initmodes_test()
-    # swap_parse("iros_16_results/results_putaway_namo.txt")
-    putaway_test(num_obstr=0)
+    swap_other_initmodes_parse("iros_16_results/results_swap_other_initmodes_partial.txt", "iros_16_results/results_swap.txt")
+    # putaway_test(num_obstr=0)
+    # putaway_parse("iros_16_results/results_putaway_3obstr_partial.txt")
