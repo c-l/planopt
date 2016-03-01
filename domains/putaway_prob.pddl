@@ -67,18 +67,18 @@
         ;; can8initloc - location
         ;; can9initloc - location
         ;; can10initloc - location
-        can1temploc - location
-        can2temploc - location
-        can3temploc - location
-        can4temploc - location
-        can5temploc - location
-        can6temploc - location
-        can7temploc - location
-        ;; can8temploc - location
-        ;; can9temploc - location
-        ;; can10temploc - location
-        goal1 - location
-        goal2 - location
+        can1temploc - temploc
+        can2temploc - temploc
+        can3temploc - temploc
+        can4temploc - temploc
+        can5temploc - temploc
+        can6temploc - temploc
+        can7temploc - temploc
+        ;; can8temploc - temploc
+        ;; can9temploc - temploc
+        ;; can10temploc - temploc
+        goal1 - temploc
+        goal2 - temploc
     )
     (:init
         (RobotAt robotinitloc)
@@ -105,18 +105,18 @@
         ;; (IsAccessPointFor pdp_can8_can8initloc can8 can8initloc)
         ;; (IsAccessPointFor pdp_can9_can9initloc can9 can9initloc)
         ;; (IsAccessPointFor pdp_can10_can10initloc can10 can10initloc)
-        (IsAccessPointFor pdp_can1_can1temploc can1 can1temploc)
-        (IsAccessPointFor pdp_can2_can2temploc can2 can2temploc)
-        (IsAccessPointFor pdp_can3_can3temploc can3 can3temploc)
-        (IsAccessPointFor pdp_can4_can4temploc can4 can4temploc)
-        (IsAccessPointFor pdp_can5_can5temploc can5 can5temploc)
-        (IsAccessPointFor pdp_can6_can6temploc can6 can6temploc)
-        (IsAccessPointFor pdp_can7_can7temploc can7 can7temploc)
-        ;; (IsAccessPointFor pdp_can8_can8temploc can8 can8temploc)
-        ;; (IsAccessPointFor pdp_can9_can9temploc can9 can9temploc)
-        ;; (IsAccessPointFor pdp_can10_can10temploc can10 can10temploc)
-        (IsAccessPointFor pdp_can1_goal1 can1 goal1)
-        (IsAccessPointFor pdp_can2_goal2 can2 goal2)
+        (IsAccessPointForTemp pdp_can1_can1temploc can1 can1temploc)
+        (IsAccessPointForTemp pdp_can2_can2temploc can2 can2temploc)
+        (IsAccessPointForTemp pdp_can3_can3temploc can3 can3temploc)
+        (IsAccessPointForTemp pdp_can4_can4temploc can4 can4temploc)
+        (IsAccessPointForTemp pdp_can5_can5temploc can5 can5temploc)
+        (IsAccessPointForTemp pdp_can6_can6temploc can6 can6temploc)
+        (IsAccessPointForTemp pdp_can7_can7temploc can7 can7temploc)
+        ;; (IsAccessPointForTemp pdp_can8_can8temploc can8 can8temploc)
+        ;; (IsAccessPointForTemp pdp_can9_can9temploc can9 can9temploc)
+        ;; (IsAccessPointForTemp pdp_can10_can10temploc can10 can10temploc)
+        (IsAccessPointForTemp pdp_can1_goal1 can1 goal1)
+        (IsAccessPointForTemp pdp_can2_goal2 can2 goal2)
 
         (ObjAt can1 can1initloc)
         (ObjAt can2 can2initloc)
@@ -130,6 +130,6 @@
         ;; (ObjAt can10 can10initloc)
     )
     (:goal
-        (and (ObjAt can1 goal1) (ObjAt can2 goal2))
+        (and (ObjAtTemp can1 goal1) (ObjAtTemp can2 goal2))
     )
 )

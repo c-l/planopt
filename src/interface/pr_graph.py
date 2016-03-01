@@ -128,7 +128,10 @@ class PRGraph(object):
             obj_loc = fluent.obj_loc.name
             # undo uniqueify symbols for error propagation
             end = fluent.hl_action.end.name[:fluent.hl_action.end.name.rfind("_")]
-            obst_list = "(obstructs {} {} {})\n".format(obj, obj_loc, end)
+            if "temploc" in obj_loc:
+                obst_list = "(obstructstemp {} {} {})\n".format(obj, obj_loc, end)
+            else:
+                obst_list = "(obstructs {} {} {})\n".format(obj, obj_loc, end)
 
             fluent.pddl_error_info = "LineNumber: %d\n%s" % (fluent.hl_action.lineno, obst_list)
             return
