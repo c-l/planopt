@@ -306,6 +306,7 @@ class PlanRefinement(object):
         fluents = [f for a in self.action_list for f in a.preconditions + a.postconditions]
         violated_fluents = self.find_violated_fluents(fluents, priority=2)
         assert len(violated_fluents) == 0
+        self.total_cost = llprob.traj_cost
         yield None
 
     # TODO: whether a fluent is useful should be determined by domain file?
