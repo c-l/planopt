@@ -10,18 +10,16 @@ import sys
 DOMAIN_PATH = "../domains/PR2PickPlace/"
 sys.path.insert(0, DOMAIN_PATH)
 from fluents.is_mp import PR2IsMP
-from fluents.not_obstructs import NotObstructsPR2
 
-class PR2Move(PR2HLAction):
+class PR2MoveWithObjLoc(PR2HLAction):
 
-    def __init__(self, lineno, hl_plan, env, robot, start, end, obj, obj_loc=None, gp=None):
+    def __init__(self, lineno, hl_plan, env, robot, start, end, obj, obj_loc):
         super(PR2Move, self).__init__(lineno, hl_plan, env, robot)
 
         self.hl_plan = hl_plan
         self.start = start
         self.end = end
         self.obj = obj
-        self.obj_loc = obj_loc
 
         # TODO: set this using optimization domain
         # self.T = 40
@@ -37,10 +35,8 @@ class PR2Move(PR2HLAction):
         self.params = [self.start, self.end, self.traj]
         self.preconditions = [RobotAt(self, 0, self.start, self.traj)]
         self.preconditions += [PR2IsMP(self.env, self, robot, 0, self.start, self.end, self.traj)]
-        if obj_loc is not None:
-            self.preconditions += [PR2ObjAt(self, 0, self.obj, self.loc, self.obj_traj)]
 
-        self.preconditions += [NotObstructsPR2(env, self, robot, 1, self.traj, self.obj, self.obj_loc)]
+        self.preconditions += [NotObstructsPR2(env, self, robot, 1, self.traj, obj)]
 
         self.postconditions = []
         self.postconditions += [RobotAt(self, 0, self.end, self.traj)]

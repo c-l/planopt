@@ -27,7 +27,7 @@ class PR2Place(PR2HLAction):
         self.loc = loc
 
         # TODO: set this using optimization domain
-        self.T = 5
+        self.T = 2
         self.K = robot.dofs
 
         self.name = "place" + str(lineno)

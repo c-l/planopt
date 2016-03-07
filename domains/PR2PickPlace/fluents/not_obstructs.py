@@ -13,7 +13,6 @@ class NotObstructsPR2(FnLEFluent):
         self.traj = traj
         self.obj = obj
         self.obj_loc = obj_loc
-        # self.obj_loc = obj_loc
         self.robot = robot
         self.priority = priority
 
@@ -32,11 +31,7 @@ class NotObstructsPR2(FnLEFluent):
         traj = self.traj
 
         g = lambda x: self.collisions(x) # function inequality constraint g(x) <= 0
-        # g = lambda x: self.num_check(self.test_collisions, x) # numerical check
-        obj_loc_list = []
-        if self.obj_loc is not None:
-            obj_loc_list = [self.obj_loc for i in range(self.timesteps)]
-        self.fn = CollisionFn([self.traj] + obj_loc_list, g)
+        self.fn = CollisionFn([self.traj, self.obj_loc], g)
 
     # TODO: compute collisions properly
     # @profile
@@ -50,24 +45,21 @@ class NotObstructsPR2(FnLEFluent):
 
         handles = []
 
-        # if self.obj_loc is not None:
-        #     val = np.zeros((2*T, 1))
-        #     jac = np.zeros((2*T, traj.size))
-        # else:
-        # val = np.zeros((T, 1))
-        # jac = np.zeros((T, traj.size))
-        # if self.obj_loc is not None:
-        #     self.obj.set_pose(env, self.obj_loc.value)
         val = None
-        jac = None
+        robot_jac = None
+        obj_jac = None
+        ot = None
+        obj_start_ind = self.robot_dofs * T
+        obj_end_ind = self.robot_dofs * T + self.obj.dofs
+        if self.obj_loc is not None:
+            ot = traj[obj_start_ind:obj_end_ind]
+            self.obj.set_pose(env, ot)
+        else:
+            self.obj.set_loc(env, self.loc.value)
 
         for t in range(self.timesteps):
-            # xt = self.traj.value[K*t:K*(t+1)]
-            # xt = traj[:,t:t+1]
             robot_start_ind = self.robot_dofs * t
             robot_end_ind = self.robot_dofs * (t+1)
-            # obj_start_ind = self.robot_dofs * T + self.obj_dofs * t
-            # obj_end_ind = self.robot_dofs * T + self.obj_dofs * (t+1)
             # xt = traj[self.robot_dofs*t:self.robot_dofs*(t+1)]
             xt = traj[robot_start_ind:robot_end_ind]
             self.robot.set_pose(env, xt)
@@ -78,8 +70,7 @@ class NotObstructsPR2(FnLEFluent):
             #     self.obj.set_pose(env, ot)
             collisions = self.cc.BodyVsAll(self.robot.get_env_body(env))
 
-            # val_t, robot_jac_t, obj_jac_t = self.calc_grad_and_val(xt, ot, collisions)
-            val_t, robot_jac_t = self.calc_grad_and_val(xt, ot, collisions)
+            val_t, robot_jac_t, obj_jac_t = self.calc_grad_and_val(xt, ot, collisions)
             if robot_jac_t is not None:
                 assert val_t is not None
                 rows = val_t.shape[0]
@@ -93,6 +84,8 @@ class NotObstructsPR2(FnLEFluent):
                     assert jac is not None
                     val = np.vstack((val, val_t))
                     jac = np.vstack((jac, jac_t))
+
+                if obj_jac_t is not None:
 
 
                 # val[t], jac[t, robot_start_ind:robot_end_ind] = col_val, robot_jac
@@ -116,6 +109,7 @@ class NotObstructsPR2(FnLEFluent):
         obj_grad = None
         vals = []
         robot_grads = []
+        obj_grads = []
         for c in collisions:
             linkAParent = c.GetLinkAParentName()
             linkBParent = c.GetLinkBParentName()
@@ -160,20 +154,23 @@ class NotObstructsPR2(FnLEFluent):
             robot_grad = np.dot(sign * normal, robot_jac)
 
             robot_grads.append(robot_grad)
-            # if ot is not None:
-            #     obj_link_ind = obj.GetLink(linkObj).GetIndex()
-            #     obj_jac = obj.CalculateActiveJacobian(obj_link_ind, ptObj)
-            #     import ipdb; ipdb.set_trace()
-            #     obj_grad = np.dot(normal, obj_jac)
+            if ot is not None:
+                obj_rot_grad = np.array([np.dot(-sign*normal, np.cross(axis, ot-ptObj)) for axis in self.obj.get_axises(ot)])
+                obj_trans_grad = np.array(normal)
+                obj_grad = np.r_[obj_rot_grad, obj_trans_grad]
+                obj_grads.append(obj_grad)
 
         if vals:
             vals = np.vstack(vals)
             robot_grads = np.vstack(robot_grads)
+            if ot is not None:
+                obj_grads = np.vstack(obj_grads)
         else:
             vals = None
             robot_grads = None
+            obj_grads = None
         print "vals: ", vals
-        return vals, robot_grads
+        return vals, robot_grads, obj_grads
 
     def num_check(self, fn, traj):
         val, ana_jac = fn(traj)
@@ -191,6 +188,7 @@ class NotObstructsPR2(FnLEFluent):
 
         return (val, num_jac)
 
+    # no object place locations in this check
     def test_collisions(self, traj):
         env = self.env
         T = self.timesteps

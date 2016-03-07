@@ -2,6 +2,7 @@ from interface.fluents.fluent import AndFluent
 from interface.fluents.fluent import LinEqFluent
 from interface.fluents.aff_expr import AffExpr
 import numpy as np
+from ipdb import set_trace
 
 class PR2ObjAt(AndFluent):
     def __init__(self, hl_action, priority, obj, loc, obj_traj):
@@ -12,6 +13,24 @@ class PR2ObjAt(AndFluent):
         self.obj_traj = obj_traj
 
         self.name = "ObjAt(" + obj.name + ", " + loc.name + ")"
+
+    def pre(self):
+        T = self.obj_traj.cols
+
+        A_loc_fixed_rhs = np.ones((1,T))
+        fixed_rhs = AffExpr({self.loc: (1.0, A_loc_rhs)})
+        A_obj_traj_fixed_lhs = np.hstack((np.zeros((3,3)), np.eye(3)))
+        loc_rhs = AffExpr({self.self.obj_traj: (A_obj_traj_fixed_lhs, 1.0)})
+        loc_fluent = LinEqFluent(self.name + '_loc_fixed', self.priority, self.hl_action, loc_lhs, loc_rhs)
+
+        A_lhs = np.hstack((np.eye(3), np.zeros((3,3))))
+        A_rhs = np.ones((T, 1))
+        standing_lhs = AffExpr({self.obj_traj: (A_lhs, A_rhs)})
+        standing_rhs = AffExpr(constant=np.zeros((3,T)))
+        standing_fluent = LinEqFluent(self.name + '_standing', self.priority, self.hl_action, standing_lhs, standing_rhs)
+        set_trace()
+
+        self.fluents = [loc_fluent, standing_fluent]
 
     def post(self):
         T = self.obj_traj.cols

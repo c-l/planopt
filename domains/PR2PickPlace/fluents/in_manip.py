@@ -24,8 +24,10 @@ class PR2InManip(AndFluent):
         traj = self.traj
 
         h_pos = lambda x: self.pos_error(x) # function inequality constraint h(x) = 0
+        # note that numerical gradient and analytical gradient will be different when joints are at their limits
         # h_pos = lambda x: self.num_check(self.pos_error, x) # numerical gradient check on pos error
         h_rot = lambda x: self.rot_error(x) # function inequality constraint h(x) = 0
+        # note that numerical gradient and analytical gradient will be different when joints are at their limits
         # h_rot = lambda x: self.num_check(self.rot_error, x) # numerical gradient check on rot error
         self.pos_fn = CollisionFn([self.traj, self.obj_traj], h_pos)
         self.rot_fn = CollisionFn([self.traj, self.obj_traj], h_rot)

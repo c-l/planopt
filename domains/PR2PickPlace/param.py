@@ -26,6 +26,7 @@ class Obj(HLParam):
         self.name = name
         self.is_var = False
         self.is_resampled = False
+        self.dofs = 6
 
     def get_pose(self, env):
         obj = self.get_env_body(env)
@@ -36,6 +37,12 @@ class Obj(HLParam):
     def set_pose(self, env, pose):
         transform = transform_from_obj_pose(pose)
         # ipdb.set_trace()
+        obj = self.get_env_body(env)
+        obj.SetTransform(transform)
+
+    def set_loc(self, env, loc):
+        transform = np.eye(4)
+        transform[:3, 3] = loc
         obj = self.get_env_body(env)
         obj.SetTransform(transform)
 
