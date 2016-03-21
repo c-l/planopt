@@ -372,12 +372,6 @@ class PlanRefinement(object):
         for n, t in tfs.items():
             self.env.GetKinBody(n).SetTransform(t)
 
-    def setActionListNames(self, hlplan):
-        self.action_list_names = hlplan.actionList
-        self.action_effects_dict = hlplan.effectDict
-        self.action_precond_dict = hlplan.preconditionDict
-        self.state_list = hlplan.stateList
-
     def add_parent_action(self, lineno, action):
         self._add_action(lineno, action)
 

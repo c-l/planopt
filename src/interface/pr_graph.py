@@ -1,7 +1,7 @@
 import copy
 import settings
 import networkx as nx
-import pylab
+# import pylab
 import pprint
 
 # from hl_actions.hl_action import ActionError, InstantiationExhaustedException
@@ -35,8 +35,6 @@ class PRGraph(object):
             settings.RANDOM_STATE = copy.deepcopy(self.saved_random_states[plan_key])
 
             self.plan_refinements[plan_key].get_next_instantiation()
-
-            self.plan_refinements[plan_key].setActionListNames(self.saved_plans[plan_key])
 
         except Fluent, f:
             # self.saved_environments[plan_key] = EnvManager.save_openrave_state(self.env)
