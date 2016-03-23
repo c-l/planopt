@@ -8,9 +8,12 @@ from ipdb import set_trace
 from IPython import embed as shell
 import time
 import gurobipy as grb
+import scipy
+import settings
 
 
 class Solver(object):
+    frame = 1
     """
     f is the function that needs to be approximately in the cost
     g is the inequality constraint
@@ -330,6 +333,13 @@ class Solver(object):
             merit = prob.val_old(penalty_coeff)
             prob.save()
 
+            # recording video
+            env = prob.hlas[0].hl_plan.env
+            env.GetViewer().SendCommand('SetFiguresInCamera 1') # also shows the figures in the image
+            I = env.GetViewer().GetCameraImage(640,480,  settings.CAMERA_TRANSFORM,[640,640,320,240])
+            scipy.misc.imsave('backtrack/backtrack' + str(Solver.frame) + '.jpg',I)
+            Solver.frame = Solver.frame + 1
+
             while True:
                 print("    trust region size: {0}".format(trust_box_size))
 
@@ -383,6 +393,14 @@ class Solver(object):
             print("  sqp_iter: {0}".format(sqp_iter))
 
             prob.convexify(penalty_coeff)
+
+            # recording video
+            env = prob.hlas[0].hl_plan.env
+            env.GetViewer().SendCommand('SetFiguresInCamera 1') # also shows the figures in the image
+            I = env.GetViewer().GetCameraImage(640,480,  settings.CAMERA_TRANSFORM,[640,640,320,240])
+            scipy.misc.imsave('earlyconverge/ec' + str(Solver.frame) + '.jpg',I)
+            Solver.frame = Solver.frame + 1
+
             grb_model_exprs = np.hstack((prob.obj_quad, prob.convexified_constr))
             vals, param_to_inds, constr_inds_to_params, constr_inds_to_fluent = prob.val(penalty_coeff)
             merit = sum(vals)

@@ -213,7 +213,7 @@ def putaway_test(num_obstr):
 
         for mode, info in [("backtrack", backtrack_info), ("sqp", sqp_info),
                            ("earlyconvergesqp", earlyconvergesqp_info), ("btsqpsmooth", btsmooth_info)]:
-            hp_instance = subprocess.Popen(["python", "../src/hybridPlanner.py", "-d", "mc", "--%s"%mode,
+            hp_instance = subprocess.Popen(["python", "../src/hybridPlanner.py", "-v", "-d", "mc", "--%s"%mode,
                                             "-e", "../envs/putaway_world.dae", "-s", str(SEEDS[i])] + viewer_arg)
             signal.signal(signal.SIGALRM, alarm_handler)
             signal.alarm(TIMEOUT)
@@ -286,5 +286,6 @@ if __name__ == "__main__":
     # swap_parse("iros_16_results/results_swap.txt")
     # swap_other_initmodes_test()
     # swap_other_initmodes_parse("iros_16_results/results_swap_other_initmodes_partial.txt", "iros_16_results/results_swap.txt")
-    putaway_test(num_obstr=5)
+    # putaway_test(num_obstr=5)
+    putaway_test(num_obstr=3)
     # putaway_parse("iros_16_results/results_putaway_3obstr.txt")

@@ -1,10 +1,20 @@
 import time
+import numpy as np
 DOMAIN_PATH = "../domains/"
 errFileName = "robotics_autogen_err1.txt"
 ENVPATH="../environments/"
 
 RECORD = False
 # RECORD = True
+CAMERA_TRANSFORM = np.array([[  9.99976643e-01,  -2.48989863e-04,   6.83014982e-03,
+          3.42240143e+00],
+       [  7.64680708e-06,  -9.99294812e-01,  -3.75483574e-02,
+          2.52659512e+00],
+       [  6.83468244e-03,   3.75475326e-02,  -9.99271470e-01,
+          1.13539438e+01],
+       [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
+          1.00000000e+00]])
+
 
 REPLAN_FOR_GRASP = False
 

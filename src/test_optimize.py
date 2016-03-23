@@ -256,7 +256,7 @@ def swap_bad_grasp_far_right():
     recently_sampled = sampled_params
     for param in pr.action_list[0].params:
         if param.name == "robotinitloc":
-            param.value = np.array([[1], [2], [0]], dtype=np.float)        
+            param.value = np.array([[1], [2], [0]], dtype=np.float)
     for param in sampled_params:
         if param.__class__.__name__ == "RP":
             param.value = param.obj_loc.value + np.array([[0], [0.6], [0]], dtype=np.float)
@@ -290,11 +290,11 @@ def putaway_easy():
 def main():
     # swap_good_init_but_locs_stuck()
     # swap_bad_init()
-    swap_bad_grasp_far_right()
+    # swap_bad_grasp_far_right()
     # swap_good_init_left_and_right()
     # swap_start_in_object_top()
     # simple_plan()
-    # putaway_easy()
+    putaway_easy()
 
 if __name__ == "__main__":
     main()

@@ -15,6 +15,7 @@ from ll_prob import LLProb
 from fluents.fluent import AndFluent
 # TODO: not sure if this dependency should be here
 from fluents.not_obstructs import NotObstructs
+import scipy
 
 try:
     import openrave_input
@@ -24,6 +25,8 @@ except ImportError:
 JOINT_REF_PRIORITIES = [2]
 
 class PlanRefinement(object):
+    frame = 1
+
     def __init__(self, env, world):
         self.env = env
         self.original_env = self.env.CloneSelf(1) # clones objects in the environment
@@ -43,6 +46,20 @@ class PlanRefinement(object):
         self.gp_counters = {}
         self.grasp_counters = {}
         self.pdp_counters = {}
+
+        # make all object opaque for recording
+        utils.set_transparency(self.robot, 0)
+        for obj_name in self.world.movable_objects:
+            utils.set_transparency(self.env.GetKinBody(obj_name), 0)
+
+        env = self.env
+        env.GetViewer().SendCommand('SetFiguresInCamera 1') # also shows the figures in the image
+        I = env.GetViewer().GetCameraImage(640,480,  settings.CAMERA_TRANSFORM,[640,640,320,240])
+        if settings.BACKTRACKING_REFINEMENT:
+            scipy.misc.imsave('backtrack/setup' + '.jpg',I)
+        if settings.DO_EARLY_CONVERGE:
+            scipy.misc.imsave('earlyconverge/setup' + '.jpg',I)
+
 
     def reset_all(self):
         self.action_list = []
@@ -357,11 +374,24 @@ class PlanRefinement(object):
                         assert action.traj.cols == action.obj_traj.cols
                         obj_T[:3, 3] = action.obj_traj.value[:, ts]
                         obj.SetTransform(obj_T)
+                    for n, t in tfs.items():
+                        # recording video
+                        env = self.env
+                        env.GetViewer().SendCommand('SetFiguresInCamera 1') # also shows the figures in the image
+                        I = env.GetViewer().GetCameraImage(640,480,  settings.CAMERA_TRANSFORM,[640,640,320,240])
+                        if settings.BACKTRACKING_REFINEMENT:
+                            scipy.misc.imsave('backtrack/exec' + str(PlanRefinement.frame) + '.jpg',I)
+                        if settings.DO_EARLY_CONVERGE:
+                            scipy.misc.imsave('earlyconverge/exec' + str(PlanRefinement.frame) + '.jpg',I)
+                        PlanRefinement.frame = PlanRefinement.frame + 1
                     time.sleep(0.02 / speedup)
             if action.name.startswith("pick"):
                 utils.set_color(action.obj.get_env_body(self.env), [0, 1, 0])
             if action.name.startswith("place"):
-                utils.set_color(action.obj.get_env_body(self.env), [0, 1, 1])
+                if action.obj.name != 'can1' and action.obj.name != 'can2':
+                    utils.set_color(action.obj.get_env_body(self.env), [1, 0, 1])
+                else:
+                    utils.set_color(action.obj.get_env_body(self.env), [0, 1, 1])
 
         # restore transparency
         utils.set_transparency(self.robot, 0.7)
@@ -369,7 +399,7 @@ class PlanRefinement(object):
             utils.set_transparency(self.env.GetKinBody(obj_name), 0.7)
 
         # restore transforms
-        for n, t in tfs.items():
+
             self.env.GetKinBody(n).SetTransform(t)
 
     def setActionListNames(self, hlplan):
