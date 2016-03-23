@@ -32,7 +32,7 @@ class PR2IsMP(AndFluent):
         # self.fluents = [disp, ub]
         # self.fluents = [disp]
 
-    def displacement(self):
+    def displacement(self): #TODO: Implement continuous collision checking and remove this function.
         K = self.hl_action.K
         T = self.hl_action.T
         # K,T = traj.size

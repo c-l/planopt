@@ -6,9 +6,9 @@ import ipdb
 
 
 class ObjLoc(HLParam):
-    def __init__(self, name, rows=3, cols=1, is_var=True,
+    def __init__(self, name, shape=(3,1), is_var=True,
                  value=None, is_resampled=False, region=None):
-        super(ObjLoc, self).__init__(name, rows, cols, is_var, value, is_resampled)
+        super(ObjLoc, self).__init__(name, shape, is_var, value, is_resampled)
         if self.is_resampled:
             assert region is not None
         if region is not None:

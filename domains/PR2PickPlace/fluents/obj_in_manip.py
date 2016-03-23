@@ -48,7 +48,7 @@ class ObjInManip(AndFluent):
         jac = np.zeros((val.size, obj_traj.size))
 
         for t in range(self.T):
-            xt = self.traj.value[:,t].flatten()
+            xt = self.traj.get_value()[:,t].flatten()
             self.robot.set_pose(self.env, xt)
 
             ot = obj_traj[self.K*t:self.K*(t+1)]
@@ -91,7 +91,7 @@ class ObjInManip(AndFluent):
         return val, num_jac
 
     def rot_error(self, obj_traj):
-        # q = self.gp.value
+        # q = self.gp.get_value()
         q = np.array([0,0,.125]).reshape((3,1))
 
         dim = 1
@@ -99,7 +99,7 @@ class ObjInManip(AndFluent):
         jac = np.zeros((val.size, obj_traj.size))
 
         for t in range(self.T):
-            xt = self.traj.value[:,t].flatten()
+            xt = self.traj.get_value()[:,t].flatten()
             self.robot.set_pose(self.env, xt)
             robot_body = self.robot.get_env_body(self.env)
 

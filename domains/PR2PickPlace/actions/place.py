@@ -31,8 +31,8 @@ class PR2Place(PR2HLAction):
         self.K = robot.dofs
 
         self.name = "place" + str(lineno)
-        self.traj = Traj(self, self.name + "_traj", self.K, self.T, is_var=True)
-        self.obj_traj = Traj(self, self.name + "_obj_traj", 6, self.T, is_var=True)
+        self.traj = Traj(self, self.name + "_traj", (self.K, self.T), is_var=True)
+        self.obj_traj = Traj(self, self.name + "_obj_traj", (6, self.T), is_var=True)
 
         self.params = [self.start, self.end, self.loc, self.traj, self.obj_traj]
         self.preconditions = [RobotAt(self, 0, self.start, self.traj)]

@@ -14,7 +14,7 @@ class PR2ObjAt(AndFluent):
         self.name = "ObjAt(" + obj.name + ", " + loc.name + ")"
 
     def post(self):
-        T = self.obj_traj.cols
+        T = self.obj_traj.num_timesteps()
         coeff = np.zeros((T, 1), dtype=np.float)
         coeff[0, 0] = 1.0
         # A_lhs = np.array([[0,0,0,1,1,1]])

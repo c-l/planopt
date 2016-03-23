@@ -183,15 +183,15 @@ class CollisionFn(Function):
 
     def _get_values(self):
         return self._get_flattened_values()
-        # values = [var.value.copy() for var in self.vs]
+        # values = [var.get_val().copy() for var in self.vs]
         # values = np.vstack(values)
         # return values
 
     def _get_flattened_values(self):
-        # values = [var.value.copy().flatten(order='F') for var in self.vs]
+        # values = [var.get_val().copy().flatten(order='F') for var in self.vs]
         values = []
         for var in self.vs:
-            values.extend(var.value.copy().flatten(order='F'))
+            values.extend(var.get_val().copy().flatten(order='F'))
         values = np.vstack(values)
         return values
 

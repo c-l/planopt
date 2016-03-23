@@ -115,8 +115,10 @@ class LLProb(object):
 
         # max(priority, 0) because priority = -1 used for straight-line init
         self.add_cnts_to_opt_prob(prob, param_to_var=param_to_var, priority=max(priority, 0))
+        
+        # Re-sampled params need to update their corresponding variables
         for param, var in param_to_var.items():
-            var.set(param.get_value())
+            var.set_val(param.get_value())
 
         for hla in self.hlas:
             if hla.cost != 0.0:

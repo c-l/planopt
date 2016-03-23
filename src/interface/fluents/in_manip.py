@@ -21,9 +21,9 @@ class InManip(LinEqFluent):
         self.name = "InManip"
 
     def pre(self):
-        # self.obj_traj.value = self.traj.value + self.gp.value
+        # self.obj_traj.set_value(self.traj.get_value() + self.gp.get_value())
 
-        self.lhs = AffExpr({self.traj: 1.0, self.gp: np.ones((1, self.traj.cols))})
+        self.lhs = AffExpr({self.traj: 1.0, self.gp: np.ones((1, self.traj.num_timesteps()))})
         self.rhs = AffExpr({self.obj_traj: 1.0})
 
     def post(self):

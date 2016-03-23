@@ -42,17 +42,17 @@ def test_place():
     # obj_pose = np.array([[0.],[0.],[0.]])
     # obj.set_pose(env, obj_pose)
 
-    # start = HLParam("pos", self.K, 1, is_var=False, value=robot.get_pose(env))
+    # start = HLParam("pos", self.(K, 1), is_var=False, value=robot.get_pose(env))
     # pose = np.array([[-1.57265580e+00], [5.27875957e-01], [-1.40000000e+00], \
     #     [-1.58244363e+00], [-1.64143184e+00], [-9.76938766e-02], [-5.78403045e-01], [0.0],[0.],[0.],[0.]])
     # pose = np.array([[-1.57265580e+00], [5.27875957e-01], [-1.40000000e+00], \
     #     [-1.58244363e+00], [-1.64143184e+00], [-9.76938766e-02], [-5.78403045e-01]])
     pose = np.array([[-1.57265580e+00], [5.27875957e-01], [-1.40000000e+00], \
         [-1.58244363e+00], [-1.64143184e+00], [-9.76938766e-02], [-5.78403045e-01], [0.4]])
-    start = HLParam("start", K, 1, value=pose, is_var=False)
+    start = HLParam("start", (K, 1), value=pose, is_var=False)
 
-    end = HLParam("end", K, 1, value=pose)
-    loc = HLParam("loc", 3, 1, is_var=False, value=obj.get_pose(env)[3:6].reshape((3,1)))
+    end = HLParam("end", (K, 1), value=pose)
+    loc = HLParam("loc", (3, 1), is_var=False, value=obj.get_pose(env)[3:6].reshape((3,1)))
     # import ipdb; ipdb.set_trace()
 
     place = PR2Place(0, hl_plan, place_env, robot, start, end, obj, loc)

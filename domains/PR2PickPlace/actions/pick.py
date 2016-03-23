@@ -29,7 +29,7 @@ class PR2Pick(PR2HLAction):
         self.K = robot.dofs
 
         self.name = "pick" + str(lineno)
-        self.traj = Traj(self, self.name + "_traj", self.K, self.T, is_var=True)
+        self.traj = Traj(self, self.name + "_traj", (self.K, self.T), is_var=True)
 
         self.params = [self.start, self.end, self.traj]
         self.preconditions = [RobotAt(self, 0, self.start, self.traj)]

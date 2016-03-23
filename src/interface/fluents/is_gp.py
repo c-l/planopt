@@ -29,7 +29,7 @@ class IsGP(AndFluent):
     def pre(self):
         # TODO: remove assumption that grasp is one time step
         # import ipdb; ipdb.set_trace()
-        # self.traj.value = self.gp.value + self.obj_traj.value
+        # self.traj.set_value(self.gp.get_value() + self.obj_traj.get_value())
 
 
         K = self.hl_action.K

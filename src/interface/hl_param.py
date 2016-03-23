@@ -6,14 +6,13 @@ from IPython import embed as shell
 
 
 class HLParam(object):
-    def __init__(self, name, rows, cols, is_var=True, value=None, is_resampled=False):
+    def __init__(self, name, shape, is_var=True, value=None, is_resampled=False):
+        self.shape = tuple(shape)
         self.name = name
-        self.rows = rows
-        self.cols = cols
 
         self.is_var = is_var
         if value is None:
-            self._value = np.zeros((rows, cols))
+            self._value = np.zeros(shape)
         else:
             self._value = np.copy(value)
         self.is_resampled = is_resampled
@@ -25,7 +24,7 @@ class HLParam(object):
         return self._value
 
     def set_value(self, value):
-        assert (self.rows, self.cols) == value.shape
+        assert self.shape == value.shape
         self._value = np.copy(value)
 
     def resample(self):
@@ -53,9 +52,9 @@ class Grasp(HLParam):
             yield v
 
 class RP(HLParam):
-    def __init__(self, name, rows, cols, obj_loc=None, is_var=True,
+    def __init__(self, name, shape, obj_loc=None, is_var=True,
                  value=None, is_resampled=False):
-        super(RP, self).__init__(name, rows, cols, is_var, value, is_resampled)
+        super(RP, self).__init__(name, shape, is_var, value, is_resampled)
         self.obj_loc = obj_loc
 
     def generator(self):
@@ -70,9 +69,9 @@ class RP(HLParam):
             yield self.obj_loc.get_value() + v
 
 class ObjLoc(HLParam):
-    def __init__(self, name, rows, cols, is_var=True,
+    def __init__(self, name, shape, is_var=True,
                  value=None, is_resampled=False, region=None):
-        super(ObjLoc, self).__init__(name, rows, cols, is_var, value, is_resampled)
+        super(ObjLoc, self).__init__(name, shape, is_var, value, is_resampled)
         self.region = region
         if region is not None:
             assert self.is_var and self.is_resampled
@@ -162,10 +161,16 @@ class PR2(Robot):
             robot.SetActiveDOFs(active_dofs)
 
 class Traj(HLParam):
-    def __init__(self, hl_action, name, rows, cols, is_var=True, value=None):
-        super(Traj, self).__init__(name, rows, cols, is_var, value)
+    def __init__(self, hl_action, name, shape, is_var=True, value=None):
+        super(Traj, self).__init__(name, shape, is_var, value)
         self.hl_action = hl_action
         self.is_traj = True
+
+    def num_timesteps(self):
+        return self.shape[1]
+
+    def num_dofs(self):
+        return self.shape[0]
 
     # # TODO: make this less hacky
     # def resample(self):

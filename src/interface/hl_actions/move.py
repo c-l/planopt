@@ -34,7 +34,7 @@ class Move(HLAction):
         KT = self.K*self.T
 
         self.name = "move" + str(lineno)
-        self.traj = Traj(self, self.name + "_traj_mean", self.K, self.T, is_var=True)
+        self.traj = Traj(self, self.name + "_traj_mean", (self.K, self.T), is_var=True)
 
         self.params = [start, end, self.traj]
         self.preconditions = [RobotAt(self, 0, start, self.traj)]
@@ -50,7 +50,7 @@ class Move(HLAction):
             self.preconditions += [ForAllNotObstructs(env, world_state, self, robot, 1, self.traj, objs)]
             self.preconditions += [ForAllNotObstructs(env, world_state, self, robot, 2, self.traj, objs)]
 
-            self.obj_traj = Traj(self, self.name + "_objtraj", self.K, self.T, is_var=True)
+            self.obj_traj = Traj(self, self.name + "_objtraj", (self.K, self.T), is_var=True)
             self.preconditions += [ForAllNotObstructs(env, world_state, self, self.obj, 1, self.obj_traj, objs)]
             self.preconditions += [ForAllNotObstructs(env, world_state, self, self.obj, 2, self.obj_traj, objs)]
             self.preconditions += [InManip(self, 0, obj, gp, self.traj, self.obj_traj)]
@@ -74,17 +74,17 @@ class Move(HLAction):
         return True
 
     def plot_consensus_pos(self):
-        start = np.array(self.start.value)
+        start = np.array(self.start.get_value())
         start[2] = 1
-        hl_start = np.array(self.hl_start.value)
+        hl_start = np.array(self.hl_start.get_value())
         hl_start[2] = 1
         if not np.allclose(start, hl_start, atol=1e-3):
             self.handles += [self.hl_plan.env.drawarrow(
                 p1=start, p2=hl_start, linewidth=0.01, color=(1, 0, 0))]
 
-        end = np.array(self.end.value)
+        end = np.array(self.end.get_value())
         end[2] = 1
-        hl_end = np.array(self.hl_end.value)
+        hl_end = np.array(self.hl_end.get_value())
         hl_end[2] = 1
         if not np.allclose(end, hl_end, atol=1e-3):
             self.handles += [self.hl_plan.env.drawarrow(
@@ -94,8 +94,8 @@ class Move(HLAction):
         # if self.name == 'move6':
         # import ipdb; ipdb.set_trace() # BREAKPOINT
         for loc, hl_loc in zip(self.place_locs, self.hl_place_locs):
-            plot_loc = np.array(loc.value)
-            plot_hl_loc = np.array(hl_loc.value)
+            plot_loc = np.array(loc.get_value())
+            plot_hl_loc = np.array(hl_loc.get_value())
             plot_loc[2] = 1
             plot_hl_loc[2] = 1
             if not np.allclose(plot_loc, plot_hl_loc, atol=1e-3):

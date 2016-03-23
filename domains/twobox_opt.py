@@ -21,19 +21,19 @@ class TwoBoxOpt(object):
         self.robot = env.GetRobots()[0]
         # env.GetKinBody('box1').SetTransform(base_pose_to_mat(np.array([[3.5],[4.5],[0]])))
         self.hl_params = {\
-                "robot_init_loc":RP("robot_init_loc", rows, cols, is_var=False, value=mat_to_base_pose(self.robot.GetTransform())),\
-                "box1_init_loc":ObjLoc("box1_init_loc", rows, cols, is_var=False, value=mat_to_base_pose(env.GetKinBody("box1").GetTransform())),\
-                "box2_init_loc":ObjLoc("box2_init_loc", rows, cols, is_var=False, value=mat_to_base_pose(env.GetKinBody("box2").GetTransform())),\
-                # "goal1":ObjLoc("goal1", rows, cols, is_var=True, value=mat_to_base_pose(env.GetKinBody("box1").GetTransform())),\
-                # "goal":ObjLoc("goal", rows, cols, is_var=False, value=goal),\
-                "goal1":ObjLoc("goal1", rows, cols, is_var=True, value=None, region=goal),\
-                "goal2":ObjLoc("goal2", rows, cols, is_var=True, value=None, region=goal),\
-                "pick_box1":RP("pick_box1", rows, cols),\
-                "place_box1": RP("place_box1", rows, cols),\
-                "pick_box2":RP("pick_box2", rows, cols),\
-                "place_box2": RP("place_box2", rows, cols),\
-                "gp1":GP("gp1", rows, cols),\
-                "gp2":GP("gp2", rows, cols),\
+                "robot_init_loc":RP("robot_init_loc", (rows, cols), is_var=False, value=mat_to_base_pose(self.robot.GetTransform())),\
+                "box1_init_loc":ObjLoc("box1_init_loc", (rows, cols), is_var=False, value=mat_to_base_pose(env.GetKinBody("box1").GetTransform())),\
+                "box2_init_loc":ObjLoc("box2_init_loc", (rows, cols), is_var=False, value=mat_to_base_pose(env.GetKinBody("box2").GetTransform())),\
+                # "goal1":ObjLoc("goal1", (rows, cols), is_var=True, value=mat_to_base_pose(env.GetKinBody("box1").GetTransform())),\
+                # "goal":ObjLoc("goal", (rows, cols), is_var=False, value=goal),\
+                "goal1":ObjLoc("goal1", (rows, cols), is_var=True, value=None, region=goal),\
+                "goal2":ObjLoc("goal2", (rows, cols), is_var=True, value=None, region=goal),\
+                "pick_box1":RP("pick_box1", (rows, cols)),\
+                "place_box1": RP("place_box1", (rows, cols)),\
+                "pick_box2":RP("pick_box2", (rows, cols)),\
+                "place_box2": RP("place_box2", (rows, cols)),\
+                "gp1":GP("gp1", (rows, cols)),\
+                "gp2":GP("gp2", (rows, cols)),\
                 "box1":Movable("box1"),\
                 "box2":Movable("box2")}
         self.params_to_sample = []

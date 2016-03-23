@@ -19,7 +19,7 @@ class PR2HLAction(HLAction):
             # with robot:
 
             transparency = 0.9
-            # traj = self.traj.value.reshape((self.K,self.T), order='F')
+            # traj = self.traj.get_value().reshape((self.K,self.T), order='F')
             for link in robot_body.GetLinks():
                 for geom in link.GetGeometries():
                     geom.SetTransparency(1)

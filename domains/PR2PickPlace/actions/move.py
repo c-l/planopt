@@ -25,7 +25,7 @@ class PR2Move(PR2HLAction):
         KT = self.K*self.T
 
         self.name = "move" + str(lineno)
-        self.traj = Traj(self, self.name + "_traj", self.K, self.T, is_var=True)
+        self.traj = Traj(self, self.name + "_traj", (self.K, self.T), is_var=True)
 
         self.params = [start, end, self.traj]
         self.preconditions = [RobotAt(self, 0, start, self.traj)]

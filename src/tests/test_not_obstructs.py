@@ -42,8 +42,8 @@ def test_not_obstructs_btn_two_cylinders():
     pose = np.array([[0.],[0.],[0.]])
     obj.set_pose(env, pose)
 
-    pos = HLParam("pos", 3, 1, is_var=False, value=robot.get_pose(env))
-    obj_pos = HLParam("obj_pos", 3, 1, is_var=False, value=obj.get_pose(env))
+    pos = HLParam("pos", (3, 1), is_var=False, value=robot.get_pose(env))
+    obj_pos = HLParam("obj_pos", (3, 1), is_var=False, value=obj.get_pose(env))
     action = TestAction(hl_plan, env, robot, pos, obj)
     fluent = action.precondition
     fluent.pre()

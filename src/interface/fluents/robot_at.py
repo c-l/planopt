@@ -17,7 +17,7 @@ class RobotAt(LinEqFluent):
         # import ipdb; ipdb.set_trace()
         # self.traj.value[:,0:1] = self.pos.value
 
-        T = self.traj.cols
+        T = self.traj.num_timesteps()
         # first time step of traj must equal pos
         coeff = np.zeros((T, 1), dtype=np.float)
         coeff[0, 0] = 1.0
@@ -27,7 +27,7 @@ class RobotAt(LinEqFluent):
     def post(self):
         # self.traj.value[:,-1:] = self.pos.value
 
-        T = self.traj.cols
+        T = self.traj.num_timesteps()
         # last time step of traj must equal pos
         coeff = np.zeros((T, 1), dtype=np.float)
         coeff[T-1, 0] = 1.0

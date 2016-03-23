@@ -19,12 +19,12 @@ class NotObstructsPR2(FnLEFluent):
 
         self.name = "NotObstructsPR2"
 
-        self.robot_dofs = traj.rows
-        self.timesteps = traj.cols
+        self.robot_dofs = traj.num_dofs()
+        self.timesteps = traj.num_timesteps()
         if self.obj_loc is None:
             self.obj_dofs = 0
         else:
-            self.obj_dofs = obj_loc.rows
+            self.obj_dofs = obj_loc.num_dofs()
         self.cc = ctrajoptpy.GetCollisionChecker(env)
         self.dsafe = dsafe
 
@@ -57,12 +57,12 @@ class NotObstructsPR2(FnLEFluent):
         # val = np.zeros((T, 1))
         # jac = np.zeros((T, traj.size))
         # if self.obj_loc is not None:
-        #     self.obj.set_pose(env, self.obj_loc.value)
+        #     self.obj.set_pose(env, self.obj_loc.get_value())
         val = None
         jac = None
 
         for t in range(self.timesteps):
-            # xt = self.traj.value[K*t:K*(t+1)]
+            # xt = self.traj.get_value()[K*t:K*(t+1)]
             # xt = traj[:,t:t+1]
             robot_start_ind = self.robot_dofs * t
             robot_end_ind = self.robot_dofs * (t+1)
@@ -208,7 +208,7 @@ class NotObstructsPR2(FnLEFluent):
         # val = np.zeros((T, 1))
         # jac = np.zeros((T, traj.size))
         # if self.obj_loc is not None:
-        #     self.obj.set_pose(env, self.obj_loc.value)
+        #     self.obj.set_pose(env, self.obj_loc.get_value())
         val = None
         jac = None
 

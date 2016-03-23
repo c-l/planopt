@@ -31,8 +31,8 @@ def to_gurobi_expr(aff_expr, param_to_var):
     return expr
 
 def test_aff_expr():
-    one = HLParam("x", 1, 1, value=np.array([[1.0]]))
-    two = HLParam("x", 1, 1, value=np.array([[2.0]]))
+    one = HLParam("x", (1, 1), value=np.array([[1.0]]))
+    two = HLParam("x", (1, 1), value=np.array([[2.0]]))
     expr = AffExpr({one: 3, two: 5}, constant=np.array([[0.5]]))
     assert expr.value() == 1.0 * 3 + 2.0 * 5 + 0.5
 
@@ -159,7 +159,7 @@ def test_le_cnt_with_gurobi():
     var.update()
     var.update_hl_param()
     assert fluent.satisfied()
-    assert np.all(variables[0].value == np.array([[1], [0], [-1]]))
+    assert np.all(variables[0].get_val() == np.array([[1], [0], [-1]]))
 
 
 def test_le_cnt_with_opt():
@@ -202,7 +202,7 @@ def test_le_cnt_with_opt():
 
     var.update_hl_param()
     assert fluent.satisfied()
-    assert np.all(variables[0].value == np.array([[1], [0], [-1]]))
+    assert np.all(variables[0].get_val() == np.array([[1], [0], [-1]]))
 
 test_aff_expr()
 test_fluent_zero_not_equal_to_e1()

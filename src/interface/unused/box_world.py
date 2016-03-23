@@ -13,12 +13,12 @@ class BoxWorld(object):
         cols = 1
         self.robot = env.GetRobots()[0]
         self.hl_params = {\
-                "robot_init_loc":RP("robot_init_loc", rows, cols, is_var=False, value=mat_to_base_pose(self.robot.GetTransform())),\
-                "obj_init_loc":ObjLoc("obj_init_loc", rows, cols, is_var=False, value=mat_to_base_pose(env.GetKinBody("obj0").GetTransform())),\
-                "goal":ObjLoc("goal", rows, cols, is_var=False, value=mat_to_base_pose(target_loc_values[0])),\
-                "pick_box1":RP("pick_box1", rows, cols),\
-                "place_box1": RP("place_box1", rows, cols),\
-                "gp1":GP("gp1", rows, cols),\
+                "robot_init_loc":RP("robot_init_loc", (rows, cols), is_var=False, value=mat_to_base_pose(self.robot.GetTransform())),\
+                "obj_init_loc":ObjLoc("obj_init_loc", (rows, cols), is_var=False, value=mat_to_base_pose(env.GetKinBody("obj0").GetTransform())),\
+                "goal":ObjLoc("goal", (rows, cols), is_var=False, value=mat_to_base_pose(target_loc_values[0])),\
+                "pick_box1":RP("pick_box1", (rows, cols)),\
+                "place_box1": RP("place_box1", (rows, cols)),\
+                "gp1":GP("gp1", (rows, cols)),\
                 "obj0":Movable("obj0")}
         self.name = "box_world"
         self.action_init_hierarchy = [["pick", "place"], ["move"]]

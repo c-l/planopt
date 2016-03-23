@@ -350,11 +350,11 @@ class PlanRefinement(object):
                 if action.obj:
                     obj = self.env.GetKinBody(action.obj.name)
                     obj_T = obj.GetTransform()
-                for ts in range(action.traj.cols):
+                for ts in range(action.traj.num_timesteps()):
                     T[:3, 3] = action.traj.get_value()[:, ts]
                     self.robot.SetTransform(T)
                     if action.obj:
-                        assert action.traj.cols == action.obj_traj.cols
+                        assert action.traj.num_timesteps() == action.obj_traj.num_timesteps()
                         obj_T[:3, 3] = action.obj_traj.get_value()[:, ts]
                         obj.SetTransform(obj_T)
                     time.sleep(0.02 / speedup)

@@ -15,7 +15,7 @@ class ObjAt(AndFluent):
         self.name = "ObjAt(" + obj.name + ", " + loc.name + ")"
 
     def pre(self):
-        T = self.obj_traj.cols
+        T = self.obj_traj.num_timesteps()
         assert T == 1 # TODO: general case
         coeff = np.zeros((T, 1), dtype=np.float)
         coeff[0, 0] = 1.0

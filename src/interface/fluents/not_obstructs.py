@@ -65,7 +65,7 @@ class NotObstructs(FnLEFluent):
             val = np.zeros((self.T, 1))
             jac = np.zeros((self.T, traj.size))
         # if self.obj_loc is not None:
-        #     self.obj.set_pose(env, self.obj_loc.value)
+        #     self.obj.set_pose(env, self.obj_loc.set_value())
 
         if self.priority == 1:
             lst = [0, T-1]
@@ -75,7 +75,7 @@ class NotObstructs(FnLEFluent):
         else:
             raise NotImplementedError
         for t in lst:
-            # xt = self.traj.value[K*t:K*(t+1)]
+            # xt = self.traj.set_value()[K*t:K*(t+1)]
             # xt = traj[:,t:t+1]
             xt = traj[K*t:K*(t+1)]
             self.robot.set_pose(env, xt)

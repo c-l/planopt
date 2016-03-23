@@ -33,7 +33,7 @@ class HLAction(object):
     def plot_traj_line(self, traj, colors=(0,0,1)):
         handles = []
         env = self.hl_plan.env
-        traj_points = np.matrix(np.reshape(traj.value.copy(), (self.T, self.K)))
+        traj_points = np.matrix(np.reshape(traj.get_value().copy(), (self.T, self.K)))
         traj_points[:,2] = np.ones((self.T,1))
         handles.append(env.drawlinestrip(points=traj_points, linewidth=10.0, colors=colors))
         handles.append(env.plot3(points=traj_points[0,:],pointsize=20, colors=colors))
@@ -60,9 +60,9 @@ class HLAction(object):
             with robot:
 
                 transparency = 0.85
-                # traj = self.traj.value.reshape((self.K,self.T), order='F')
+                # traj = self.traj.get_value().reshape((self.K,self.T), order='F')
                 for t in range(self.T):
-                    # xt = self.traj.value[self.K*t:self.K*(t+1)]
+                    # xt = self.traj.get_value()[self.K*t:self.K*(t+1)]
                     xt = self.traj.get_value()[:, t:t+1]
                     # env.Load(robot.GetXMLFilename())
                     newrobot = self.create_robot_kinbody(name=self.name + "_" + robot.GetName() + str(t), transparency=transparency)
@@ -81,13 +81,13 @@ class HLAction(object):
 
 
     def plot_traj_robot_kinbodies(self):
-        # traj = self.traj.value.reshape((self.K,self.T), order='F')
+        # traj = self.traj.get_value().reshape((self.K,self.T), order='F')
         if self.robot_clones is None:
             self.create_robot_clones()
 
         for t in range(self.T):
             xt = self.traj.get_value()[:,t:t+1]
-            # xt = self.traj.value[self.K*t:self.K*(t+1)]
+            # xt = self.traj.get_value()[self.K*t:self.K*(t+1)]
             self.robot_clones[t].SetTransform(base_pose_to_mat(xt))
         return self.robot_clones
 

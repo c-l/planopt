@@ -22,11 +22,11 @@ class TwoCanOpt(object):
         self.add_body_params(env, self.param_map)
         self.body_params = self.param_map.copy()
         robot = self.param_map['robot']
-        self.param_map.update({"robotinitloc":RP("robotinitloc", self.rows, self.cols, is_var=False, value=robot.get_pose(env)),
-                               "goal1":ObjLoc("goal1", self.rows, self.cols, is_var=False, value=np.array([[3.5], [5.5], [0]])),
-                               "goal2":ObjLoc("goal2", self.rows, self.cols, is_var=False, value=np.array([[3.5], [3.5], [0]]))})
+        self.param_map.update({"robotinitloc":RP("robotinitloc", (self.rows, self.cols), is_var=False, value=robot.get_pose(env)),
+                               "goal1":ObjLoc("goal1", (self.rows, self.cols), is_var=False, value=np.array([[3.5], [5.5], [0]])),
+                               "goal2":ObjLoc("goal2", (self.rows, self.cols), is_var=False, value=np.array([[3.5], [3.5], [0]]))})
         for i in range(1, num_cans+1):
-            self.param_map["can%dinitloc"%i] = ObjLoc("can%dinitloc"%i, self.rows,self.cols,
+            self.param_map["can%dinitloc"%i] = ObjLoc("can%dinitloc"%i, (self.rows, self.cols),
                                                       is_var=False, value=self.param_map["can%d"%i].get_pose(env))
 
         self.name = "twocan_world"
@@ -57,18 +57,18 @@ class TwoCanOpt(object):
         if param_name not in self.param_map:
             if param_name.startswith("pdp"):
                 obj_loc = self._get_param(param_name.split("_")[2])
-                self.param_map[param_name] = RP(param_name, self.rows, self.cols, obj_loc, is_resampled=True)
+                self.param_map[param_name] = RP(param_name, (self.rows, self.cols), obj_loc, is_resampled=True)
             elif param_name.startswith("gp"):
                 obj = self.param_map[param_name.split("_")[1]]
                 obj_loc = self.world_state[obj]
-                self.param_map[param_name] = RP(param_name, self.rows, self.cols, obj_loc, is_resampled=True)
+                self.param_map[param_name] = RP(param_name, (self.rows, self.cols), obj_loc, is_resampled=True)
             elif param_name.startswith("grasp"):
-                self.param_map[param_name] = Grasp(param_name, self.rows, self.cols, is_resampled=True)
+                self.param_map[param_name] = Grasp(param_name, (self.rows, self.cols), is_resampled=True)
             elif param_name.startswith("none"):
                 return None
             elif "temploc" in param_name:
                 # sampled ObjLoc (object location)
-                self.param_map[param_name] = ObjLoc(param_name, self.rows, self.cols, is_var=True,
+                self.param_map[param_name] = ObjLoc(param_name, (self.rows, self.cols), is_var=True,
                                                     is_resampled=True, region=(0.5, 6.5, -1.5, 2.5))
             else:
                 import ipdb; ipdb.set_trace()

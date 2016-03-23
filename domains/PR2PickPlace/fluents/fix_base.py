@@ -15,9 +15,9 @@ class FixBase(LinEqFluent):
         self.name = "IsMP"
 
     def pre(self):
-        # start = self.start.value
-        # end = self.end.value
-        # self.traj.value = np.array([np.linspace(i, j, self.traj.cols) for i, j in zip(np.array(start), np.array(end))])
+        # start = self.start.get_value()
+        # end = self.end.get_value()
+        # self.traj.set_value( np.array([np.linspace(i, j, self.traj.num_timesteps()) for i, j in zip(np.array(start), np.array(end))]) )
         if "base" not in self.robot.active_bodyparts:
             self.rhs = AffExpr(constant=np.zeros((1,1)))
             self.lhs = AffExpr(constant=np.zeros((1,1)))

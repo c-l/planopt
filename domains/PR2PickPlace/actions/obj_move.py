@@ -36,13 +36,13 @@ class PR2ObjMove(PR2HLAction):
         KT = self.K*self.T
 
         self.name = "move" + str(lineno)
-        # traj_value = np.tile(start.value, (1, self.T))
-        self.traj = Traj(self, self.name + "_traj", self.K, self.T, is_var=False, value=traj)
+        # traj_value = np.tile(start.get_value(), (1, self.T))
+        self.traj = Traj(self, self.name + "_traj", (self.K, self.T), is_var=False, value=traj)
 
         # Object trajectory
         obj_traj = np.array([[.707], [0.], [0.707], [0.], [0.], [0.]])
         obj_traj = np.tile(obj_traj, (1,T))
-        self.obj_traj = Traj(self, self.name + "_obj_traj", self.obj_K, self.T, is_var=True, value=obj_traj)
+        self.obj_traj = Traj(self, self.name + "_obj_traj", (self.obj_K, self.T), is_var=True, value=obj_traj)
 
         self.params = [start, end, self.traj, self.obj_traj]
         self.preconditions = [RobotAt(self, 0, start, self.traj)]

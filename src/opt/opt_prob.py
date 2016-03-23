@@ -69,21 +69,21 @@ class OptProb(object):
 
         obj = grb.QuadExpr()
         for var in self.vars:
-            if var.value is not None and var.recently_sampled:
+            if var.get_val() is not None and var.recently_sampled:
                 obj += 1e5 * self.l2_norm_diff_squared(self.model, var)
-            elif var.value is not None and var.is_resampled:
+            elif var.get_val() is not None and var.is_resampled:
                 obj += 1 * self.l2_norm_diff_squared(self.model, var)
         if mode == "straight":
             obj += grb.quicksum(self.obj_quad)
         elif mode == "l2":
             for var in self.vars:
-                if var.value is not None:
+                if var.get_val() is not None:
                     obj += self.l2_norm_diff_squared(self.model, var)
         elif mode == "minvel":
             for var in self.vars:
                 if var.hl_param.is_traj:
-                    K = var.hl_param.rows
-                    T = var.hl_param.cols
+                    K = var.hl_param.num_dofs()
+                    T = var.hl_param.num_timesteps()
                     KT = K * T
                     v = -1 * np.ones((KT - K, 1))
                     d = np.vstack((np.ones((KT - K, 1)), np.zeros((K, 1))))
@@ -92,7 +92,7 @@ class OptProb(object):
                     P = np.diag(v[:, 0], K) + np.diag(d[:, 0])
                     # minimum-velocity finite difference
                     Q = np.dot(np.transpose(P), P)
-                    obj += Function.quad_expr((var.get_grb_vars(self) - var.value).flatten(order="f"), Q)
+                    obj += Function.quad_expr((var.get_grb_vars(self) - var.get_val()).flatten(order="f"), Q)
         else:
             raise NotImplementedError
 
@@ -108,7 +108,7 @@ class OptProb(object):
 
         obj = grb.QuadExpr()
         for var in self.vars:
-            if var.value is not None:
+            if var.get_val() is not None:
                 obj += self.l2_norm_diff_squared(self.model, var)
 
         return self.optimize(objective=obj)
@@ -153,7 +153,7 @@ class OptProb(object):
         # if self.augmented_objective:
         #     dual_val = 0
         #     for (var, dual, consensus, ro) in self.dual_terms:
-        #         dual_val += np.dot(np.transpose(dual.value), var.value)[0, 0] + ro / 2 * square(norm(var.value - consensus.value, 2))
+        #         dual_val += np.dot(np.transpose(dual.get_val()), var.get_val())[0, 0] + ro / 2 * square(norm(var.get_val() - consensus.get_val(), 2))
         #     val += dual_val
 
         assert len(self.constraints) == 1
@@ -219,7 +219,7 @@ class OptProb(object):
     #     self.model.update()
     #     if self.augmented_objective:
     #         for (var, dual, consensus, ro) in self.dual_terms:
-    #             self.obj_sqp += np.dot(np.transpose(dual.value), var.grb_vars)[0, 0] + ro / 2 * self.l2_norm_squared(self.model, var, consensus.value)
+    #             self.obj_sqp += np.dot(np.transpose(dual.get_val()), var.grb_vars)[0, 0] + ro / 2 * self.l2_norm_squared(self.model, var, consensus.get_val())
 
     def constraints_satisfied(self, tolerance):
         for constraint in self.constraints:
@@ -248,13 +248,13 @@ class OptProb(object):
         self.trust_temp = []
 
         # var_list = [grb_var for var in self.vars for grb_var in var.grb_vars.flatten()]
-        # val_list = [val for var in self.vars for val in var.value.flatten()]
+        # val_list = [val for var in self.vars for val in var.get_val().flatten()]
 
         # self.add_trust_region_cnt(var_list, val_list, trust_region_size)
 
         for var in self.vars:
             if var.hl_param in trust_region_sizes:
-                self.add_trust_region_cnt(var.name, var.get_grb_vars(self).flatten(), var.value.flatten(), trust_region_sizes[var.hl_param])
+                self.add_trust_region_cnt(var.name, var.get_grb_vars(self).flatten(), var.get_val().flatten(), trust_region_sizes[var.hl_param])
 
     # @profile
     def add_trust_region_old(self, trust_region_size):
@@ -265,7 +265,7 @@ class OptProb(object):
 
         var_list = [
             grb_var for var in self.vars for grb_var in var.get_grb_vars(self).flatten()]
-        val_list = [val for var in self.vars for val in var.value.flatten()]
+        val_list = [val for var in self.vars for val in var.get_val().flatten()]
 
         # self.trust_region_cnt = self.add_trust_region_cnt(
         self.add_trust_region_cnt_old(var_list, val_list, trust_region_size)
@@ -350,7 +350,7 @@ class OptProb(object):
     def l2_norm_squared(self, model, var, consensus):
         obj = grb.QuadExpr()
         x = var.get_grb_vars(self)
-        # value = consensus.value
+        # value = consensus.get_val()
         value = consensus
         rows, cols = x.shape
         for i in range(rows):
@@ -362,7 +362,7 @@ class OptProb(object):
     def l2_norm_diff_squared(self, model, var):
         obj = grb.QuadExpr()
         x = var.get_grb_vars(self)
-        value = var.value
+        value = var.get_val()
         rows, cols = x.shape
         for i in range(rows):
             for j in range(cols):

@@ -45,9 +45,9 @@ def test_is_gp():
     pose = np.array([[0.],[0.],[0.]])
     obj.set_pose(env, pose)
 
-    pos = HLParam("pos", 3, 1, is_var=False, value=robot.get_pose(env))
-    obj_pos = HLParam("obj_pos", 3, 1, is_var=False, value=obj.get_pose(env))
-    gp = HLParam("gp", 3, 1, is_var=False, value=pose)
+    pos = HLParam("pos", (3, 1), is_var=False, value=robot.get_pose(env))
+    obj_pos = HLParam("obj_pos", (3, 1), is_var=False, value=obj.get_pose(env))
+    gp = HLParam("gp", (3, 1), is_var=False, value=pose)
     action = TestIsGPAction(hl_plan, env, robot, obj, gp, pos, obj_pos)
     fluent = action.precondition
     fluent.pre()

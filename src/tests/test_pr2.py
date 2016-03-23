@@ -104,8 +104,8 @@ def test_not_obstructs_pr2_table():
     # obj_pose = np.array([[0.],[0.],[0.]])
     # obj.set_pose(env, obj_pose)
 
-    pos = HLParam("pos", 11, 1, is_var=False, value=robot.get_pose(env))
-    obj_pos = HLParam("obj_pos", 3, 1, is_var=False, value=obj.get_pose(env))
+    pos = HLParam("pos", (11, 1), is_var=False, value=robot.get_pose(env))
+    obj_pos = HLParam("obj_pos", (3, 1), is_var=False, value=obj.get_pose(env))
     action = TestAction(hl_plan, env, robot, pos, obj)
     fluent = action.precondition
     fluent.pre()
@@ -138,14 +138,14 @@ def test_move_pr2_gradient():
     # obj_pose = np.array([[0.],[0.],[0.]])
     # obj.set_pose(env, obj_pose)
 
-    # start = HLParam("pos", self.K, 1, is_var=False, value=robot.get_pose(env))
+    # start = HLParam("pos", (self.K, 1), is_var=False, value=robot.get_pose(env))
     start_pose = np.array([[-1.57265580e+00], [5.27875957e-01], [-1.40000000e+00], \
         [-1.58244363e+00], [-1.64143184e+00], [-9.76938766e-02], [-5.78403045e-01]])
     end_pose = np.array([[-1.31066711e+00], [1.08996543e+00], [-1.40000000e+00],\
         [-2.10243169e+00], [2.93131497e+00], [-6.18669215e-01], [5.20253411e-01]])
-    start = HLParam("start", K, 1, is_var=False, value=start_pose)
-    end = HLParam("end", K, 1, is_var=False, value=end_pose)
-    obj_pos = HLParam("obj_pos", 3, 1, is_var=False, value=obj.get_pose(env))
+    start = HLParam("start", (K, 1), is_var=False, value=start_pose)
+    end = HLParam("end", (K, 1), is_var=False, value=end_pose)
+    obj_pos = HLParam("obj_pos", (3, 1), is_var=False, value=obj.get_pose(env))
 
     move = PR2Move(0, hl_plan, move_env, robot, start, end, obj)
     hlas = [move]
@@ -177,7 +177,7 @@ def test_move_pr2_with_obj_wrt_robot():
     # obj_pose = np.array([[0.],[0.],[0.]])
     # obj.set_pose(env, obj_pose)
 
-    # start = HLParam("pos", self.K, 1, is_var=False, value=robot.get_pose(env))
+    # start = HLParam("pos", (self.K, 1), is_var=False, value=robot.get_pose(env))
     start_pose = np.array([[-1.4352011 ],\
        [ 0.63522797],\
        [-1.19804084],\
@@ -207,7 +207,7 @@ def test_move_pr2_with_obj_wrt_robot():
     import ipdb; ipdb.set_trace()
 
     gp_val = np.array([0,0,.125]).reshape((3,1))
-    gp = HLParam("gp", 3, 1, is_var=False, value=gp_val)
+    gp = HLParam("gp", (3, 1), is_var=False, value=gp_val)
 
     # start_pose = np.array([[-1.07265580e+00], [5.17875957e-01], [-1.30000000e+00], \
     #     [-1.08244363e+00], [-1.04143184e+00], [-9.06938766e-02], [-5.38403045e-01]])
@@ -220,9 +220,9 @@ def test_move_pr2_with_obj_wrt_robot():
     # print "obj_end:", obj_end
     obj_traj = lininterp(obj_start, obj_end, 10)
 
-    start = HLParam("start", K, 1, is_var=False, value=start_pose)
-    end = HLParam("end", K, 1, is_var=True, value=end_pose)
-    # obj_pos = HLParam("obj_pos", 3, 1, is_var=False, value=obj.get_pose(env))
+    start = HLParam("start", (K, 1), is_var=False, value=start_pose)
+    end = HLParam("end", (K, 1), is_var=True, value=end_pose)
+    # obj_pos = HLParam("obj_pos", (3, 1), is_var=False, value=obj.get_pose(env))
 
     move = PR2MoveWithObj(0, hl_plan, move_env, robot, start, end, obj, obj_traj, gp)
     hlas = [move]
@@ -272,7 +272,7 @@ def test_err_obj_in_manip():
     obj = Obj('object17')
 
     gp_val = np.array([0,0,.125]).reshape((3,1))
-    gp = HLParam("gp", 3, 1, is_var=False, value=gp_val)
+    gp = HLParam("gp", (3, 1), is_var=False, value=gp_val)
 
     # traj_val = np.array([[-1.4352011 ],\
     #    [ 0.63522797],\
@@ -286,8 +286,8 @@ def test_err_obj_in_manip():
         [-1.08244363e+00], [-1.04143184e+00], [-9.06938766e-02], [-5.38403045e-01]])
 
     dummy_action = DummyInManipAction()
-    traj = Traj(dummy_action, "traj", 7, 1, is_var=True, value=traj_val)
-    obj_traj = Traj(dummy_action, "obj_traj", obj_K, 1, is_var=False, value=obj_traj_val)
+    traj = Traj(dummy_action, "traj", (7, 1), is_var=True, value=traj_val)
+    obj_traj = Traj(dummy_action, "obj_traj", (obj_K, 1), is_var=False, value=obj_traj_val)
 
     fluent = ObjInManip(env, dummy_action, robot, 0, obj, gp, traj, obj_traj)
 
@@ -322,7 +322,7 @@ def test_err_in_manip():
     obj = Obj('object17')
 
     gp_val = np.array([0,0,.125]).reshape((3,1))
-    gp = HLParam("gp", 3, 1, is_var=False, value=gp_val)
+    gp = HLParam("gp", (3, 1), is_var=False, value=gp_val)
 
     # traj_val = np.array([[-1.4352011 ],\
     #    [ 0.63522797],\
@@ -336,8 +336,8 @@ def test_err_in_manip():
         [-1.08244363e+00], [-1.04143184e+00], [-9.06938766e-02], [-5.38403045e-01]])
 
     dummy_action = DummyInManipAction()
-    traj = Traj(dummy_action, "traj", 7, 1, is_var=True, value=traj_val)
-    obj_traj = Traj(dummy_action, "obj_traj", obj_K, 1, is_var=False, value=obj_traj)
+    traj = Traj(dummy_action, "traj", (7, 1), is_var=True, value=traj_val)
+    obj_traj = Traj(dummy_action, "obj_traj", (obj_K, 1), is_var=False, value=obj_traj)
 
     fluent = PR2InManip(env, dummy_action, robot, 0, obj, gp, traj, obj_traj)
     val, jac = fluent.pos_error(traj_val)
@@ -379,7 +379,7 @@ def test_move_pr2_with_obj_wrt_obj():
     # obj_pose = np.array([[0.],[0.],[0.]])
     # obj.set_pose(env, obj_pose)
 
-    # start = HLParam("pos", self.K, 1, is_var=False, value=robot.get_pose(env))
+    # start = HLParam("pos", (self.K, 1), is_var=False, value=robot.get_pose(env))
     start_pose = np.array([[-1.4352011 ],\
        [ 0.63522797],\
        [-1.19804084],\
@@ -407,9 +407,9 @@ def test_move_pr2_with_obj_wrt_obj():
     W_T_O = obj17.GetTransform()
     EE_T_O = np.dot(EE_T_W, W_T_O)
     EE_T_O_pose = poseFromMatrix(EE_T_O)
-    # gp = HLParam("gp", 7, 1, is_var=False, value=EE_T_O_pose)
+    # gp = HLParam("gp", (7, 1), is_var=False, value=EE_T_O_pose)
     gp_val = np.array([0,0,.125]).reshape((3,1))
-    gp = HLParam("gp", 3, 1, is_var=False, value=gp_val)
+    gp = HLParam("gp", (3, 1), is_var=False, value=gp_val)
 
     # start_pose = np.array([[-1.07265580e+00], [5.17875957e-01], [-1.30000000e+00], \
     #     [-1.08244363e+00], [-1.04143184e+00], [-9.06938766e-02], [-5.38403045e-01]])
@@ -424,9 +424,9 @@ def test_move_pr2_with_obj_wrt_obj():
     # obj_traj = lininterp(obj_start, obj_end, 10)
     obj_traj = lininterp(obj_start, obj_end, 2)
 
-    start = HLParam("start", K, 1, is_var=False, value=start_pose)
-    end = HLParam("end", K, 1, is_var=False, value=end_pose)
-    # obj_pos = HLParam("obj_pos", 3, 1, is_var=False, value=obj.get_pose(env))
+    start = HLParam("start", (K, 1), is_var=False, value=start_pose)
+    end = HLParam("end", (K, 1), is_var=False, value=end_pose)
+    # obj_pos = HLParam("obj_pos", (3, 1), is_var=False, value=obj.get_pose(env))
 
     move = PR2ObjMove(0, hl_plan, move_env, robot, start, end, traj_val, obj, gp)
     hlas = [move]

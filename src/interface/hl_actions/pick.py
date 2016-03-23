@@ -29,8 +29,8 @@ class Pick(HLAction):
         T = self.T
         K = self.K
 
-        self.traj = Traj(self, self.name + "_traj", K, T, is_var=True)
-        self.obj_traj = Traj(self, self.name + "_objtraj", K, T, is_var=True)
+        self.traj = Traj(self, self.name + "_traj", (K, T), is_var=True)
+        self.obj_traj = Traj(self, self.name + "_objtraj", (K, T), is_var=True)
         self.params = [pos, loc, gp, self.traj, self.obj_traj]
 
         self.preconditions = [RobotAt(self, 0, pos, self.traj)]
@@ -42,24 +42,24 @@ class Pick(HLAction):
         # self.postconditions = [InManip(self.env, self, self.model, robot, self.obj, self.gp, self.traj, self.obj_traj)]
 
     def plot_consensus_pos(self):
-        if not np.allclose(self.pos.value, self.hl_pos.value, atol=1e-3):
-            pick_pos = np.array(self.pos.value)
+        if not np.allclose(self.pos.get_value(), self.hl_pos.get_value(), atol=1e-3):
+            pick_pos = np.array(self.pos.get_value())
             pick_pos[2] = 1
-            hl_pos = np.array(self.hl_pos.value)
+            hl_pos = np.array(self.hl_pos.get_value())
             hl_pos[2] = 1
             self.handles += [self.hl_plan.env.drawarrow(p1=pick_pos, p2=hl_pos, linewidth=0.01, color=(1,0,0))]
             self.handles += [self.hl_plan.env.plot3(points=hl_pos[:, 0], pointsize=10, colors=(1,0,0))]
 
     def plot_consensus_obj_pos(self):
-        if not np.allclose(self.loc.value, self.hl_loc.value, atol=1e-3):
-            # hl_gp = np.array(self.hl_gp.value)
+        if not np.allclose(self.loc.get_value(), self.hl_loc.get_value(), atol=1e-3):
+            # hl_gp = np.array(self.hl_gp.get_value())
 
-            # pick_pos = np.array(self.traj.value)
+            # pick_pos = np.array(self.traj.get_value())
             # pick_pos[2] = 1
 
-            hl_obj_pos = np.array(self.hl_loc.value)
+            hl_obj_pos = np.array(self.hl_loc.get_value())
             hl_obj_pos[2]=1
-            pick_obj_pos = np.array(self.loc.value)
+            pick_obj_pos = np.array(self.loc.get_value())
             pick_obj_pos[2] = 1
 
             self.handles += [self.hl_plan.env.drawarrow(p1=pick_obj_pos, p2=hl_obj_pos, linewidth=0.01, color=(1,0,0))]

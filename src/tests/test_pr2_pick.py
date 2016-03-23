@@ -42,12 +42,12 @@ def test_pick_pr2_gradient():
     # obj_pose = np.array([[0.],[0.],[0.]])
     # obj.set_pose(env, obj_pose)
 
-    # start = HLParam("pos", self.K, 1, is_var=False, value=robot.get_pose(env))
+    # start = HLParam("pos", (self.(K, 1)), is_var=False, value=robot.get_pose(env))
     pose = np.array([[-1.57265580e+00], [5.27875957e-01], [-1.40000000e+00], \
         [-1.58244363e+00], [-1.64143184e+00], [-9.76938766e-02], [-5.78403045e-01]])
-    pos = HLParam("pos", K, 1, value=pose)
-    # end = HLParam("end", K, 1, is_var=True, value=end_pose)
-    # obj_pos = HLParam("obj_pos", 3, 1, is_var=False, value=obj.get_pose(env))
+    pos = HLParam("pos", (K, 1), value=pose)
+    # end = HLParam("end", (K, 1), is_var=True, value=end_pose)
+    # obj_pos = HLParam("obj_pos", (3, 1), is_var=False, value=obj.get_pose(env))
 
     pick = PR2Pick(0, hl_plan, pick_env, robot, pos, obj)
     pick.preconditions[-1].error(pose)
@@ -88,14 +88,14 @@ def test_pick():
     # obj_pose = np.array([[0.],[0.],[0.]])
     # obj.set_pose(env, obj_pose)
 
-    # start = HLParam("pos", self.K, 1, is_var=False, value=robot.get_pose(env))
+    # start = HLParam("pos", (self.(K, 1)), is_var=False, value=robot.get_pose(env))
     pose = np.array([[-1.57265580e+00], [5.27875957e-01], [-1.40000000e+00], \
         [-1.58244363e+00], [-1.64143184e+00], [-9.76938766e-02], [-5.78403045e-01], [0.0]])
     # pose = np.array([[-1.57265580e+00], [5.27875957e-01], [-1.40000000e+00], \
     #     [-1.58244363e+00], [-1.64143184e+00], [-9.76938766e-02], [-5.78403045e-01]])
-    pos = HLParam("pos", K, 1, value=pose)
-    # end = HLParam("end", K, 1, is_var=True, value=end_pose)
-    # obj_pos = HLParam("obj_pos", 3, 1, is_var=False, value=obj.get_pose(env))
+    pos = HLParam("pos", (K, 1), value=pose)
+    # end = HLParam("end", (K, 1), is_var=True, value=end_pose)
+    # obj_pos = HLParam("obj_pos", (3, 1), is_var=False, value=obj.get_pose(env))
 
     pick = PR2Pick(0, hl_plan, pick_env, robot, pos, obj)
     # pick.preconditions[-1].error(pose)
@@ -128,18 +128,18 @@ def test_pick_full_DOF():
     # obj_pose = np.array([[0.],[0.],[0.]])
     # obj.set_pose(env, obj_pose)
 
-    # start = HLParam("pos", self.K, 1, is_var=False, value=robot.get_pose(env))
+    # start = HLParam("pos", (self.(K, 1)), is_var=False, value=robot.get_pose(env))
     # pose = np.array([[-1.57265580e+00], [5.27875957e-01], [-1.40000000e+00], \
     #     [-1.58244363e+00], [-1.64143184e+00], [-9.76938766e-02], [-5.78403045e-01], [0.0],[0.],[0.],[0.]])
     # pose = np.array([[-1.57265580e+00], [5.27875957e-01], [-1.40000000e+00], \
     #     [-1.58244363e+00], [-1.64143184e+00], [-9.76938766e-02], [-5.78403045e-01]])
     pose = np.array([[-1.57265580e+00], [5.27875957e-01], [-1.40000000e+00], \
         [-1.58244363e+00], [-1.64143184e+00], [-9.76938766e-02], [-5.78403045e-01], [0.]])
-    start = HLParam("start", K, 1, value=pose, is_var=False)
-    # start = HLParam("start", K, 1, value=pose, is_var=True)
-    end = HLParam("end", K, 1, value=pose)
-    # end = HLParam("end", K, 1, is_var=True, value=end_pose)
-    # obj_pos = HLParam("obj_pos", 3, 1, is_var=False, value=obj.get_pose(env))
+    start = HLParam("start", (K, 1), value=pose, is_var=False)
+    # start = HLParam("start", (K, 1), value=pose, is_var=True)
+    end = HLParam("end", (K, 1), value=pose)
+    # end = HLParam("end", (K, 1), is_var=True, value=end_pose)
+    # obj_pos = HLParam("obj_pos", (3, 1), is_var=False, value=obj.get_pose(env))
 
     pick = PR2Pick(0, hl_plan, pick_env, robot, start, end, obj)
     # pick.preconditions[-1].error(pose)
@@ -175,18 +175,18 @@ def test_pick_small_cans_full_DOF():
     # obj_pose = np.array([[0.],[0.],[0.]])
     # obj.set_pose(env, obj_pose)
 
-    # start = HLParam("pos", self.K, 1, is_var=False, value=robot.get_pose(env))
+    # start = HLParam("pos", (self.(K, 1)), is_var=False, value=robot.get_pose(env))
     # pose = np.array([[-1.57265580e+00], [5.27875957e-01], [-1.40000000e+00], \
     #     [-1.58244363e+00], [-1.64143184e+00], [-9.76938766e-02], [-5.78403045e-01], [0.0],[0.],[0.],[0.]])
     # pose = np.array([[-1.57265580e+00], [5.27875957e-01], [-1.40000000e+00], \
     #     [-1.58244363e+00], [-1.64143184e+00], [-9.76938766e-02], [-5.78403045e-01]])
     pose = np.array([[-1.57265580e+00], [5.27875957e-01], [-1.40000000e+00], \
         [-1.58244363e+00], [-1.64143184e+00], [-9.76938766e-02], [-5.78403045e-01], [.4]])
-    start = HLParam("start", K, 1, value=pose, is_var=False)
-    # start = HLParam("start", K, 1, value=pose, is_var=True)
-    end = HLParam("end", K, 1, value=pose)
-    # end = HLParam("end", K, 1, is_var=True, value=end_pose)
-    # obj_pos = HLParam("obj_pos", 3, 1, is_var=False, value=obj.get_pose(env))
+    start = HLParam("start", (K, 1), value=pose, is_var=False)
+    # start = HLParam("start", (K, 1), value=pose, is_var=True)
+    end = HLParam("end", (K, 1), value=pose)
+    # end = HLParam("end", (K, 1), is_var=True, value=end_pose)
+    # obj_pos = HLParam("obj_pos", (3, 1), is_var=False, value=obj.get_pose(env))
 
     pick = PR2Pick(0, hl_plan, pick_env, robot, start, end, obj)
     # pick.preconditions[-1].error(pose)
