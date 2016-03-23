@@ -101,7 +101,7 @@ class HLAction(object):
             with obj:
 
                 transparency = 0.85
-                # traj = self.obj_traj.value.reshape((self.K,self.T), order='F')
+                # traj = self.obj_traj.get_value().reshape((self.K,self.T), order='F')
                 for t in range(self.T):
                     xt = self.obj_traj.get_value()[:, t:t+1]
                     # xt = traj[:,t]
@@ -127,12 +127,12 @@ class HLAction(object):
             # time.sleep(3)
 
     def plot_traj_obj_kinbodies(self):
-        # traj = self.obj_traj.value.reshape((self.K,self.T), order='F')
+        # traj = self.obj_traj.get_value().reshape((self.K,self.T), order='F')
         if self.obj_clones is None:
             self.create_obj_clones()
 
         for t in range(self.T):
-            xt = self.obj_traj.value[:, t:t+1]
+            xt = self.obj_traj.get_value()[:, t:t+1]
             # xt = traj[:,t]
             self.obj_clones[t].SetTransform(base_pose_to_mat(xt))
         return self.obj_clones

@@ -27,8 +27,8 @@ class LLProb(object):
             elif isinstance(fluent, FnEQFluent):
                 constraints.add_nonlinear_eq_constraint(fluent)
         elif isinstance(fluent, LinFluent):
-            lhs = self.to_gurobi_expr(prob, fluent.lhs, param_to_var)
-            rhs = self.to_gurobi_expr(prob, fluent.rhs, param_to_var)
+            lhs = self.to_gurobi_affine_expr(prob, fluent.lhs, param_to_var)
+            rhs = self.to_gurobi_affine_expr(prob, fluent.rhs, param_to_var)
             if isinstance(fluent, LinLEFluent):
                 constraints.add_leq_cntr(lhs, rhs)
             elif isinstance(fluent, LinEqFluent):
@@ -37,7 +37,7 @@ class LLProb(object):
             raw_input("shouldn't be here")
             import ipdb; ipdb.set_trace()
 
-    def to_gurobi_expr(self, prob, aff_expr, param_to_var):
+    def to_gurobi_affine_expr(self, prob, aff_expr, param_to_var):
         expr = 0.0 + aff_expr.constant
 
         for param, coeff in aff_expr.items():
@@ -116,7 +116,7 @@ class LLProb(object):
         # max(priority, 0) because priority = -1 used for straight-line init
         self.add_cnts_to_opt_prob(prob, param_to_var=param_to_var, priority=max(priority, 0))
         for param, var in param_to_var.items():
-            var.set(param.value)
+            var.set(param.get_value())
 
         for hla in self.hlas:
             if hla.cost != 0.0:

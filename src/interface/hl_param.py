@@ -13,26 +13,26 @@ class HLParam(object):
 
         self.is_var = is_var
         if value is None:
-            self.value = np.zeros((rows, cols))
+            self._value = np.zeros((rows, cols))
         else:
-            self.value = value
+            self._value = np.copy(value)
         self.is_resampled = is_resampled
         self.gen = None
         self.sample_priority = 0
         self.is_traj = False
 
     def get_value(self):
-        return self.value
+        return self._value
 
-    def set(self, value):
+    def set_value(self, value):
         assert (self.rows, self.cols) == value.shape
-        self.value = value
+        self._value = np.copy(value)
 
     def resample(self):
         assert self.is_var and self.is_resampled
         if self.gen is None:
             self.gen = self.generator()
-        self.value = next(self.gen)
+        self._value = next(self.gen)
 
     def generator(self):
         raise NotImplementedError
@@ -67,7 +67,7 @@ class RP(HLParam):
                     np.array([[0], [-0.6], [0]], dtype=np.float)]
         settings.RANDOM_STATE.shuffle(vals)
         for v in vals:
-            yield self.obj_loc.value + v
+            yield self.obj_loc.get_value() + v
 
 class ObjLoc(HLParam):
     def __init__(self, name, rows, cols, is_var=True,
@@ -169,4 +169,4 @@ class Traj(HLParam):
 
     # # TODO: make this less hacky
     # def resample(self):
-    #     self.value = straight_line()
+    #     self._value = straight_line()

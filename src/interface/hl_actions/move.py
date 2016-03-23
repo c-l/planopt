@@ -34,7 +34,7 @@ class Move(HLAction):
         KT = self.K*self.T
 
         self.name = "move" + str(lineno)
-        self.traj = Traj(self, self.name + "_traj", 3, 40, is_var=True)
+        self.traj = Traj(self, self.name + "_traj_mean", self.K, self.T, is_var=True)
 
         self.params = [start, end, self.traj]
         self.preconditions = [RobotAt(self, 0, start, self.traj)]
@@ -50,7 +50,7 @@ class Move(HLAction):
             self.preconditions += [ForAllNotObstructs(env, world_state, self, robot, 1, self.traj, objs)]
             self.preconditions += [ForAllNotObstructs(env, world_state, self, robot, 2, self.traj, objs)]
 
-            self.obj_traj = Traj(self, self.name + "_objtraj", 3, 40, is_var=True)
+            self.obj_traj = Traj(self, self.name + "_objtraj", self.K, self.T, is_var=True)
             self.preconditions += [ForAllNotObstructs(env, world_state, self, self.obj, 1, self.obj_traj, objs)]
             self.preconditions += [ForAllNotObstructs(env, world_state, self, self.obj, 2, self.obj_traj, objs)]
             self.preconditions += [InManip(self, 0, obj, gp, self.traj, self.obj_traj)]

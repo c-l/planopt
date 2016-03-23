@@ -14,13 +14,13 @@ class Variable(object):
         self.is_resampled = hl_param.is_resampled
         self.rows = hl_param.rows
         self.cols = hl_param.cols
-        self.set(hl_param.value)
+        self.set(hl_param.get_value())
         self.recently_sampled = recently_sampled
         if name is None:
             self.name = hl_param.name
         else:
             self.name = name
-        self.set(hl_param.value)
+        self.set(hl_param.get_value())
         self.opt_prob_to_grb_var = {}
 
     def add_opt_prob(self, opt_prob):
@@ -68,7 +68,7 @@ class Variable(object):
 
     def update_hl_param(self):
         assert self.value.shape == (self.rows, self.cols)
-        self.hl_param.set(self.value.copy())
+        self.hl_param.set_value(self.value)
 
     def save(self):
         self.saved_value = self.value.copy()
@@ -144,12 +144,12 @@ class GlobalVariable(Variable):
 class Constant(object):
 
     def __init__(self, hl_param, name=None):
-        assert hl_param.value is not None
+        assert hl_param.get_value() is not None
         self.hl_param = hl_param
         self.rows = hl_param.rows
         self.cols = hl_param.cols
-        self.set(hl_param.value)
-        # self.grb_vars = hl_param.value
+        self.set(hl_param.get_value())
+        # self.grb_vars = hl_param.get_value()
         self.name = name
 
     def set(self, value):

@@ -179,15 +179,15 @@ class CollisionFn(Function):
             if param not in param_to_var:
                 raise Exception("Parameter %s not found in param_to_var!"%param.name)
             self.vs.append(param_to_var[param])
-        self.grb_vars = self.get_grb_vars(prob)
+        self.grb_vars = self._get_grb_vars(prob)
 
-    def get_values(self):
-        return self.get_flattened_values()
+    def _get_values(self):
+        return self._get_flattened_values()
         # values = [var.value.copy() for var in self.vs]
         # values = np.vstack(values)
         # return values
 
-    def get_flattened_values(self):
+    def _get_flattened_values(self):
         # values = [var.value.copy().flatten(order='F') for var in self.vs]
         values = []
         for var in self.vs:
@@ -195,7 +195,7 @@ class CollisionFn(Function):
         values = np.vstack(values)
         return values
 
-    def get_grb_vars(self, prob):
+    def _get_grb_vars(self, prob):
         grb_vars = []
         for var in self.vs:
             grb_vars.extend(var.get_grb_vars(prob).flatten(order='F'))
@@ -203,21 +203,21 @@ class CollisionFn(Function):
         return grb_vars
 
     def val(self):
-        x = self.get_values()
+        x = self._get_values()
         val, grad = self.f(x)
         return val
 
     def grad(self):
-        x = self.get_values()
+        x = self._get_values()
         val, grad = self.f(x)
         return grad
 
     def convexify(self):
-        # x = self.get_values()
-        x = self.get_flattened_values()
+        # x = self._get_values()
+        x = self._get_flattened_values()
         f_val, f_grad = self.f(x)
         # TODO: fix temporary hack which get things to work (flattened_values)
-        # affexprlist = diff(self.grb_vars, self.get_flattened_values())
+        # affexprlist = diff(self.grb_vars, self._get_flattened_values())
         affexprlist = diff(self.grb_vars, x)
         affexprlist = self.aff_expr(affexprlist, f_grad, f_val)
         return affexprlist

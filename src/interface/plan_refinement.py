@@ -351,11 +351,11 @@ class PlanRefinement(object):
                     obj = self.env.GetKinBody(action.obj.name)
                     obj_T = obj.GetTransform()
                 for ts in range(action.traj.cols):
-                    T[:3, 3] = action.traj.value[:, ts]
+                    T[:3, 3] = action.traj.get_value()[:, ts]
                     self.robot.SetTransform(T)
                     if action.obj:
                         assert action.traj.cols == action.obj_traj.cols
-                        obj_T[:3, 3] = action.obj_traj.value[:, ts]
+                        obj_T[:3, 3] = action.obj_traj.get_value()[:, ts]
                         obj.SetTransform(obj_T)
                     time.sleep(0.02 / speedup)
             if action.name.startswith("pick"):
